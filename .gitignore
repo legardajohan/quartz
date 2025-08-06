@@ -1,0 +1,21 @@
+# Archivos de entorno 
+.env
+
+# Carpeta de desarrollo personal
+dev/
+
+# Dependencias de Node.js
+node_modules/
+
+# Archivos de compilación de TypeScript/JavaScript
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
