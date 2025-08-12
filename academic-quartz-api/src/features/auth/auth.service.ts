@@ -26,7 +26,7 @@ export async function validateCredentials(
 }
 
 export function generateJWT(user: SafeUser) {
-  // Solo los campos mínimos necesarios para la UI y autorización
+  // Only include necessary user information in the JWT
   return jwt.sign(
     {
       id: user._id,
