@@ -12,9 +12,16 @@ app.use(express.json());
 // Rutas de autenticación
 app.use('/api/auth', authRoutes);
 
-// Conexión a MongoDB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/academic-quartz-db';
-mongoose.connect(MONGO_URI)
+// Conexión a MongoDB usando credenciales de variables de entorno
+const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;
+if (!MONGODB_URI || !API_USER || !API_PASSWORD) {
+  console.error('Faltan variables de entorno para la conexión a MongoDB (MONGODB_URI, API_USER o API_PASSWORD)');
+  process.exit(1);
+}
+
+const mongoUri = MONGODB_URI.replace('<user>', encodeURIComponent(API_USER)).replace('<password>', encodeURIComponent(API_PASSWORD));
+
+mongoose.connect(mongoUri)
   .then(() => {
     console.log('MongoDB connected');
     const PORT = process.env.PORT || 4000;

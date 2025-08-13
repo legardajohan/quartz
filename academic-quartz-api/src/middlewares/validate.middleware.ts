@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodSchema, ZodError } from 'zod';
+import { ZodObject, ZodError } from 'zod';
 
 // Define a type for the Express middleware function
 type ExpressMiddleware = (req: Request, res: Response, next: NextFunction) => void;
 
-export function validate(schema: ZodSchema<any>): ExpressMiddleware {
+export function validate(schema: ZodObject<any>): ExpressMiddleware {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse({

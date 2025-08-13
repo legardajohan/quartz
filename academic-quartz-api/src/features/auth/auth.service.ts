@@ -6,12 +6,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
 export async function validateCredentials(
   email: string, 
-  password: string, 
-  institutionId: string
+  password: string
 ): Promise<SafeUser | null> {
   try {
-    const user = await User.findOne({ email, institutionId }).select('+passwordHash') as IUserDocument | null;
+    // Find user by email only
+    const user = await User.findOne({ email }).select('+passwordHash') as IUserDocument | null;
     if (!user) return null;
+
     const isValid = await bcrypt.compare(password, user.passwordHash);
 
     if (isValid) {
