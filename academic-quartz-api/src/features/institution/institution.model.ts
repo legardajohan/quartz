@@ -1,7 +1,7 @@
 import { Schema, model, Document } from 'mongoose';
 
 // Interface for the EducationalInstitution document
-export interface IEducationalInstitution extends Document {
+export interface IInstitutionDocument extends Document {
   name: string;
   daneCode: string;
   address: string;
@@ -9,10 +9,9 @@ export interface IEducationalInstitution extends Document {
   phoneNumber: string;
   email: string;
   isActive: boolean;
-  createdAt: Date;
 }
 
-const EducationalInstitutionSchema = new Schema<IEducationalInstitution>(
+const InstitutionSchema = new Schema<IInstitutionDocument>(
   {
     name: { type: String, required: true },
     daneCode: { type: String, required: true, unique: true },
@@ -21,12 +20,11 @@ const EducationalInstitutionSchema = new Schema<IEducationalInstitution>(
     phoneNumber: { type: String },
     email: { type: String, required: true, unique: true },
     isActive: { type: Boolean, default: true },
-    createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true } // Adds createdAt and updatedAt automatically
 );
 
-export const EducationalInstitution = model<IEducationalInstitution>(
-  'EducationalInstitution',
-  EducationalInstitutionSchema
+export const Institution = model<IInstitutionDocument>(
+  'Institution',
+  InstitutionSchema
 );

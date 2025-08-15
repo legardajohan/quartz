@@ -30,12 +30,9 @@ export function generateJWT(user: SafeUser) {
   // Only include necessary user information in the JWT
   return jwt.sign(
     {
-      id: user._id,
+      sub: user._id,
       role: user.role,
-      institutionId: user.institutionId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
+      institutionId: user.institutionId
     },
     JWT_SECRET,
     { expiresIn: '8h' }

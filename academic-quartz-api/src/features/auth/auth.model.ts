@@ -16,7 +16,7 @@ export interface IUser {
   gradesTaught?: string[]; // Optional, for teachers
   createdAt?: Date;
   updatedAt?: Date;
-}
+};
 
 export interface IUserDocument extends IUser, Document {
   toSafeUser(): SafeUser;

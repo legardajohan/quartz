@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import authRoutes from './features/auth/auth.routes';
+import expectedLearningRoutes from './features/expected-learning/expected-learning.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -9,10 +10,12 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Rutas de autenticación
+// Routes for authentication
 app.use('/api/auth', authRoutes);
+// Routes for expected learning
+app.use('/api/expected-learnings', expectedLearningRoutes);
 
-// Conexión a MongoDB usando credenciales de variables de entorno
+// Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;
 if (!MONGODB_URI || !API_USER || !API_PASSWORD) {
   console.error('Faltan variables de entorno para la conexión a MongoDB (MONGODB_URI, API_USER o API_PASSWORD)');
