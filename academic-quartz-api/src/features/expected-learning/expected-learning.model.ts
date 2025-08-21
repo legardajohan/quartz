@@ -9,7 +9,7 @@ export interface IExpectedLearningDocument extends Document {
 };
 
 const ExpectedLearningSchema = new Schema<IExpectedLearningDocument>({
-  institutionId: { type: Schema.Types.ObjectId, ref: 'EducationalInstitution', required: true },
+  institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
   subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
   periodId: { type: Schema.Types.ObjectId, ref: 'Period', required: true },
   description: { type: String, required: true },
