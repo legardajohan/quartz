@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { createExpectedLearning } from './expected-learning.service';
+import { createLearning } from './learning.service';
 
-export async function expectedLearningController(req: Request, res: Response) {
+export async function learningController(req: Request, res: Response) {
   try {
     const { 
         institutionId, 
@@ -12,7 +12,7 @@ export async function expectedLearningController(req: Request, res: Response) {
     } = req.body;
 
     // Call the service to create expected learning
-    const expectedLearning = await createExpectedLearning(
+    const learning = await createLearning(
       institutionId,
       subjectId,
       periodId,
@@ -22,7 +22,7 @@ export async function expectedLearningController(req: Request, res: Response) {
 
     res.status(201).json({
       message: 'Aprendizaje esperado creado exitosamente.',
-      expectedLearning
+      learning
     });
   } catch (error: any) {
     // Manejo de errores de validación de referencias

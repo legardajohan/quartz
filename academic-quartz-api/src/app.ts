@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import authRoutes from './features/auth/auth.routes';
-import expectedLearningRoutes from './features/expected-learning/expected-learning.routes';
+import learningRoutes from './features/learning/learning.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -13,7 +13,7 @@ app.use(express.json());
 // Routes for authentication
 app.use('/api/auth', authRoutes);
 // Routes for expected learning
-app.use('/api/expected-learnings', expectedLearningRoutes);
+app.use('/api/learnings', learningRoutes);
 
 // Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;

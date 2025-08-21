@@ -1,15 +1,15 @@
-import { ExpectedLearning, IExpectedLearningDocument } from "./expected-learning.model";
+import { Learning, ILearningDocument } from "./learning.model";
 import { Institution } from '../institution/institution.model';
 import { Subject } from '../subject/subject.model';
 import { Period } from '../period/period.model';
 
-export async function createExpectedLearning(
+export async function createLearning(
     institutionId: string,
     subjectId: string,
     periodId: string,
     description: string,
     grade: string
-): Promise<IExpectedLearningDocument> {
+): Promise<ILearningDocument> {
 
     // Validate existence of institutionId
     const institutionExists = await Institution.exists({ _id: institutionId });
@@ -29,7 +29,7 @@ export async function createExpectedLearning(
         throw new Error('El periodId proporcionado no existe.');
     }
 
-    const expectedLearning = new ExpectedLearning({
+    const learning = new Learning({
         institutionId,
         subjectId,
         periodId,
@@ -37,5 +37,5 @@ export async function createExpectedLearning(
         grade
     });
 
-    return await expectedLearning.save();
+    return await learning.save();
 }

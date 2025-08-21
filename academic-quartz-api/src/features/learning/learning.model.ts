@@ -1,6 +1,6 @@
 import { Schema, model, Document } from 'mongoose';
 
-export interface IExpectedLearningDocument extends Document {
+export interface ILearningDocument extends Document {
   institutionId: Schema.Types.ObjectId;
   subjectId: Schema.Types.ObjectId; 
   periodId: Schema.Types.ObjectId;
@@ -8,7 +8,7 @@ export interface IExpectedLearningDocument extends Document {
   grade: string;
 };
 
-const ExpectedLearningSchema = new Schema<IExpectedLearningDocument>({
+const LearningSchema = new Schema<ILearningDocument>({
   institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
   subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
   periodId: { type: Schema.Types.ObjectId, ref: 'Period', required: true },
@@ -18,4 +18,4 @@ const ExpectedLearningSchema = new Schema<IExpectedLearningDocument>({
   timestamps: true
 });
 
-export const ExpectedLearning = model<IExpectedLearningDocument>('ExpectedLearning', ExpectedLearningSchema);
+export const Learning = model<ILearningDocument>('Learning', LearningSchema);

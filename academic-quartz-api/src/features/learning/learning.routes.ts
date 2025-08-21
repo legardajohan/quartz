@@ -1,19 +1,19 @@
 import { Router } from 'express';
-import { expectedLearningController } from './expected-learning.controller';
+import { learningController } from './learning.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { authorize } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
-import { createExpectedLearningSchema } from './expected-learning.validation';
+import { createLearningSchema } from './learning.validation';
 
 const router = Router();
 
-// Protected route to create Expected Learning
+// Protected route to create Learning
 router.post(
   '/',
   authenticateJWT,
   authorize(['Jefe de Área']),
-  validate(createExpectedLearningSchema),
-  expectedLearningController
+  validate(createLearningSchema),
+  learningController
 );
 
 export default router;

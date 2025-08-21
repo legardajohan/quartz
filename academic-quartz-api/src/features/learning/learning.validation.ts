@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const createExpectedLearningSchema = z.object({
+export const createLearningSchema = z.object({
   body: z.object({
     institutionId: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
       message: 'El ID de la institución no es un ObjectId válido.',
