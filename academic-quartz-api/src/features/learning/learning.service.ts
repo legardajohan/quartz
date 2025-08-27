@@ -39,3 +39,39 @@ export async function createLearning(
 
     return await learning.save();
 }
+
+export async function updateLearning(
+    learningId: string,
+    updateData: Partial<ILearningDocument>
+): Promise<ILearningDocument | null> {
+    // Validate existence of subjectId if it is being updated
+    if (updateData.subjectId) {
+        const subjectExists = await Subject.exists({ _id: updateData.subjectId });
+        if (!subjectExists) {
+            throw new Error('El subjectId proporcionado no existe.');
+        }
+    }
+
+    // Validate existence of periodId if it is being updated
+    if (updateData.periodId) {
+        const periodExists = await Period.exists({ _id: updateData.periodId });
+        if (!periodExists) {
+            throw new Error('El periodId proporcionado no existe.');
+        }
+    }
+
+    const updatedLearning = await Learning.findByIdAndUpdate(
+        learningId,
+        updateData,
+        { new: true }
+    );
+
+    return updatedLearning;
+}
+
+export async function deleteLearning(
+    learningId: string
+): Promise<ILearningDocument | null> {
+    const deletedLearning = await Learning.findByIdAndDelete(learningId);
+    return deletedLearning;
+}
