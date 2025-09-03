@@ -1,12 +1,20 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
-export interface ILearningDocument extends Document {
-  institutionId: Schema.Types.ObjectId;
-  subjectId: Schema.Types.ObjectId; 
-  periodId: Schema.Types.ObjectId;
+export interface ILearning {
+  institutionId: string;
+  subjectId: string;
+  periodId: string;
   description: string;
   grade: string;
-};
+}
+
+export interface ILearningDocument extends Document {
+  institutionId: Types.ObjectId;
+  subjectId: Types.ObjectId; 
+  periodId: Types.ObjectId;
+  description: string;
+  grade: string;
+}
 
 const LearningSchema = new Schema<ILearningDocument>({
   institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
@@ -18,4 +26,4 @@ const LearningSchema = new Schema<ILearningDocument>({
   timestamps: true
 });
 
-export const Learning = model<ILearningDocument>('Learning', LearningSchema);
+export const LearningModel = model<ILearningDocument>('Learning', LearningSchema);

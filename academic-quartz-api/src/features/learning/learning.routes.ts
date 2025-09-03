@@ -25,7 +25,7 @@ router.put(
   updateLearningController
 );
 
-// Protected route to delete Learning
+// // Protected route to delete Learning
 router.delete(
   '/:learningId',
   authenticateJWT,
