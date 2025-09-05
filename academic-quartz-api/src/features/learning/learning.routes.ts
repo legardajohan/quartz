@@ -1,11 +1,20 @@
 import { Router } from 'express';
-import { createLearningController, updateLearningController, deleteLearningController } from './learning.controller';
+import { getAllLearningsController, createLearningController, updateLearningController, deleteLearningController } from './learning.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { authorize } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
-import { createLearningSchema, updateLearningSchema, deleteLearningSchema } from './learning.validation';
+import { getAllLearningsSchema, createLearningSchema, updateLearningSchema, deleteLearningSchema } from './learning.validation';
 
 const router = Router();
+
+// Protected route to get all Learnings
+router.get(
+  '/',
+  authenticateJWT,
+  authorize(['Jefe de Área', 'Docente']),
+  validate(getAllLearningsSchema),
+  getAllLearningsController
+);
 
 // Protected route to create Learning
 router.post(
@@ -25,7 +34,7 @@ router.put(
   updateLearningController
 );
 
-// // Protected route to delete Learning
+// Protected route to delete Learning
 router.delete(
   '/:learningId',
   authenticateJWT,

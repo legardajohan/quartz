@@ -1,5 +1,16 @@
 import { Request, Response } from "express";
-import { createLearning, updateLearning, deleteLearning } from './learning.service';
+import { getAllLearnings, createLearning, updateLearning, deleteLearning } from './learning.service';
+
+export async function getAllLearningsController(req: Request, res: Response) {
+    try {
+        // Filter can be extended based on query parameters
+        const learnings = await getAllLearnings(req.query);
+        res.status(200).json(learnings);
+    } catch (error: any) {
+        console.error("Error en el controlador para obtener todos los Aprendizajes Esperados: ", error);
+        res.status(500).json({ message: 'Error al obtener los Aprendizajes Esperados.' });
+    }
+}
 
 export async function createLearningController(req: Request, res: Response) {
   try {

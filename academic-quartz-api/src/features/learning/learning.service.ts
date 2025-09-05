@@ -1,10 +1,16 @@
 import { FilterQuery, Model, Types } from 'mongoose';
-import { create, updateById, deleteById, getById, getAll } from '../../repositories/base.repository';
+import { getAll, create, updateById, deleteById } from '../../repositories/base.repository';
 import { LearningModel, ILearning, ILearningDocument } from "./learning.model";
 import { Institution } from '../institution/institution.model';
 import { Subject } from '../subject/subject.model';
 import { Period } from '../period/period.model';
-import { validateAllExist, ensureDocumentExists } from '../../services/document-validator.service';
+import { validateAllExist } from '../../services/document-validator.service';
+
+export async function getAllLearnings(
+    filter: FilterQuery<ILearningDocument>
+): Promise<ILearningDocument[]> {
+    return getAll(LearningModel, filter);
+}
 
 export async function createLearning(
     institutionId: string,
@@ -70,11 +76,3 @@ export async function deleteLearning(
 ): Promise<ILearningDocument | null> {
     return deleteById(LearningModel, learningId);
 }
-
-// export async function getLearningById(learningId: string): Promise<ILearningDocument | null> {
-//     return getById(LearningModel, learningId);
-// }
-
-// export async function getAllLearnings(filter: FilterQuery<ILearningDocument>): Promise<ILearningDocument[]> {
-//     return getAll(LearningModel, filter);
-// }

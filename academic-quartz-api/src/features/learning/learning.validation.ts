@@ -41,3 +41,18 @@ export const deleteLearningSchema = z.object({
     }),
   }),
 });
+
+export const getAllLearningsSchema = z.object({
+  query: z.object({
+    institutionId: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+      message: 'El ID de la institución no es un ObjectId válido.',
+    }).optional(),
+    subjectId: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+        message: 'El ID de la materia no es un ObjectId válido.',
+    }).optional(),
+    periodId: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+        message: 'El ID del período no es un ObjectId válido.',
+    }).optional(),
+    grade: z.string().min(1, { message: 'El grado no puede estar vacío.' }).optional(),
+  }),
+});
