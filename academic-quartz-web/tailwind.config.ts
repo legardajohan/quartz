@@ -7,17 +7,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        'purple': {
+        purple: {
           '300': '#c2abff',
           '400': '#a57cff',
           '500': '#8b47ff',
           '600': '#8021ff',
           '700': '#7210f1',
-          prueba: '#0d76ff', // Default purple-800 
+          '800': '#620DD1', // Default purple-800 
           '900': '#4f0da5',
           '950': '#300471'
         },       
-        'pink': {
+        pink: {
           '300': '#ff9cb8',
           '400': '#ff6593',
           '500': '#ff2f72',
@@ -27,7 +27,7 @@ export default {
           '900': '#920947',
           '950': '#520022'
         },
-        'grey': {
+        grey: {
           '50': '#F8F8F8',  // Grey for backgrounds
           '100': '#efefef', // Lighter grey for backgrounds
           '200': '#d1d1d1', // Grey for borders
@@ -36,9 +36,10 @@ export default {
           '700': '#4d4d4d', // Grey for secondary text
           '900': '#333333', // Grey for primary text
         },
-        'green': '#00A650',
-      }
+        verde: '#0eaf5c',
+      },
     },
   },
   plugins: [],
 }
+

@@ -20,7 +20,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>((
         name={name}
         placeholder=" "
         className={`
-          w-full h-12 px-4 pt-2 pb-2 border border-purple-600 rounded-2xl bg-white 
+          w-full h-12 px-4 pt-2 pb-2 border border-purple-800 rounded-2xl bg-white 
           focus:outline-none focus:ring-[1.3px] focus:ring-purple-600 focus:border-transparent 
           transition-all peer
           ${className}
