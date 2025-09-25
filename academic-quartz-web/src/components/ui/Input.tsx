@@ -5,10 +5,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>((
-  { label, type = 'text', name, className, ...props }, 
+  { label, type = 'text', name, className, ...props },
   ref
 ) => {
-  
+
   const id = React.useId();
 
   return (
@@ -31,9 +31,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>((
         htmlFor={id}
         className="
           absolute left-4 top-3 text-gray-500 bg-white px-1 transition-all duration-200
-          text-sm -translate-y-6
+          text-sm -translate-y-6 rounded
           peer-placeholder-shown:text-base peer-placeholder-shown:translate-y-0
           peer-focus:-translate-y-6 peer-focus:text-sm peer-focus:text-pink-500
+          peer-focus:rounded peer-[not-placeholder-shown]:rounded
         "
       >
         {label}

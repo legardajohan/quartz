@@ -27,7 +27,7 @@ export default {
           '900': '#920947',
           '950': '#520022'
         },
-        grey: {
+        gray: {
           '50': '#F8F8F8',  // Grey for backgrounds
           '100': '#efefef', // Lighter grey for backgrounds
           '200': '#d1d1d1', // Grey for borders
@@ -37,6 +37,10 @@ export default {
           '900': '#333333', // Grey for primary text
         },
         verde: '#0eaf5c',
+      },
+      fontFamily: {
+        space: ['SpaceAge', 'sans-serif'],
+        nico: ['NicoMoji', 'sans-serif'],
       },
     },
   },

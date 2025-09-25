@@ -1,3 +1,17 @@
+@font-face {
+  font-family: 'NicoMoji';
+  src: url('./assets/fonts/NicoMoji-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SpaceAge';
+  src: url('./assets/fonts/SpaceAge.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
