@@ -1,49 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiClient } from '../../api/apiClient';
-
-// Types
-export interface User {
-  _id: string;
-  institutionId: string;
-  role: 'Jefe de Área' | 'Docente' | 'Estudiante';
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  secondLastName?: string;
-  email: string;
-  schoolId: string;
-  gradesTaught?: string[];
-}
-
-export interface AuthState {
-  // State
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  error: string | null;
-  
-  // Actions
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  clearError: () => void;
-  refreshUser: () => Promise<void>;
-}
-
-// API Response types
-interface LoginResponse {
-  success: boolean;
-  data: {
-    user: User;
-    token: string;
-  };
-  message: string;
-}
-
-interface LoginRequest {
-  email: string;
-  password: string;
-}
+import type { AuthState, LoginRequest, LoginResponse, ProfileResponse } from './types';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -64,7 +22,7 @@ export const useAuthStore = create<AuthState>()(
             password
           } as LoginRequest);
 
-          const { user, token } = response.data.data;
+          const { user, token } = response.data; // Response API
           
           // Store token in apiClient for future requests
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -119,8 +77,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         
         try {
-          const response = await apiClient.get<{ success: boolean; data: User }>('/auth/profile');
-          const user = response.data.data;
+          const response = await apiClient.get<ProfileResponse>('/auth/profile');
+          const user = response.data.user;
           
           set({ 
             user, 

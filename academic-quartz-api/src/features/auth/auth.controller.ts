@@ -11,7 +11,7 @@ export async function loginController(req: Request, res: Response, next: NextFun
     }
 
     const token = generateJWT(user);
-    res.json({ token, user });
+    res.json({ token, user }); // Response backend /api/auth/login
   } catch (error) {
     // Pass errors to the next error-handling middleware
     next(error);

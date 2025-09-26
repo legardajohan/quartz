@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import mongoose from 'mongoose';
 import authRoutes from './features/auth/auth.routes';
 import learningRoutes from './features/learning/learning.routes';
@@ -8,6 +9,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
+
+app.use(cors({
+  origin: 'http://localhost:5173', // Frontend URL
+  credentials: true, 
+}));
+
 app.use(express.json());
 
 // Routes for authentication
