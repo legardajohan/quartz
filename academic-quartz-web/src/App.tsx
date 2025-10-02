@@ -1,30 +1,20 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
 import { ProtectedRoute } from './components/router/ProtectedRoute';
-import { useAuthStore } from './features/auth/useAuthStore';
-import { SidebarMenu } from './components/layouts/SidebarMenu';
-
-// El Layout de la aplicación que contiene el menú y el contenido principal
-const AppLayout = () => {
-  return (
-    <div style={{ display: 'flex' }}>
-      <SidebarMenu />
-      <main style={{ flexGrow: 1 }}>
-        <Outlet /> {/* Aquí se renderizarán las páginas anidadas */}
-      </main>
-    </div>
-  );
-};
+import { Dashboard } from './components/layouts/Dashboard';
 
 // Placeholder para un futuro Dashboard
 const DashboardPage = () => {
-  const { user, logout } = useAuthStore();
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Bienvenido al Dashboard, {user?.firstName || 'Usuario'}!</h1>
-      <p>Esta es una ruta protegida.</p>
-      <button onClick={logout}>Cerrar Sesión</button>
-    </div>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h1 className="text-2xl font-semibold text-blue-gray-800">
+          Contenido Principal
+        </h1>
+        <p className="mt-2 text-gray-600">
+          El contenido de la página se ajustará automáticamente cuando el menú
+          lateral se abra o se cierre.
+        </p>
+      </div>
   );
 };
 
@@ -36,7 +26,7 @@ function App() {
 
       {/* RUTAS PROTEGIDAS CON LAYOUT */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
+        <Route element={<Dashboard><Outlet /></Dashboard>}>
           {/* Todas las rutas aquí dentro tendrán el menú lateral */}
           <Route path="/dashboard" element={<DashboardPage />} />
           {/* Ejemplo: <Route path="/learnings" element={<LearningsPage />} /> */}
@@ -53,4 +43,3 @@ function App() {
 }
 
 export default App;
-
