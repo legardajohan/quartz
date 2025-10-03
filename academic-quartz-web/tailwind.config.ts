@@ -37,7 +37,7 @@ export default withMT({
           '700': '#4d4d4d', // Grey for secondary text
           '900': '#333333', // Grey for primary text
         },
-        verde: '#0eaf5c',
+        green: '#0eaf5c',
       },
       fontFamily: {
         space: ['SpaceAge', 'sans-serif'],

@@ -1,7 +1,8 @@
-import { IconButton, Navbar, Typography, } from "@material-tailwind/react";
+import { IconButton, Navbar } from "@material-tailwind/react";
 import { Bars3Icon } from "@heroicons/react/24/solid";
 
 import { UserProfile } from "../common/UserProfile";
+import defaultUser from '../../assets/default-user.jpg';
 
 interface ProfileNavbarProps {
     toggleSidebar: () => void;
@@ -22,13 +23,13 @@ export function ProfileNavbar({ toggleSidebar, isSidebarOpen }: ProfileNavbarPro
                             color="blue-gray"
                             onClick={toggleSidebar}
                         >
-                            <Bars3Icon className="h-6 w-6" />
+                            <Bars3Icon className="h-8 w-8" />
                         </IconButton>
 
                         <img
                             src={academicQuartz}
                             alt="brand"
-                            className="h-10 w-10"
+                            className="h-10 w-10 ml-4"
                         />
                         <h1 className="font-space text-[27px] text-purple-800">
                             QUARTZ
@@ -36,7 +37,7 @@ export function ProfileNavbar({ toggleSidebar, isSidebarOpen }: ProfileNavbarPro
                     </div>
                 )}
                 <div className="flex-grow" />
-                <UserProfile />
+                <UserProfile userImage={defaultUser} />
             </div>
         </Navbar>
     );
