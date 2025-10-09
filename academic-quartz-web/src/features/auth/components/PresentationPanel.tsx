@@ -1,7 +1,9 @@
-import aqWhite from '../../../assets/aq-white.svg';
-import loginBg from '../../../assets/login-bg.jpg';
+import aqWhite from '../../../assets/images/aq-white.svg';
+import loginBg from '../../../assets/images/login-bg.jpg';
 
 export function PresentationPanel() {
+  const appName = import.meta.env.VITE_APP_NAME;
+
   return (
     <div className="flex-1 flex flex-col items-center justify-end px-10 py-8 relative bg-gradient-to-br from-purple-700/80 to-purple-900/80">
       {/* Background Image */}
@@ -27,12 +29,12 @@ export function PresentationPanel() {
           }}
         />
         {/* Title */}
-        <h1 className="font-space text-4xl text-white tracking-wider mb-2 text-center">
-          ACADEMIC QUARTZ
+        <h1 className="font-space text-5xl text-white tracking-wider mb-2 text-center">
+          {appName.toUpperCase()}
         </h1>
         {/* Inspirational Text */}
         <div className="text-center max-w-sm">
-          <p className="text-white text-xl font-normal leading-tight">
+          <p className="text-white text-lg font-normal leading-tight">
             <span className="block">El principio de todo inicia cuando</span>
             <span className="block">permites lo que mereces</span>
           </p>

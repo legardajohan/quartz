@@ -83,8 +83,8 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
   ];
 
   // Style variables
-  const activeClass = "!bg-purple-700/40 shadow-lg text-white focus:!bg-purple-700/40 focus:!text-white";
-  const hoverClass = "hover:bg-purple-600/30 hover:text-white";
+  const activeClass = "!bg-purple-700 shadow-lg text-white";
+  const hoverClass = "hover:bg-purple-600 hover:text-white";
   const inactiveClass = "text-purple-300";
 
   const bgPattern = `url(${starryBackground})`;
@@ -92,8 +92,7 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
 
   return (
     <div
-      className={`fixed top-0 left-0 h-screen z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
-    >
+      className={`fixed top-0 left-0 h-screen z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
       <Card
         shadow={false}
         className="h-screen w-full max-w-[20rem] px-4 py-1 shadow-xl text-white shadow-purple-700/50 rounded-none"
@@ -106,11 +105,11 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
           <h1 className="font-space text-[27px] text-white">
             {appName.toUpperCase()}
           </h1>
-          <IconButton variant="text" size="sm" className="ml-auto text-purple-400 hover:text-white hover:bg-purple-700/40" onClick={toggleSidebar}>
+          <IconButton variant="text" size="sm" className="ml-auto text-purple-400 hover:text-white hover:bg-purple-700" onClick={toggleSidebar}>
             <ChevronLeftIcon strokeWidth={3} className="h-4 w-4" />
           </IconButton>
         </div>
-        <List className="mt-4">
+        <List className="mt-4 text-white">
           {menuItems.map((item) => {
             const isChildActive = item.subItems?.some(sub => sub.id === activeItem) ?? false;
             const isAccordionOpen = open === item.id;
@@ -119,7 +118,7 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
             if (isChildActive) {
               accordionHeaderClasses = activeClass;
             } else if (isAccordionOpen) {
-              accordionHeaderClasses = "bg-purple-500/30 hover:bg-purple-600/30 text-white";
+              accordionHeaderClasses = "bg-purple-500 text-white";
             }
 
             return item.subItems ? (
@@ -129,12 +128,12 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
                 icon={<ChevronDownIcon strokeWidth={2.5} 
                 className={`mx-auto h-4 w-4 transition-transform group-hover:text-white ${isAccordionOpen ? "rotate-180" : ""} ${isChildActive ? "text-white" : inactiveClass}`} />}
               >
-                <ListItem className="p-0 group hover:bg-transparent active:bg-transparent">
-                  <AccordionHeader onClick={() => handleOpen(item.id)} className={`border-b-0 p-3 rounded-lg active:bg-purple-500/30 ${hoverClass} ${accordionHeaderClasses}`}>
+                <ListItem className="p-0 group">
+                  <AccordionHeader onClick={() => handleOpen(item.id)} className={`border-b-0 p-3 rounded-lg active:bg-purple-500 ${hoverClass} ${accordionHeaderClasses}`}>
                     <ListItemPrefix className={`group-hover:text-white ${isChildActive ? "text-white" : inactiveClass}`}>
                       {item.icon}
                     </ListItemPrefix>
-                    <Typography color="inherit" className="mr-auto font-normal">
+                    <Typography color="white" className="mr-auto font-normal">
                       {item.label}
                     </Typography>
                   </AccordionHeader>
@@ -147,12 +146,12 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
                         <ListItem
                           key={subItem.id}
                           onClick={() => handleActive(subItem.id)}
-                          className={`group rounded-lg active:bg-purple-500/10 ${hoverClass} ${isSubItemActive ? activeClass : inactiveClass}`}
+                          className={`group rounded-lg active:bg-purple-500 ${hoverClass} ${isSubItemActive ? activeClass : inactiveClass}`}
                         >
                           <ListItemPrefix>
                             <ChevronRightIcon strokeWidth={3} className={`h-3 w-5 group-hover:text-white ${isSubItemActive ? "text-white" : inactiveClass}`} />
                           </ListItemPrefix>
-                          <Typography color="inherit" className="font-normal">
+                          <Typography color="white" className="font-normal">
                             {subItem.label}
                           </Typography>
                         </ListItem>
@@ -165,12 +164,12 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
               <ListItem
                 key={item.id}
                 onClick={() => handleActive(item.id)}
-                className={`group rounded-lg active:bg-purple-500/10 ${hoverClass} ${activeItem === item.id ? activeClass : inactiveClass}`}
+                className={`group rounded-lg active:bg-purple-500 ${hoverClass} ${activeItem === item.id ? activeClass : inactiveClass}`}
               >
                 <ListItemPrefix className={`group-hover:text-white ${activeItem === item.id ? "text-white" : inactiveClass}`}>
                   {item.icon}
                 </ListItemPrefix>
-                <Typography color="inherit" className="font-normal">
+                <Typography color="white" className="font-normal">
                   {item.label}
                 </Typography>
               </ListItem>

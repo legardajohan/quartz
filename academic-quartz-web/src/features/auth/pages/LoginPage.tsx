@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../useAuthStore';
 import { PresentationPanel } from '../components/PresentationPanel';
 import { LoginPanel } from '../components/LoginPanel';
-import circleBg from '../../../assets/circle-bg.png';
+import circleBg from '../../../assets/images/circle-bg.png';
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
