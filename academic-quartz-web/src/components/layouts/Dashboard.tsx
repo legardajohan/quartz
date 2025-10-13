@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { SidebarMenu } from "./SidebarMenu";
-import { ProfileNavbar } from "./Navbar";
+import { ProfileNavbar } from "./ProfileNavbar";
 
 export function Dashboard({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(true);

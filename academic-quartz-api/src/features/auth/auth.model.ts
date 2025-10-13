@@ -1,19 +1,20 @@
 import { Schema, model, Document } from 'mongoose';
+import { GradeLevel, IdentificationType, UserRole } from './auth.types';
 
 export interface IUser {
   institutionId: Schema.Types.ObjectId;
-  role: 'Jefe de Área' | 'Docente' | 'Estudiante';
+  role: UserRole;
   firstName: string;
   middleName?: string;
   lastName: string;
   secondLastName?: string;
-  identificationType: 'CC' | 'TI' | 'RC';
-  identificationNumber: Number;
+  identificationType: IdentificationType;
+  identificationNumber: number;
   phoneNumber?: string;
   email: string;
   passwordHash: string;
   schoolId: Schema.Types.ObjectId; // The user is associated with a specific school
-  gradesTaught?: string[]; // Optional, for teachers
+  gradesTaught?: GradeLevel[]; // Optional, for teachers
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -28,18 +29,18 @@ export type SafeUser = Omit<IUser, 'passwordHash'> & { _id: Schema.Types.ObjectI
 
 const UserSchema = new Schema<IUserDocument>({
   institutionId: { type: Schema.Types.ObjectId, ref: 'EducationalInstitution', required: true },
-  role: { type: String, enum: ['Jefe de Área', 'Docente', 'Estudiante'], required: true },
+  role: { type: String, enum: Object.values(UserRole), required: true },
   firstName: { type: String, required: true },
   middleName: { type: String }, 
   lastName: { type: String, required: true },
   secondLastName: { type: String }, 
-  identificationType: { type: String, enum: ['CC', 'TI', 'RC'], required: true },
+  identificationType: { type: String, enum: Object.values(IdentificationType), required: true },
   identificationNumber: { type: Number, required: true, unique: true }, // Unique within the institution
   phoneNumber: { type: String },  
   email: { type: String, required: true },
   passwordHash: { type: String, required: true, select: false },  
   schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true }, // The user is associated with a specific school
-  gradesTaught: [{ type: String }], // Optional, for teachers 
+  gradesTaught: [{ type: String, enum: Object.values(GradeLevel) }], // Optional, for teachers 
   createdAt: { type: Date, default: Date.now },
 
   updatedAt: { type: Date, default: Date.now }

@@ -1,8 +1,7 @@
 import { IconButton, Navbar } from "@material-tailwind/react";
 import { Bars3Icon } from "@heroicons/react/24/solid";
 
-import { UserProfile } from "../common/UserProfile";
-import defaultUser from '../../assets/images/default-user.jpg';
+import { UserMenu } from "../common/UserMenu";
 
 interface ProfileNavbarProps {
     toggleSidebar: () => void;
@@ -38,7 +37,7 @@ export function ProfileNavbar({ toggleSidebar, isSidebarOpen }: ProfileNavbarPro
                     </div>
                 )}
                 <div className="flex-grow" />
-                <UserProfile userImage={defaultUser} />
+                <UserMenu />
             </div>
         </Navbar>
     );

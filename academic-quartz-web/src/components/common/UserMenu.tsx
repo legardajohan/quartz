@@ -16,35 +16,44 @@ import {
     PowerIcon,
     UserCircleIcon,
 } from "@heroicons/react/24/solid";
+import { useAuthStore } from "../../features/auth/useAuthStore";
+import defaultUser from '../../assets/images/default-user.jpg';
 
 // profile menu component
 const profileMenuItems = [
     {
-        label: "My Profile",
+        label: "Mi perfil",
         icon: UserCircleIcon,
     },
     {
-        label: "Edit Profile",
+        label: "Editar perfil",
         icon: Cog6ToothIcon,
     },
     {
-        label: "Inbox",
+        label: "Bandeja de entrada",
         icon: InboxArrowDownIcon,
     },
     {
-        label: "Help",
+        label: "Ayuda",
         icon: LifebuoyIcon,
     },
     {
-        label: "Sign Out",
+        label: "Cerrar sesión",
         icon: PowerIcon,
     },
 ];
 
-export function UserProfile({ userImage }: { userImage?: string }) {
+export function UserMenu() {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const user = useAuthStore((state) => state.user);
+    const logout = useAuthStore((state) => state.logout);
 
-    const closeMenu = () => setIsMenuOpen(false);
+    const handleMenuClick = (label: string) => {
+        if (label === "Cerrar sesión") {
+            logout();
+        }
+        setIsMenuOpen(false);
+    };
 
     return (
         <Menu open={isMenuOpen} handler={setIsMenuOpen} placement="bottom-end">
@@ -57,14 +66,16 @@ export function UserProfile({ userImage }: { userImage?: string }) {
                     <Avatar
                         variant="circular"
                         size="sm"
-                        alt="tania andrew"
+                        alt={user?.firstName || "User"}
                         className="border border-gray-900 p-0.5"
-                        src={userImage}
+                        src={defaultUser} // Use the imported default image
                     />
+                    <Typography as="span" variant="small" className="font-normal px-2">
+                        {user?.firstName}
+                    </Typography>
                     <ChevronDownIcon
                         strokeWidth={2.5}
-                        className={`h-3 w-3 transition-transform ${isMenuOpen ? "rotate-180" : ""
-                            }`}
+                        className={`h-3 w-3 transition-transform ${isMenuOpen ? "rotate-180" : ""}`}
                     />
                 </Button>
             </MenuHandler>
@@ -74,21 +85,20 @@ export function UserProfile({ userImage }: { userImage?: string }) {
                     return (
                         <MenuItem
                             key={label}
-                            onClick={closeMenu}
+                            onClick={() => handleMenuClick(label)}
                             className={`flex items-center gap-2 rounded ${isLastItem
-                                    ? "hover:bg-red-500/10 focus:bg-red-500/10 active:bg-red-500/10"
+                                    ? "hover:bg-[#ff9cb8] focus:bg-[#ff9cb8] active:bg-[#ff9cb8]"
                                     : ""
                                 }`}
                         >
                             {React.createElement(icon, {
-                                className: `h-4 w-4 ${isLastItem ? "text-red-500" : ""}`,
+                                className: `h-4 w-4 ${isLastItem ? "text-[#f20c60]" : ""}`,
                                 strokeWidth: 2,
                             })}
                             <Typography
                                 as="span"
                                 variant="small"
-                                className="font-normal"
-                                color={isLastItem ? "red" : "inherit"}
+                                className={`font-normal ${isLastItem ? "text-[#f20c60]" : "inherit"}`}
                             >
                                 {label}
                             </Typography>
