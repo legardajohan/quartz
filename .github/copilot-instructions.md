@@ -51,6 +51,53 @@
 - **Immutability:** In the frontend, never mutate state directly. Always create new objects or arrays.
 - **Error Handling:** Any API call or process that might fail must be wrapped in a `try...catch` block.
 
+### 1.1. Module Export Conventions (ESM)
+
+To maintain consistency and clarity across the codebase, we will follow these standards for ES/JavaScript module exports.
+
+#### Rule 1: Use `export default` for Primary Components
+- **When:** For the main component of a file, especially for pages or significant UI features (e.g., `LoginPage.tsx`, `SidebarMenu.tsx`).
+- **Why:** It clearly signals the file's primary purpose and allows for cleaner, more flexible imports.
+- **Example:**
+  ```tsx
+  // In LearningsPage.tsx
+  export default function LearningsPage() {
+    // ... component logic
+  }
+
+  // How to import:
+  import MyLearningsPage from './features/learning/pages/LearningsPage'; // Name can be chosen freely
+  ```
+
+#### Rule 2: Use Named `export` for Utilities and Secondary Elements
+- **When:** For files that export multiple, related items like utility functions, constants, or types (e.g., `utils.ts`, `types.ts`).
+- **Why:** Allows multiple items to be grouped in a single module and imported explicitly.
+- **Example:**
+  ```ts
+  // In /utils/validators.ts
+  export const validateEmail = (email) => { /* ... */ };
+  export const validatePassword = (password) => { /* ... */ };
+
+  // How to import:
+  import { validateEmail, validatePassword } from '../utils/validators'; // Names must match
+  ```
+
+#### Rule 3: Use a Hybrid Approach for Components with Extras
+- **When:** When a component file needs to export its main component AND related items like TypeScript types or hooks.
+- **Why:** This is a powerful pattern that combines the clarity of `export default` with the utility of named exports.
+- **Example:**
+  ```tsx
+  // In UserProfile.tsx
+  export type UserProfileProps = { userId: string }; // Named export for type
+
+  export default function UserProfile({ userId }: UserProfileProps) {
+    // ... component logic
+  }
+
+  // How to import:
+  import UserProfile, { UserProfileProps } from './components/UserProfile';
+  ```
+
 ### 2. Backend Development Guide (Node.js/Express)
 - **Layered Architecture:**
   - **Routes (`.routes.js`):** Define endpoints and call the controllers.

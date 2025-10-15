@@ -9,6 +9,8 @@ export default withMT({
     extend: {
       colors: {
         purple: {
+          '100':'#ece6ff',
+          '200': '#dbd1ff',
           '300': '#c2abff',
           '400': '#a57cff',
           '500': '#8b47ff',

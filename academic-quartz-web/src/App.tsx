@@ -2,6 +2,13 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
 import { ProtectedRoute } from './components/router/ProtectedRoute';
 import { Dashboard } from './components/layouts/Dashboard';
+import LearningsPage from './features/learning/pages/LearningsPage';
+import ConceptsPage from './features/concept/pages/ConceptsPage';
+import ChecklistsPage from './features/checklist/pages/ChecklistsPage';
+import EvaluationsPage from './features/evaluation/pages/EvaluationsPage';
+import ReportsPage from './features/report/pages/ReportsPage';
+import UsersPage from './features/user/pages/UsersPage';
+import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
 
 // Placeholder para un futuro Dashboard
 const DashboardPage = () => {
@@ -29,7 +36,14 @@ function App() {
         <Route element={<Dashboard><Outlet /></Dashboard>}>
           {/* Todas las rutas aquí dentro tendrán el menú lateral */}
           <Route path="/dashboard" element={<DashboardPage />} />
-          {/* Ejemplo: <Route path="/learnings" element={<LearningsPage />} /> */}
+          <Route path="/academico/aprendizajes" element={<LearningsPage />} />
+          <Route path="/academico/conceptos" element={<ConceptsPage />} />
+          <Route path="/academico/lista-chequeo" element={<ChecklistsPage />} />
+
+          <Route path="/evaluacion" element={<EvaluationsPage />} />
+          <Route path="/informes" element={<ReportsPage />} />
+          <Route path="/gestion/usuarios" element={<UsersPage />} />
+          <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />
         </Route>
       </Route>
 

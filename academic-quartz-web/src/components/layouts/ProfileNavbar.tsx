@@ -14,7 +14,7 @@ export function ProfileNavbar({ toggleSidebar, isSidebarOpen }: ProfileNavbarPro
     const appName = import.meta.env.VITE_APP_NAME;
 
     return (
-        <Navbar className="sticky top-0 z-10 h-max max-w-full rounded-none px-4 py-2 lg:px-8 lg:py-4">
+        <Navbar className="sticky top-0 z-10 h-max max-w-full shadow-sm rounded-none px-4 py-2 lg:px-8 lg:py-4">
             <div className="relative mx-auto flex items-center justify-between text-blue-gray-900">
                 {!isSidebarOpen && (
                     <div className="flex items-center gap-3">

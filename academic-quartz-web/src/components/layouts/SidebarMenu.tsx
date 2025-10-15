@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   IconButton,
   Typography,
@@ -31,56 +32,59 @@ interface SidebarMenuProps {
   toggleSidebar: () => void;
 }
 
-export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) {
+const menuItems = [
+  {
+    id: 1,
+    icon: <HomeIcon className="h-5 w-5" />,
+    label: "Inicio",
+    path: "/dashboard",
+  },
+  {
+    id: 2,
+    icon: <AcademicCapIcon className="h-5 w-5" />,
+    label: "Académico",
+    basePath: "/academico",
+    subItems: [
+      { id: 21, label: "Aprendizajes", path: "/academico/aprendizajes" },
+      { id: 22, label: "Conceptos", path: "/academico/conceptos" },
+      { id: 23, label: "Lista de chequeo", path: "/academico/lista-chequeo" },
+    ],
+  },
+  {
+    id: 3,
+    icon: <DocumentCheckIcon className="h-5 w-5" />,
+    label: "Evaluación",
+    path: "/evaluacion",
+  },
+  {
+    id: 4,
+    icon: <DocumentArrowDownIcon className="h-5 w-5" />,
+    label: "Informes",
+    path: "/informes",
+  },
+  {
+    id: 5,
+    icon: <ShieldCheckIcon className="h-5 w-5" />,
+    label: "Gestión",
+    basePath: "/gestion",
+    subItems: [
+      { id: 51, label: "Usuarios", path: "/gestion/usuarios" },
+      { id: 52, label: "Consolidados", path: "/gestion/consolidados" },
+    ],
+  },
+];
 
+export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) {
   const appName = import.meta.env.VITE_APP_NAME;
-  const [open, setOpen] = React.useState(0);
-  const [activeItem, setActiveItem] = React.useState(1); // Set 'Inicio' as default active item
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const initiallyOpenAccordion = menuItems.find(item => item.basePath && location.pathname.startsWith(item.basePath))?.id || 0;
+  const [open, setOpen] = React.useState(initiallyOpenAccordion);
 
   const handleOpen = (value: number) => {
     setOpen(open === value ? 0 : value);
   };
-
-  const handleActive = (itemId: number) => {
-    setActiveItem(itemId);
-  };
-
-  const menuItems = [
-    {
-      id: 1,
-      icon: <HomeIcon className="h-5 w-5" />,
-      label: "Inicio",
-    },
-    {
-      id: 2,
-      icon: <AcademicCapIcon className="h-5 w-5" />,
-      label: "Académico",
-      subItems: [
-        { id: 21, label: "Aprendizajes" },
-        { id: 22, label: "Conceptos" },
-        { id: 23, label: "Lista de chequeo" },
-      ],
-    },
-    {
-      id: 3,
-      icon: <DocumentCheckIcon className="h-5 w-5" />,
-      label: "Evaluación",
-    },
-    {
-      id: 4,
-      icon: <DocumentArrowDownIcon className="h-5 w-5" />,
-      label: "Informes",
-    },
-    {
-      id: 5,
-      icon: <ShieldCheckIcon className="h-5 w-5" />,
-      label: "Gestión",
-      subItems: [
-        { id: 51, label: "Usuarios" },
-        { id: 52, label: "Consolidados" },
-      ],
-    },
-  ];
 
   // Style variables
   const activeClass = "!bg-purple-700/40 shadow-lg text-white focus:!bg-purple-700/40 focus:!text-white";
@@ -96,10 +100,8 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
     >
       <Card
         shadow={false}
-        className="h-screen w-full max-w-[20rem] px-4 py-1 shadow-xl text-white shadow-purple-700/50 rounded-none"
-        style={{
-          background: `${bgPattern}, ${gradient}`,
-        }}
+        className="h-screen w-full max-w-[20rem] px-4 py-1 text-white shadow-xl shadow-purple-700/50 rounded-none"
+        style={{ background: `${bgPattern}, ${gradient}` }}
       >
         <div className="mb-2 flex items-center gap-3 px-2 py-4">
           <img src={aqWhite} alt="brand" className="h-10 w-10" />
@@ -112,25 +114,35 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
         </div>
         <List className="mt-4">
           {menuItems.map((item) => {
-            const isChildActive = item.subItems?.some(sub => sub.id === activeItem) ?? false;
-            const isAccordionOpen = open === item.id;
-
-            let accordionHeaderClasses = inactiveClass;
-            if (isChildActive) {
-              accordionHeaderClasses = activeClass;
-            } else if (isAccordionOpen) {
-              accordionHeaderClasses = "bg-purple-500/30 hover:bg-purple-600/30 text-white";
+            if (!item.subItems) {
+              const isActive = location.pathname === item.path;
+              return (
+                <ListItem
+                  key={item.id}
+                  onClick={() => navigate(item.path!)}
+                  className={`group rounded-lg active:bg-purple-500/10 ${hoverClass} ${isActive ? activeClass : inactiveClass}`}
+                >
+                  <ListItemPrefix className={`group-hover:text-white ${isActive ? "text-white" : inactiveClass}`}>
+                    {item.icon}
+                  </ListItemPrefix>
+                  <Typography color="inherit" className="font-normal">
+                    {item.label}
+                  </Typography>
+                </ListItem>
+              );
             }
 
-            return item.subItems ? (
+            const isChildActive = location.pathname.startsWith(item.basePath!)
+            const isAccordionOpen = open === item.id;
+
+            return (
               <Accordion
                 key={item.id}
                 open={isAccordionOpen}
-                icon={<ChevronDownIcon strokeWidth={2.5} 
-                className={`mx-auto h-4 w-4 transition-transform group-hover:text-white ${isAccordionOpen ? "rotate-180" : ""} ${isChildActive ? "text-white" : inactiveClass}`} />}
+                icon={<ChevronDownIcon strokeWidth={2.5} className={`mx-auto h-4 w-4 transition-transform group-hover:text-white ${isAccordionOpen ? "rotate-180" : ""} ${isChildActive ? "text-white" : inactiveClass}`} />}
               >
                 <ListItem className="p-0 group hover:bg-transparent active:bg-transparent">
-                  <AccordionHeader onClick={() => handleOpen(item.id)} className={`border-b-0 p-3 rounded-lg active:bg-purple-500/30 ${hoverClass} ${accordionHeaderClasses}`}>
+                  <AccordionHeader onClick={() => handleOpen(item.id)} className={`border-b-0 p-3 rounded-lg active:bg-purple-500/30 ${hoverClass} ${isChildActive ? activeClass : isAccordionOpen ? "bg-purple-500/30 hover:bg-purple-600/30 text-white" : inactiveClass}`}>
                     <ListItemPrefix className={`group-hover:text-white ${isChildActive ? "text-white" : inactiveClass}`}>
                       {item.icon}
                     </ListItemPrefix>
@@ -141,12 +153,12 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
                 </ListItem>
                 <AccordionBody className="py-1">
                   <List className="p-0">
-                    {item.subItems.map((subItem) => {
-                      const isSubItemActive = activeItem === subItem.id;
+                    {item.subItems.map(subItem => {
+                      const isSubItemActive = location.pathname === subItem.path;
                       return (
                         <ListItem
                           key={subItem.id}
-                          onClick={() => handleActive(subItem.id)}
+                          onClick={() => navigate(subItem.path)}
                           className={`group rounded-lg active:bg-purple-500/10 ${hoverClass} ${isSubItemActive ? activeClass : inactiveClass}`}
                         >
                           <ListItemPrefix>
@@ -161,19 +173,6 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
                   </List>
                 </AccordionBody>
               </Accordion>
-            ) : (
-              <ListItem
-                key={item.id}
-                onClick={() => handleActive(item.id)}
-                className={`group rounded-lg active:bg-purple-500/10 ${hoverClass} ${activeItem === item.id ? activeClass : inactiveClass}`}
-              >
-                <ListItemPrefix className={`group-hover:text-white ${activeItem === item.id ? "text-white" : inactiveClass}`}>
-                  {item.icon}
-                </ListItemPrefix>
-                <Typography color="inherit" className="font-normal">
-                  {item.label}
-                </Typography>
-              </ListItem>
             );
           })}
         </List>

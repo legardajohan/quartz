@@ -15,10 +15,11 @@ export function Dashboard({ children }: { children: React.ReactNode }) {
       <div className="relative">
         <ProfileNavbar toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
         <main
-          className={`p-4 mt-5 transition-all duration-300 ease-in-out ${
+          className={`px-4 py-2 mt-4 transition-all duration-300 ease-in-out ${
             isSidebarOpen ? "lg:ml-[20rem]" : "ml-0"
           }`}
         >
+          {/* Aquí se renderizan las funcionalidades del menú */}
           {children}
         </main>
       </div>

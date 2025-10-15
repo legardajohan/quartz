@@ -61,21 +61,21 @@ export function UserMenu() {
                 <Button
                     variant="text"
                     color="blue-gray"
-                    className="flex items-center gap-1 rounded-full py-0.5 pr-2 pl-0.5 lg:ml-auto"
+                    className={`flex items-center gap-1 rounded-full py-0.5 pr-2 pl-0.5 lg:ml-auto hover:bg-purple-100 ${isMenuOpen ? "text-purple-800" : "text-gray-900"}`}
                 >
                     <Avatar
                         variant="circular"
                         size="sm"
                         alt={user?.firstName || "User"}
-                        className="border border-gray-900 p-0.5"
+                        className="border border-purple-300 p-0.5"
                         src={defaultUser} // Use the imported default image
                     />
-                    <Typography as="span" variant="small" className="font-normal px-2">
+                    <Typography as="span" variant="small" className="font-normal px-2 normal-case text-[16px]">
                         {user?.firstName}
                     </Typography>
                     <ChevronDownIcon
                         strokeWidth={2.5}
-                        className={`h-3 w-3 transition-transform ${isMenuOpen ? "rotate-180" : ""}`}
+                        className={`h-3 w-3 transition-transform ${isMenuOpen ? "rotate-180 text-purple-800" : ""}`}
                     />
                 </Button>
             </MenuHandler>
@@ -87,18 +87,18 @@ export function UserMenu() {
                             key={label}
                             onClick={() => handleMenuClick(label)}
                             className={`flex items-center gap-2 rounded ${isLastItem
-                                    ? "hover:bg-[#ff9cb8] focus:bg-[#ff9cb8] active:bg-[#ff9cb8]"
-                                    : ""
+                                    ? "hover:bg-pink-300/40 focus:bg-pink-300/40 active:bg-pink-300/50"
+                                    : "hover:bg-purple-300/40 focus:bg-purple-300/40 active:bg-purple-300/50"
                                 }`}
                         >
                             {React.createElement(icon, {
-                                className: `h-4 w-4 ${isLastItem ? "text-[#f20c60]" : ""}`,
+                                className: `h-4 w-4 ${isLastItem ? "text-pink-600" : ""}`,
                                 strokeWidth: 2,
                             })}
                             <Typography
                                 as="span"
                                 variant="small"
-                                className={`font-normal ${isLastItem ? "text-[#f20c60]" : "inherit"}`}
+                                className={`font-normal ${isLastItem ? "text-pink-600" : "inherit"}`}
                             >
                                 {label}
                             </Typography>
