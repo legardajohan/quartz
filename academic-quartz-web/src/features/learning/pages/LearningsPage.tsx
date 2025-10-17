@@ -1,3 +1,5 @@
+import LearningCard from "../components/LearningCard";
+
 export default function LearningsPage() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">

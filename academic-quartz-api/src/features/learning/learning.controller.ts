@@ -1,11 +1,20 @@
 import { Request, Response } from "express";
-import { getAllLearnings, createLearning, updateLearning, deleteLearning } from './learning.service';
+import { 
+    getAllLearnings, 
+    createLearning, 
+    updateLearning, 
+    deleteLearning, 
+    mapLearningToResponse 
+} from './learning.service';
 
 export async function getAllLearningsController(req: Request, res: Response) {
     try {
-        // Filter can be extended based on query parameters
         const learnings = await getAllLearnings(req.query);
-        res.status(200).json(learnings);
+        
+        // Map each learning to the final response format
+        const responseLearnings = learnings.map(mapLearningToResponse);
+
+        res.status(200).json(responseLearnings);
     } catch (error: any) {
         console.error("Error en el controlador para obtener todos los Aprendizajes Esperados: ", error);
         res.status(500).json({ message: 'Error al obtener los Aprendizajes Esperados.' });
@@ -17,26 +26,27 @@ export async function createLearningController(req: Request, res: Response) {
     const { 
         institutionId, 
         subjectId, 
-        periodId, 
+        periodId,
+        userId, 
         description, 
         grade 
     } = req.body;
 
-    // Call the service to create expected learning
     const learning = await createLearning(
       institutionId,
       subjectId,
       periodId,
+      userId,
       description,
       grade
     );
 
+    // TODO: Consider mapping this response as well if consistency is needed
     res.status(201).json({
       message: 'Aprendizaje esperado creado exitosamente.',
       learning
     });
   } catch (error: any) {
-    // Manejo de errores de validación de referencias
     if (error.message && (error.message.includes('subjectId') || error.message.includes('periodId'))) {
       return res.status(400).json({ message: error.message });
     }
@@ -56,6 +66,7 @@ export async function updateLearningController(req: Request, res: Response) {
             return res.status(404).json({ message: 'Aprendizaje esperado no encontrado.' });
         }
 
+        // TODO: Consider mapping this response as well
         res.status(200).json({
             message: 'Aprendizaje esperado actualizado exitosamente.',
             learning: updatedLearning
