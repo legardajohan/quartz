@@ -24,7 +24,7 @@ const LearningCard = ({ learning }: LearningCardProps) => {
 
         {/* Tittle and Subject */}
         <Typography variant="h5" color="white" className="mb-1 font-nico">
-          {learning.title}
+          Titulo
         </Typography>
         <Typography className="text-purple-300 font-bold mb-4">
           {learning.subject.name}
@@ -39,15 +39,15 @@ const LearningCard = ({ learning }: LearningCardProps) => {
         <div className="flex items-center justify-between pt-4 border-t border-gray-800">
           <div className="flex items-center gap-4">
             <Chip
-              value={`${learning.period.name} ${learning.period.year}`}
+              value={`${learning.period.name} 2025`}
               className="bg-pink-500 text-sm font-bold text-white"
             />
             <Typography className="text-sm text-gray-300">
-              Prof: {`${learning.teacher.name} ${learning.teacher.lastname}`}
+              Prof: Johan Legarda 
             </Typography>
           </div>
           <Typography className="font-bold text-gray-300">
-            {learning.grade.name}
+            Transición
           </Typography>
         </div>
       </CardBody>

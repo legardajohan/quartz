@@ -26,7 +26,7 @@ router.post(
 );
 
 // Protected route to update Learning
-router.put(
+router.patch(
   '/:learningId',
   authenticateJWT,
   authorize(['Jefe de Área']),

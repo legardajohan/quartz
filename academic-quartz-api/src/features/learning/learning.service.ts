@@ -6,7 +6,6 @@ import { Subject } from '../subject/subject.model';
 import { Period } from '../period/period.model';
 import { User } from '../auth/auth.model';
 import { validateAllExist } from '../../services/document-validator.service';
-import { ILearningResponse } from './learning.types';
 
 export async function getAllLearnings(
     filter: FilterQuery<ILearningDocument>
@@ -15,17 +14,12 @@ export async function getAllLearnings(
         .populate({
             path: 'subjectId',
             model: Subject,
-            select: 'name type' 
+            select: 'name' 
         })
         .populate({
             path: 'periodId',
             model: Period,
-            select: 'name startDate endDate isActive' 
-        })
-        .populate({
-            path: 'userId',
-            model: User,
-            select: 'firstName lastName role' 
+            select: 'name' 
         })
         .exec();
 
@@ -102,20 +96,4 @@ export async function deleteLearning(
     learningId: string
 ): Promise<ILearningDocument | null> {
     return deleteById(LearningModel, learningId);
-}
-
-export function mapLearningToResponse(learning: any): ILearningResponse {
-    // toObject() converts the Mongoose document to a plain JavaScript object.
-    const { subjectId, periodId, userId, ...restOfLearning } = learning.toObject();
-
-    return {
-        ...restOfLearning,
-        subject: subjectId, // subjectId is already the populated object
-        period: periodId,   // periodId is already the populated object
-        user: {
-            _id: userId._id,
-            name: `${userId.firstName} ${userId.lastName}`.trim(), // trim() for safety
-            role: userId.role
-        }
-    };
 }
