@@ -1,9 +1,9 @@
-import { IUser } from '../../features/auth/auth.model';
+import { SafeUser } from '../../features/auth/auth.model';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: IUser;
+      user?: SafeUser;
     }
   }
 }

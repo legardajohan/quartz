@@ -27,13 +27,14 @@ export async function validateCredentials(
 }
 
 export function generateJWT(user: SafeUser) {
-  // Only include necessary user information in the JWT
+  const payload = {
+    sub: user._id, 
+    institutionId: user.institutionId,
+    role: user.role,
+    firstName: user.firstName,
+  };
   return jwt.sign(
-    {
-      sub: user._id,
-      role: user.role,
-      institutionId: user.institutionId
-    },
+    payload,
     JWT_SECRET,
     { expiresIn: '8h' }
   );

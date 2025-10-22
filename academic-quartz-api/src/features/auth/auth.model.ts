@@ -42,7 +42,6 @@ const UserSchema = new Schema<IUserDocument>({
   schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true }, // The user is associated with a specific school
   gradesTaught: [{ type: String, enum: Object.values(GradeLevel) }], // Optional, for teachers 
   createdAt: { type: Date, default: Date.now },
-
   updatedAt: { type: Date, default: Date.now }
 });
 

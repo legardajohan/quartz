@@ -40,22 +40,23 @@ export async function getAllLearningsController(req: Request, res: Response) {
 
 export async function createLearningController(req: Request, res: Response) {
   try {
-    const { 
-        institutionId, 
-        subjectId, 
-        periodId,
-        userId, 
-        description, 
-        grade 
-    } = req.body;
+    const learningData = req.body;
+    const user = req.user;
+
+    // Defensive check for a malformed user object on the request
+    if (!user || !user._id || !user.institutionId) {
+      console.error('Critical: User object on request is missing required properties (_id or institutionId).');
+      return res.status(500).json({ message: 'Error interno del servidor: información de usuario corrupta o incompleta.' });
+    }
+
+    // Extract primitive types from the user object to pass to the service layer
+    const institutionId = user.institutionId.toString();
+    const userId = user._id.toString();
 
     const learning = await createLearning(
       institutionId,
-      subjectId,
-      periodId,
       userId,
-      description,
-      grade
+      learningData
     );
 
     // To map the response, we need to fetch the created document with populated fields

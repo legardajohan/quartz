@@ -1,5 +1,3 @@
-import { Types } from 'mongoose';
-
 export interface ILearningResponse {
   _id: string;
   description: string;
@@ -12,3 +10,12 @@ export interface ILearningResponse {
     name: string;
   };
 }
+
+export type LearningData = {
+  subjectId: string;
+  periodId: string;
+  description: string;
+  grade: string;
+};
+
+export type UpdateLearningData = Partial<LearningData>;
