@@ -7,9 +7,14 @@ import type { LearningData, UpdateLearningData } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
 
 export async function getAllLearnings(
+    institutionId: string,
     filter: FilterQuery<ILearningDocument>
 ): Promise<ILearningDocument[]> {
-    const learnings = await LearningModel.find(filter)
+    const query: FilterQuery<ILearningDocument> = {
+        ...filter,
+        institutionId: new Types.ObjectId(institutionId),
+    };
+    const learnings = await LearningModel.find(query)
         .populate({
             path: 'subjectId',
             model: Subject,
@@ -58,6 +63,7 @@ export async function createLearning(
 
 export async function updateLearning(
     learningId: string,
+    institutionId: string,
     updateData: UpdateLearningData
 ): Promise<ILearningDocument | null> {
 
@@ -78,15 +84,31 @@ export async function updateLearning(
     }
 
     // 3. Use the generic service to update the document
-    return updateById(
-        LearningModel, 
-        learningId, 
-        updateData
+    const query = {
+        _id: new Types.ObjectId(learningId),
+        institutionId: new Types.ObjectId(institutionId)
+    };
+    return LearningModel.findOneAndUpdate(
+        query,
+        updateData,
+        { new: true }
     );
+
+    // return updateById(
+    //     LearningModel, 
+    //     learningId, 
+    //     updateData
+    // );
 }
 
 export async function deleteLearning(
-    learningId: string
+    learningId: string,
+    institutionId: string
 ): Promise<ILearningDocument | null> {
-    return deleteById(LearningModel, learningId);
+    const query = {
+        _id: new Types.ObjectId(learningId),
+        institutionId: new Types.ObjectId(institutionId)
+    };
+    
+    return LearningModel.findOneAndDelete(query);
 }
