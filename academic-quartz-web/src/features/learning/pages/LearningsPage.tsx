@@ -15,6 +15,16 @@ export default function LearningsPage() {
     fetchLearnings();
   }, [fetchLearnings]);
 
+  const handleEdit = (id: string) => {
+    console.log("Editing learning with id:", id);
+    // Future implementation: open an edit modal or navigate to an edit page
+  };
+
+  const handleDelete = (id: string) => {
+    console.log("Deleting learning with id:", id);
+    // Future implementation: show a confirmation dialog and call a delete action
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -33,16 +43,21 @@ export default function LearningsPage() {
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      <div className="flex flex-col gap-6 mt-6">
         {learnings.map((learning) => (
-          <LearningCard key={learning._id} learning={learning} />
+          <LearningCard 
+            key={learning._id} 
+            learning={learning} 
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         ))}
       </div>
     );
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="p-6 rounded-lg shadow-md">
       <h1 className="text-2xl font-semibold text-blue-gray-800">
         Gestión de Aprendizajes Esperados
       </h1>

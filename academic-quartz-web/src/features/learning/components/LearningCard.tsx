@@ -1,57 +1,46 @@
-import {
-  Card,
-  CardBody,
-  Typography,
-  Chip,
-} from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Learning } from "../types";
 
 interface LearningCardProps {
   learning: Learning;
-  // Add function props if needed, e.g., onEdit, onDelete
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-const LearningCard = ({ learning }: LearningCardProps) => {
+const LearningCard = ({ learning, onEdit, onDelete }: LearningCardProps) => {
   return (
-    <Card className="mt-6 w-full bg-gray-900 text-white relative group shadow-lg border border-gray-800">
-      <CardBody>
-        {/* Icon Container - Visible on hover */}
-        <div className="absolute top-4 right-4 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <PencilIcon className="h-5 w-5 text-gray-200 hover:text-purple-600 cursor-pointer" />
-          <TrashIcon className="h-5 w-5 text-gray-200 hover:text-pink-500 cursor-pointer" />
-        </div>
+    <div className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 p-5 px-6 mx-8 relative min-h-[80px] flex items-center">
+      {/* Period Badge */}
+      <div className="absolute top-0 right-6 -translate-y-1/2 bg-pink-500 rounded-md text-white font-semibold text-xs px-1 py-1 min-w-[70px] h-[25px] flex items-center justify-center">
+        {learning.period.name}
+      </div>
 
-        {/* Tittle and Subject */}
-        <Typography variant="h5" color="white" className="mb-1 font-nico">
-          Titulo
-        </Typography>
-        <Typography className="text-purple-300 font-bold mb-4">
-          {learning.subject.name}
-        </Typography>
-
-        {/* Description */}
-        <Typography className="mb-6 text-gray-300">
+      {/* Wrapper for description and buttons */}
+      <div className="flex items-center justify-between w-full">
+        {/* Description Text */}
+        <p className="text-gray-800 font-normal text-lg leading-tight line-clamp-2 flex-grow mr-6">
           {learning.description}
-        </Typography>
+        </p>
 
-        {/* Card Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-800">
-          <div className="flex items-center gap-4">
-            <Chip
-              value={`${learning.period.name} 2025`}
-              className="bg-pink-500 text-sm font-bold text-white"
-            />
-            <Typography className="text-sm text-gray-300">
-              Prof: Johan Legarda 
-            </Typography>
-          </div>
-          <Typography className="font-bold text-gray-300">
-            Transición
-          </Typography>
+        {/* Action Buttons - Visible on hover */}
+        <div className="flex-shrink-0 flex gap-6 items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <button
+            onClick={() => onEdit(learning._id)}
+            className="text-gray-400 hover:text-purple-400 transition-colors duration-200"
+            aria-label="Editar objetivo"
+          >
+            <PencilIcon className="h-5 w-5" strokeWidth={2.5} />
+          </button>
+          <button
+            onClick={() => onDelete(learning._id)}
+            className="text-gray-400 hover:text-pink-400 transition-colors duration-200"
+            aria-label="Eliminar objetivo"
+          >
+            <TrashIcon className="h-5 w-5" strokeWidth={2.5} />
+          </button>
         </div>
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   );
 };
 

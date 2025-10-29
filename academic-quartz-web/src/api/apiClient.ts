@@ -15,12 +15,6 @@ export const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add timestamp to prevent caching issues
-    config.params = {
-      ...config.params,
-      _t: Date.now()
-    };
-
     // Log requests in development
     if (import.meta.env.DEV) {
       console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
