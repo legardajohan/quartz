@@ -16,4 +16,5 @@ export interface LearningState {
   isLoading: boolean;
   error: string | null;
   fetchLearnings: () => Promise<void>;
+  deleteLearning: (id: string) => Promise<void>;
 }

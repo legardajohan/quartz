@@ -9,6 +9,7 @@ import EvaluationsPage from './features/evaluation/pages/EvaluationsPage';
 import ReportsPage from './features/report/pages/ReportsPage';
 import UsersPage from './features/user/pages/UsersPage';
 import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
+import { Toaster } from 'react-hot-toast';
 
 // Placeholder para un futuro Dashboard
 const DashboardPage = () => {
@@ -27,32 +28,53 @@ const DashboardPage = () => {
 
 function App() {
   return (
-    <Routes>
-      {/* RUTAS PÚBLICAS */}
-      <Route path="/login" element={<LoginPage />} />
+    <>
+      <Routes>
+        {/* RUTAS PÚBLICAS */}
+        <Route path="/login" element={<LoginPage />} />
 
-      {/* RUTAS PROTEGIDAS CON LAYOUT */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<Dashboard><Outlet /></Dashboard>}>
-          {/* Todas las rutas aquí dentro tendrán el menú lateral */}
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/academico/aprendizajes" element={<LearningsPage />} />
-          <Route path="/academico/conceptos" element={<ConceptsPage />} />
-          <Route path="/academico/lista-chequeo" element={<ChecklistsPage />} />
+        {/* RUTAS PROTEGIDAS CON LAYOUT */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Dashboard><Outlet /></Dashboard>}>
+            {/* Todas las rutas aquí dentro tendrán el menú lateral */}
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/academico/aprendizajes" element={<LearningsPage />} />
+            <Route path="/academico/conceptos" element={<ConceptsPage />} />
+            <Route path="/academico/lista-chequeo" element={<ChecklistsPage />} />
 
-          <Route path="/evaluacion" element={<EvaluationsPage />} />
-          <Route path="/informes" element={<ReportsPage />} />
-          <Route path="/gestion/usuarios" element={<UsersPage />} />
-          <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />
+            <Route path="/evaluacion" element={<EvaluationsPage />} />
+            <Route path="/informes" element={<ReportsPage />} />
+            <Route path="/gestion/usuarios" element={<UsersPage />} />
+            <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* REDIRECCIÓN PRINCIPAL */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* REDIRECCIÓN PRINCIPAL */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-      {/* RUTA NOT FOUND (404) */}
-      <Route path="*" element={<div>404 - Página no encontrada</div>} />
-    </Routes>
+        {/* RUTA NOT FOUND (404) */}
+        <Route path="*" element={<div>404 - Página no encontrada</div>} />
+      </Routes>
+      
+      {/* Toaster */}
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          success: {
+            style: {
+              background: '#ECFDF5', // green-50
+              color: '#065F46', // green-800
+            },
+          },
+          error: {
+            style: {
+              background: '#FEF2F2', // red-50
+              color: '#991B1B', // red-800
+            },
+          },
+        }}
+      />
+    </>
   );
 }
 

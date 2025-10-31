@@ -1,4 +1,4 @@
-import { IIcon } from '../interfaces/IIcon';
+import type { IIcon } from '../interfaces/IIcon';
 
 export const SpinnerIcon = ({ width = "24", color = "currentColor", className }: IIcon) => {
     return (
