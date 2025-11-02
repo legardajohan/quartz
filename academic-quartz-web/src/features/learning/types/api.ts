@@ -1,3 +1,10 @@
-import type { Learning } from './index';
+import type { Learning } from './store';
 
 export type LearningsResponse = Learning[];
+
+export interface NewLearning {
+    subjectId: string;
+    periodId: string;
+    description: string;
+    grade: string;
+}

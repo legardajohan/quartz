@@ -6,7 +6,7 @@ import {
     DialogFooter,
 } from "@material-tailwind/react";
 
-import type { ModalProps } from "../interfaces/ModalProps";
+import type { ConfirmationModalProps } from "../interfaces/ConfirmationModalProps";
 
 export const ConfirmationModal = ({
     open,
@@ -17,7 +17,7 @@ export const ConfirmationModal = ({
     confirmText = "Confirmar",
     cancelText = "Cancelar",
     confirmColor = "pink",
-}: ModalProps) => {
+}: ConfirmationModalProps) => {
     return (
         <Dialog open={open} size="xs" handler={onClose}>
             <DialogHeader>{title}</DialogHeader>
