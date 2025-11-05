@@ -1,29 +1,53 @@
 import { User, IUserDocument, SafeUser } from './auth.model';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { getPeriodsByInstitution } from '../period/period.service';
+import { getSubjectsByInstitution } from '../subject/subject.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
-export async function validateCredentials(
-  email: string, 
-  password: string
-): Promise<SafeUser | null> {
-  try {
-    // Find user by email only
-    const user = await User.findOne({ email }).select('+passwordHash') as IUserDocument | null;
-    if (!user) return null;
+async function getSessionData(user: SafeUser) {
+    const [periods, subjects] = await Promise.all([
+        getPeriodsByInstitution(user.institutionId.toString()),
+        getSubjectsByInstitution(user.institutionId.toString())
+    ]);
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
+    const sessionData = {
+        user: {
+            _id: user._id,
+            institutionId: user.institutionId,
+            role: user.role,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            secondLastName: user.secondLastName,
+            schoolId: user.schoolId
+        },
+        periods: periods.map(p => ({ _id: p._id, name: p.name, isActive: p.isActive })),
+        subjects: subjects.map(s => ({ _id: s._id, name: s.name }))
+    };
 
-    if (isValid) {
-      return user.toSafeUser();
+    return sessionData;
+}
+
+export async function login(email: string, password: string) {
+    try {
+        const user = await User.findOne({ email }).select('+passwordHash') as IUserDocument | null;
+        if (!user) return null;
+
+        const isValid = await bcrypt.compare(password, user.passwordHash);
+
+        if (isValid) {
+            const safeUser = user.toSafeUser();
+            const sessionData = await getSessionData(safeUser);
+            const token = generateJWT(safeUser);
+            return { token, sessionData };
+        }
+
+        return null;
+    } catch (error) {
+        console.error("Error al iniciar sesión: ", error);
+        throw new Error('La autenticación falló');
     }
-
-    return null;
-  } catch (error) {
-    console.error("Error al validar las credenciales: ", error); 
-    throw new Error('La autenticación falló');
-  }
 }
 
 export function generateJWT(user: SafeUser) {

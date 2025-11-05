@@ -7,7 +7,7 @@ export interface ISubjectDocument extends Document {
 };
 
 const SubjectSchema = new Schema<ISubjectDocument>({
-    institutionId: { type: Schema.Types.ObjectId, ref: 'EducationalInstitution', required: true },
+    institutionId: { type: Schema.Types.ObjectId, ref: 'EducationalInstitution' },
     name: { type: String, required: true },
     type: { type: String, enum: ['Dimensión', 'Asignatura'], required: true }
 }, {

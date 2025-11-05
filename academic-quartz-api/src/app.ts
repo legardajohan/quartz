@@ -3,6 +3,8 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import authRoutes from './features/auth/auth.routes';
 import learningRoutes from './features/learning/learning.routes';
+import periodRoutes from './features/period/period.routes';
+import subjectRoutes from './features/subject/subject.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -21,6 +23,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 // Routes for expected learning
 app.use('/api/learnings', learningRoutes);
+// Routes for periods
+app.use('/api/periods', periodRoutes);
+// Routes for subjects
+app.use('/api/subjects', subjectRoutes);
 
 // Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;
