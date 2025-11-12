@@ -1,12 +1,17 @@
 import { Schema, model, Document } from 'mongoose';
+import { LeanDocument } from '../../types/mongoose';
 
-export interface IPeriodDocument extends Document {
+export interface IPeriod {
     institutionId: Schema.Types.ObjectId;
     name: string;
     startDate: Date;
     endDate: Date;
     isActive: boolean;
 };
+
+export interface IPeriodDocument extends IPeriod, Document {};
+
+export type PlainPeriodObject = LeanDocument<IPeriod>;
 
 const PeriodSchema = new Schema<IPeriodDocument>({
     institutionId: { type: Schema.Types.ObjectId, ref: 'EducationalInstitution', required: true },

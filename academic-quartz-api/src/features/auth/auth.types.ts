@@ -24,3 +24,24 @@ export enum GradeLevel {
   DECIMO = '10mo',
   ONCEMO = '11mo',
 }
+
+export interface ISessionData {
+  user: {
+    _id: string;
+    institutionId: string;
+    role: UserRole;
+    firstName: string;
+    lastName: string;
+    secondLastName?: string;
+    schoolId?: string;
+  };
+  periods: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  }[];
+  subjects: {
+    _id: string;
+    name: string;
+  }[];
+}

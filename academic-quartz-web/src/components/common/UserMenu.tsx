@@ -17,7 +17,7 @@ import {
     UserCircleIcon,
 } from "@heroicons/react/24/solid";
 import { useAuthStore } from "../../features/auth/useAuthStore";
-import defaultUser from '../../assets/images/default-user.jpg';
+import userImage from '../../assets/images/user.png';
 
 // profile menu component
 const profileMenuItems = [
@@ -68,7 +68,7 @@ export function UserMenu() {
                         size="sm"
                         alt={user?.firstName || "User"}
                         className="border border-purple-300 p-0.5"
-                        src={defaultUser} // Use the imported default image
+                        src={userImage} // Use the imported default image
                     />
                     <Typography as="span" variant="small" className="font-normal px-2 normal-case text-[16px]">
                         {user?.firstName}
