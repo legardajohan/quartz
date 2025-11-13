@@ -19,12 +19,33 @@ export interface User {
   gradesTaught?: GradeLevel[];
 }
 
+export interface ISessionData {
+  user: {
+    _id: string;
+    institutionId: string;
+    role: UserRole;
+    firstName: string;
+    lastName: string;
+    secondLastName?: string;
+    schoolId?: string;
+  };
+  periods: {
+    _id: string;
+    name: string;
+    isActive: boolean;
+  }[];
+  subjects: {
+    _id: string;
+    name: string;
+  }[];
+}
+
 export interface AuthState {
-  user: User | null;
   token: string | null;
+  sessionData: ISessionData | null;
   isLoading: boolean;
   error: string | null;
-  
+
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;

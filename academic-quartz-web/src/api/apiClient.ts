@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import { useAuthStore } from '../features/auth/useAuthStore';
 
 // Environment configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -15,6 +16,10 @@ export const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    };
     // Log requests in development
     if (import.meta.env.DEV) {
       console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
@@ -45,13 +50,15 @@ apiClient.interceptors.response.use(
     // Handle common HTTP errors
     if (error.response) {
       const status = error.response.status;
-      const message = error.response.data?.message || error.message;
+
+      if (status === 401) {
+        console.warn('🚫 Unauthorized (401) - Token inválido o expirado. Cerrando sesión...');
+        useAuthStore.getState().logout();
+      }
+
+      const message = (error.response.data as any)?.message || error.message;
 
       switch (status) {
-        case 401:
-          console.warn('🚫 Unauthorized - Token may be expired');
-          // Don't automatically logout here, let the auth store handle it
-          break;
         case 403:
           console.warn('🚫 Forbidden - Insufficient permissions');
           break;

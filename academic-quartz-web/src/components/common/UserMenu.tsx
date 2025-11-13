@@ -45,7 +45,7 @@ const profileMenuItems = [
 
 export function UserMenu() {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-    const user = useAuthStore((state) => state.user);
+    const user = useAuthStore((state) => state.sessionData?.user);
     const logout = useAuthStore((state) => state.logout);
 
     const handleMenuClick = (label: string) => {
@@ -71,7 +71,7 @@ export function UserMenu() {
                         src={userImage} // Use the imported default image
                     />
                     <Typography as="span" variant="small" className="font-normal px-2 normal-case text-[16px]">
-                        {user?.firstName}
+                        {user?.firstName} {user?.lastName}
                     </Typography>
                     <ChevronDownIcon
                         strokeWidth={2.5}

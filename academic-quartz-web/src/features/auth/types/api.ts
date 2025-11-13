@@ -1,4 +1,4 @@
-import type { User } from './store';
+import type { ISessionData, User } from './store';
 
 export interface LoginRequest {
   email: string;
@@ -7,13 +7,13 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   success: boolean;
-  user: User;
   token: string;
+  sessionData: ISessionData;
   message?: string;
 }
 
 export interface ProfileResponse {
   success: boolean;
-  user: User;
+  user: User; 
   message?: string;
 }

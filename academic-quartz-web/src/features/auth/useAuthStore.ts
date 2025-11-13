@@ -7,8 +7,8 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       // Initial state
-      user: null,
       token: null,
+      sessionData: null,
       isLoading: false,
       error: null,
 
@@ -22,14 +22,14 @@ export const useAuthStore = create<AuthState>()(
             password
           } as LoginRequest);
 
-          const { user, token } = response.data; // Response API
+          const { token, sessionData } = response.data; // Response API
           
           // Store token in apiClient for future requests
-          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          // apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
-          set({ 
-            user, 
-            token, 
+          set({  
+            token,
+            sessionData, 
             isLoading: false,
             error: null 
           });
@@ -39,9 +39,9 @@ export const useAuthStore = create<AuthState>()(
                              error.message || 
                              'Error de conexión. Verifica tu conexión a internet.';
           
-          set({ 
-            user: null, 
-            token: null, 
+          set({  
+            token: null,
+            sessionData: null, 
             isLoading: false, 
             error: errorMessage 
           });
@@ -51,11 +51,11 @@ export const useAuthStore = create<AuthState>()(
       // Logout action
       logout: () => {
         // Clear token from apiClient
-        delete apiClient.defaults.headers.common['Authorization'];
+        // delete apiClient.defaults.headers.common['Authorization'];
         
         set({ 
-          user: null, 
-          token: null, 
+          token: null,
+          sessionData: null, 
           isLoading: false, 
           error: null 
         });
@@ -69,22 +69,21 @@ export const useAuthStore = create<AuthState>()(
       // Refresh user data action
       refreshUser: async () => {
         const { token } = get();
-        
-        if (!token) {
-          return;
-        }
+        if (!token) return;
 
         set({ isLoading: true, error: null });
         
         try {
           const response = await apiClient.get<ProfileResponse>('/auth/profile');
-          const user = response.data.user;
+          const refreshedUser = response.data.user;
           
-          set({ 
-            user, 
+          set((state) => ({
+            sessionData: state.sessionData
+              ? { ...state.sessionData, user: refreshedUser } 
+              : null,
             isLoading: false,
             error: null 
-          });
+          }));
 
         } catch (error: any) {
           // If token is invalid, logout user
@@ -93,9 +92,7 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
           
-          const errorMessage = error.response?.data?.message || 
-                             error.message || 
-                             'Error al actualizar datos del usuario';
+          const errorMessage = error.response?.data?.message || error.message || 'Error al actualizar datos del usuario';
           
           set({ 
             isLoading: false, 
@@ -105,17 +102,11 @@ export const useAuthStore = create<AuthState>()(
       }
     }),
     {
-      name: 'academic-quartz-auth',
-      partialize: (state) => ({ 
-        user: state.user, 
-        token: state.token 
+      name: 'quartz-session',
+      partialize: (state) => ({  
+        token: state.token,
+        sessionData: state.sessionData 
       }),
-      onRehydrateStorage: () => (state) => {
-        // Set token in apiClient when rehydrating from storage
-        if (state?.token) {
-          apiClient.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
-        }
-      }
     }
   )
 );
