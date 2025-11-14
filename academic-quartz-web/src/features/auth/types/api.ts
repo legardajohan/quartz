@@ -1,4 +1,4 @@
-import type { ISessionData, User } from './store';
+import type { ISessionData, User } from '@/types/domain';
 
 export interface LoginRequest {
   email: string;

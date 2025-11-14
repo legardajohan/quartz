@@ -5,21 +5,19 @@ import toast from "react-hot-toast";
 import LearningCard from "../components/LearningCard";
 import { LearningForm } from "../components/LearningForm";
 import { useLearningStore } from "../useLearningStore";
+import { useAuthStore } from "../../auth/useAuthStore";
 import { SpinnerIcon } from "../../../components/icons";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
 import { Learning, NewLearning } from "../types";
 
 export default function LearningsPage() {
-  const {
-    learnings,
-    isLoading,
-    isSubmitting,
-    error,
-    fetchLearnings,
-    createLearning,
-    deleteLearning
-  } = useLearningStore();
+  const { learnings, isLoading, isSubmitting, error, createLearning, deleteLearning } =
+    useLearningStore();
+  const { sessionData } = useAuthStore();
+
+  const subjects = sessionData?.subjects ?? [];
+  const periods = sessionData?.periods ?? [];
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
@@ -27,15 +25,16 @@ export default function LearningsPage() {
   const [newLearningData, setNewLearningData] = useState<Omit<NewLearning, 'grade'> | null>(null);
 
   useEffect(() => {
-    fetchLearnings();
-  }, [fetchLearnings]);
+    // Fetch learnings only once on component mount
+    useLearningStore.getState().fetchLearnings();
+  }, []);
 
   const handleEdit = (id: string) => {
     console.log("Editing learning with id:", id);
   };
 
   const handleDelete = (id: string) => {
-    const learning = learnings.find(l => l._id === id);
+    const learning = learnings.find((l) => l._id === id);
     if (learning) {
       setLearningToDelete(learning);
       setDeleteModalOpen(true);
@@ -52,9 +51,9 @@ export default function LearningsPage() {
 
     const promise = deleteLearning(learningToDelete._id);
     toast.promise(promise, {
-      loading: 'Eliminando aprendizaje...',
+      loading: "Eliminando aprendizaje...",
       success: <b>Aprendizaje eliminado con éxito</b>,
-      error: (err) => <b>{err.toString()}</b>
+      error: (err) => <b>{err.toString()}</b>,
     });
     handleCloseDeleteModal();
   };
@@ -73,9 +72,9 @@ export default function LearningsPage() {
 
     const promise = createLearning(learningToCreate);
     toast.promise(promise, {
-      loading: 'Creando aprendizaje...',
+      loading: "Creando aprendizaje...",
       success: <b>Aprendizaje creado con éxito</b>,
-      error: (err) => <b>{err.toString()}</b>
+      error: (err) => <b>{err.toString()}</b>,
     });
 
     setFormModalOpen(false);
@@ -118,6 +117,37 @@ export default function LearningsPage() {
         <h1 className="text-2xl font-semibold text-purple-900">
           Gestión de Aprendizajes Esperados
         </h1>
+
+        {/* Data from session 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6 border-t border-b border-gray-200 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700">Asignaturas Disponibles</h2>
+            <ul className="list-disc list-inside mt-2 bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
+              {subjects.length > 0 ? (
+                subjects.map((subject) => (
+                  <li key={subject._id} className="text-gray-600">{subject.name}</li>
+                ))
+              ) : (
+                <li className="text-gray-500">No hay asignaturas cargadas.</li>
+              )}
+            </ul>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700">Períodos Académicos</h2>
+            <ul className="list-disc list-inside mt-2 bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
+              {periods.length > 0 ? (
+                periods.map((period) => (
+                  <li key={period._id} className="text-gray-600">{period.name}</li>
+                ))
+              ) : (
+                <li className="text-gray-500">No hay períodos cargados.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+
+      */}
+
         {renderContent()}
 
         {/* Centered container for the add button */}
@@ -153,7 +183,11 @@ export default function LearningsPage() {
         submitText="Crear Aprendizaje"
         isSubmitting={isSubmitting}
       >
-        <LearningForm onFormChange={setNewLearningData} />
+        <LearningForm 
+          onFormChange={setNewLearningData} 
+          subjects={subjects}
+          periods={periods}
+        />
       </FormModal>
     </>
   );

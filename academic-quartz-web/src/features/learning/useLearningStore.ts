@@ -3,17 +3,13 @@ import { apiGet, apiDelete, apiPost } from '../../api/apiClient';
 import type { 
   LearningState, 
   LearningsResponse, 
-  Subject, 
-  Period, 
   Learning, 
   NewLearning 
 } from './types';
 
-export const useLearningStore = create<LearningState>((set, get) => ({
+export const useLearningStore = create<LearningState>((set) => ({
   // Initial state
   learnings: [],
-  subjects: [],
-  periods: [],
   isLoading: false,
   isSubmitting: false,
   error: null,
@@ -26,34 +22,6 @@ export const useLearningStore = create<LearningState>((set, get) => ({
       set({ learnings: data, isLoading: false });
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Falló la carga de aprendizajes.';
-      set({ error: errorMessage, isLoading: false });
-      console.error(err);
-    }
-  },
-
-  // Fetch subjects action
-  fetchSubjects: async () => {
-    if (get().subjects.length > 0) return; // Avoid re-fetching
-    set({ isLoading: true, error: null });
-    try {
-      const data = await apiGet<Subject[]>('/subjects');
-      set({ subjects: data, isLoading: false });
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Falló la carga de asignaturas.';
-      set({ error: errorMessage, isLoading: false });
-      console.error(err);
-    }
-  },
-
-  // Fetch periods action
-  fetchPeriods: async () => {
-    if (get().periods.length > 0) return; // Avoid re-fetching
-    set({ isLoading: true, error: null });
-    try {
-      const data = await apiGet<Period[]>('/periods');
-      set({ periods: data, isLoading: false });
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Falló la carga de períodos.';
       set({ error: errorMessage, isLoading: false });
       console.error(err);
     }
