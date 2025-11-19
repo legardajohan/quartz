@@ -1,4 +1,4 @@
-import { NewLearning } from ".";
+import { NewLearning, UpdateLearning } from ".";
 
 export interface Learning {
   _id: string;
@@ -20,5 +20,6 @@ export interface LearningState {
   error: string | null;
   fetchLearnings: () => Promise<void>;
   createLearning: (learningData: NewLearning) => Promise<void>;
+  updateLearning: (id: string, learningData: UpdateLearning) => Promise<void>;
   deleteLearning: (id: string) => Promise<void>;
 }

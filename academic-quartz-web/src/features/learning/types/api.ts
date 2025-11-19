@@ -8,3 +8,5 @@ export interface NewLearning {
     description: string;
     grade: string;
 }
+
+export type UpdateLearning = Partial<NewLearning>;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Subject, Period } from '@/types/domain';
+import { Learning } from '../types';
 import {
     Textarea,
     Select,
@@ -9,17 +10,35 @@ import {
 interface LearningFormProps {
     subjects: Subject[];
     periods: Period[];
-    onFormChange: (formData: { subjectId: string; periodId: string; description: string }) => void;
+    initialData?: Learning | null;
+    onFormChange: (formData: { subjectId: string; periodId: string; description: string }, isDirty: boolean) => void;
 }
 
-export const LearningForm = ({ subjects, periods, onFormChange }: LearningFormProps) => {
+export const LearningForm = ({ subjects, periods, initialData, onFormChange }: LearningFormProps) => {
     const [subjectId, setSubjectId] = useState('');
     const [periodId, setPeriodId] = useState('');
     const [description, setDescription] = useState('');
 
     useEffect(() => {
-        onFormChange({ subjectId, periodId, description });
-    }, [subjectId, periodId, description, onFormChange]);
+        if (initialData) {
+            setSubjectId(initialData.subject._id);
+            setPeriodId(initialData.period._id);
+            setDescription(initialData.description);
+        } else {
+            setSubjectId('');
+            setPeriodId('');
+            setDescription('');
+        }
+    }, [initialData]);
+
+    useEffect(() => {
+        const isDirty = !initialData ||
+            initialData.subject._id !== subjectId ||
+            initialData.period._id !== periodId ||
+            initialData.description !== description;
+
+        onFormChange({ subjectId, periodId, description }, isDirty);
+    }, [subjectId, periodId, description, initialData, onFormChange]);
 
     return (
         <div className="space-y-6">
@@ -29,7 +48,7 @@ export const LearningForm = ({ subjects, periods, onFormChange }: LearningFormPr
                 label="Periodo académico"
                 value={periodId}
                 onChange={(val) => setPeriodId(val || '')}
-                key={periods.length}
+                key={initialData?._id ? `period-${initialData._id}` : periods.length}
             >
                 {periods.map((period) => (
                     <Option key={period._id} value={period._id}>
@@ -44,7 +63,7 @@ export const LearningForm = ({ subjects, periods, onFormChange }: LearningFormPr
                 label="Dimensión"
                 value={subjectId}
                 onChange={(val) => setSubjectId(val || '')}
-                key={subjects.length}
+                key={initialData?._id ? `subject-${initialData._id}` : subjects.length}
             >
                 {subjects.map((subject) => (
                     <Option key={subject._id} value={subject._id}>

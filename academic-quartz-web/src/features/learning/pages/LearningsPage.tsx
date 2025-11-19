@@ -9,10 +9,10 @@ import { useAuthStore } from "../../auth/useAuthStore";
 import { SpinnerIcon } from "../../../components/icons";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
-import { Learning, NewLearning } from "../types";
+import { Learning, NewLearning, UpdateLearning } from "../types";
 
 export default function LearningsPage() {
-  const { learnings, isLoading, isSubmitting, error, createLearning, deleteLearning } =
+  const { learnings, isLoading, isSubmitting, error, createLearning, updateLearning, deleteLearning } =
     useLearningStore();
   const { sessionData } = useAuthStore();
 
@@ -21,16 +21,27 @@ export default function LearningsPage() {
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
+  const [learningFormData, setLearningFormData] = useState<Omit<NewLearning, 'grade'> | null>(null);
+  const [selectedLearning, setSelectedLearning] = useState<Learning | null>(null);
   const [learningToDelete, setLearningToDelete] = useState<Learning | null>(null);
-  const [newLearningData, setNewLearningData] = useState<Omit<NewLearning, 'grade'> | null>(null);
+  const [isFormDirty, setIsFormDirty] = useState(false);
+  
 
   useEffect(() => {
-    // Fetch learnings only once on component mount
     useLearningStore.getState().fetchLearnings();
   }, []);
 
+  const handleOpenCreateModal = () => {
+    setSelectedLearning(null);
+    setFormModalOpen(true);
+  }
+
   const handleEdit = (id: string) => {
-    console.log("Editing learning with id:", id);
+    const learning = learnings.find((l) => l._id === id);
+    if (learning) {
+      setSelectedLearning(learning);
+      setFormModalOpen(true);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -41,9 +52,12 @@ export default function LearningsPage() {
     }
   };
 
-  const handleCloseDeleteModal = () => {
+  const handleCloseModals = () => {
     setDeleteModalOpen(false);
     setLearningToDelete(null);
+    setFormModalOpen(false);
+    setSelectedLearning(null);
+    setIsFormDirty(false);
   };
 
   const handleConfirmDelete = () => {
@@ -55,29 +69,46 @@ export default function LearningsPage() {
       success: <b>Aprendizaje eliminado con éxito</b>,
       error: (err) => <b>{err.toString()}</b>,
     });
-    handleCloseDeleteModal();
+    handleCloseModals();
   };
+
+  const handleFormChange = (formData: Omit<NewLearning, grade>, isDirty: boolean) => {
+    setLearningFormData(formData);
+    setIsFormDirty(isDirty);
+  }
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newLearningData || !newLearningData.subjectId || !newLearningData.periodId || !newLearningData.description) {
+    if (!learningFormData || !learningFormData.subjectId || !learningFormData.periodId || !learningFormData.description) {
       toast.error("Por favor, completa todos los campos del formulario.");
       return;
     }
 
-    const learningToCreate: NewLearning = {
-      ...newLearningData,
-      grade: "Transición", // As per requirement
-    };
+    let promise;
+    if (selectedLearning) {
+      const learningToUpdate: UpdateLearning = {
+        ...learningFormData,
+      };
+      promise = updateLearning(selectedLearning._id, learningToUpdate);
+      toast.promise(promise, {
+        loading: "Actualizando aprendizaje...",
+        success: <b>¡Aprendizaje actualizado con éxito!</b>,
+        error: (err) => <b>{ err.toString() }</b>,
+      });
+    } else {
+      const learningToCreate: NewLearning = {
+        ...learningFormData,
+        grade: "Transición", 
+      };
+      promise = createLearning(learningToCreate);
+      toast.promise(promise, {
+        loading: "Creando aprendizaje...",
+        success: <b>¡Aprendizaje creado con éxito!</b>,
+        error: (err) => <b>{err.toString()}</b>,
+      });
+    }
 
-    const promise = createLearning(learningToCreate);
-    toast.promise(promise, {
-      loading: "Creando aprendizaje...",
-      success: <b>Aprendizaje creado con éxito</b>,
-      error: (err) => <b>{err.toString()}</b>,
-    });
-
-    setFormModalOpen(false);
+    handleCloseModals();
   };
 
   const renderContent = () => {
@@ -110,6 +141,9 @@ export default function LearningsPage() {
       </div>
     );
   };
+
+  const isEditMode = !!selectedLearning;
+  const isSubmitDisabled = isSubmitting || (isEditMode && !isFormDirty);
 
   return (
     <>
@@ -153,7 +187,7 @@ export default function LearningsPage() {
         {/* Centered container for the add button */}
         <div className="mt-8 flex justify-center">
           <button
-            onClick={() => setFormModalOpen(true)}
+            onClick={handleOpenCreateModal}
             aria-label="Crear nuevo aprendizaje"
             className="group relative flex justify-center rounded-full focus:outline-none"
           >
@@ -167,7 +201,7 @@ export default function LearningsPage() {
 
       <ConfirmationModal
         open={isDeleteModalOpen}
-        onClose={handleCloseDeleteModal}
+        onClose={handleCloseModals}
         onConfirm={handleConfirmDelete}
         title="¿Deseas eliminar el aprendizaje?"
         body={learningToDelete?.description ?? ''}
@@ -176,15 +210,17 @@ export default function LearningsPage() {
 
       <FormModal
         open={isFormModalOpen}
-        onClose={() => setFormModalOpen(false)}
+        onClose={handleCloseModals}
         onSubmit={handleFormSubmit}
-        title="Nuevo Aprendizaje"
-        subtitle="Completa los datos para registrar un nuevo aprendizaje esperado."
-        submitText="Crear Aprendizaje"
+        title={!isEditMode ? "Nuevo Aprendizaje" : "Editar Aprendizaje"}
+        subtitle={!isEditMode ? "Completa los datos para registrar un nuevo aprendizaje esperado." : "Actualiza los datos del aprendizaje."}
+        submitText={!isEditMode ? "Crear Aprendizaje" : "Actualizar"}
         isSubmitting={isSubmitting}
+        isSubmitDisabled={isSubmitDisabled}
       >
         <LearningForm 
-          onFormChange={setNewLearningData} 
+          initialData={selectedLearning}
+          onFormChange={handleFormChange} 
           subjects={subjects}
           periods={periods}
         />

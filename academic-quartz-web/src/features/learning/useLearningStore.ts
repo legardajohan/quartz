@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { apiGet, apiDelete, apiPost } from '../../api/apiClient';
+import { apiGet, apiPost, apiPut, apiDelete } from '../../api/apiClient';
 import type { 
   LearningState, 
   LearningsResponse, 
   Learning, 
-  NewLearning 
+  NewLearning,
+  UpdateLearning 
 } from './types';
 
 export const useLearningStore = create<LearningState>((set) => ({
@@ -38,6 +39,25 @@ export const useLearningStore = create<LearningState>((set) => ({
       }));
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Falló la creación del aprendizaje.';
+      console.error(errorMessage);
+      set({ isSubmitting: false });
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Update learning action
+  updateLearning: async (id: string, learningData: UpdateLearning) => {
+    set({ isSubmitting: true });
+    try {
+      const updateLearning = await apiPut<Learning>(`/learning/${id}`, learningData);
+      set((state) => ({
+        learnings: state.learnings.map((learning) => 
+          learning._id === id ? updateLearning : learning
+        ),
+        isSubmitting: false,
+      }));
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Falló la actualización del aprendizaje';
       console.error(errorMessage);
       set({ isSubmitting: false });
       throw new Error(errorMessage);

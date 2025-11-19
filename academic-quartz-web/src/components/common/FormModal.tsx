@@ -19,6 +19,7 @@ export const FormModal = ({
     cancelText = "Cancelar",
     submitColor = "purple",
     isSubmitting = false,
+    isSubmitDisabled,
 }: FormModalProps) => {
     return (
         <Dialog open={open} handler={onClose} size="sm" className="px-5 py-3" dismiss={{ enabled: false }}>
@@ -52,7 +53,7 @@ export const FormModal = ({
                         variant="gradient"
                         color={submitColor}
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isSubmitDisabled}
                         className="flex items-center justify-center"
                     >
                         {isSubmitting ? (

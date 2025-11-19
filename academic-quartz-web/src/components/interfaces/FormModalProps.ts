@@ -11,4 +11,5 @@ export interface FormModalProps {
     cancelText?: string;
     submitColor?: "pink" | "green" | "purple" | "blue";
     isSubmitting?: boolean;
+    isSubmitDisabled?: boolean;
 }
