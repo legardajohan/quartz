@@ -19,8 +19,8 @@ export const ConfirmationModal = ({
     confirmColor = "pink",
 }: ConfirmationModalProps) => {
     return (
-        <Dialog open={open} size="xs" handler={onClose}>
-            <DialogHeader>{title}</DialogHeader>
+        <Dialog open={open} size="sm" className="px-2 py-1" handler={onClose}>
+            <DialogHeader className="text-purple-900">{title}</DialogHeader>
             <DialogBody>
                 {typeof body === "string" ? <p className="text-gray-600">{body}</p> : body}
             </DialogBody>

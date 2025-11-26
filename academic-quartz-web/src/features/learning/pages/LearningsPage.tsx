@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
@@ -72,10 +72,10 @@ export default function LearningsPage() {
     handleCloseModals();
   };
 
-  const handleFormChange = (formData: Omit<NewLearning, grade>, isDirty: boolean) => {
+  const handleFormChange = useCallback((formData: Omit<NewLearning, 'grade'>, isDirty: boolean) => {
     setLearningFormData(formData);
     setIsFormDirty(isDirty);
-  }
+  }, []);
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

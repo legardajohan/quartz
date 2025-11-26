@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { apiGet, apiPost, apiPut, apiDelete } from '../../api/apiClient';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../../api/apiClient';
 import type { 
   LearningState, 
   LearningsResponse, 
@@ -49,7 +49,7 @@ export const useLearningStore = create<LearningState>((set) => ({
   updateLearning: async (id: string, learningData: UpdateLearning) => {
     set({ isSubmitting: true });
     try {
-      const updateLearning = await apiPut<Learning>(`/learning/${id}`, learningData);
+      const updateLearning = await apiPatch<Learning>(`/learnings/${id}`, learningData);
       set((state) => ({
         learnings: state.learnings.map((learning) => 
           learning._id === id ? updateLearning : learning

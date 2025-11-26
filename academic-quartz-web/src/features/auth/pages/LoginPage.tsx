@@ -1,17 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../useAuthStore';
 import { PresentationPanel } from '../components/PresentationPanel';
 import { LoginPanel } from '../components/LoginPanel';
 import circleBg from '../../../assets/images/circle-bg.png';
 
-export default function LoginForm() {
+export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+  const { login, isLoading, error, token } = useAuthStore();
 
-  const { login, isLoading, error } = useAuthStore();
+  useEffect(() => {
+    if (token) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [token, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
