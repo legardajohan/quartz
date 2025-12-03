@@ -33,7 +33,8 @@ async function getSessionData(user: SafeUser): Promise<ISessionData> {
 export async function login(email: string, password: string) {
     try {
         const user = await User.findOne({ email }).select('+passwordHash') as IUserDocument | null;
-        if (!user) return null;
+
+        if (!user || !user.passwordHash) return null;
 
         const isValid = await bcrypt.compare(password, user.passwordHash);
 

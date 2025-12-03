@@ -5,6 +5,7 @@ import authRoutes from './features/auth/auth.routes';
 import learningRoutes from './features/learning/learning.routes';
 import periodRoutes from './features/period/period.routes';
 import subjectRoutes from './features/subject/subject.routes';
+import checklistTemplatesRoutes from './features/checklist-template/checklist-template.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -27,6 +28,8 @@ app.use('/api/learnings', learningRoutes);
 app.use('/api/periods', periodRoutes);
 // Routes for subjects
 app.use('/api/subjects', subjectRoutes);
+// Routes for checklist templates
+app.use('/api/checklist-templates', checklistTemplatesRoutes);
 
 // Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;
