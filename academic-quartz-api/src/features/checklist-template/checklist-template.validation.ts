@@ -12,10 +12,16 @@ export const createTemplateSchema = z.object({
   }).strict(),
 });
 
-export const getTemplateByIdSchema = z.object({
+export const getTemplatesByTeacherSchema = z.object({
+  query: z.object({
+    periodId: z.string().refine((val) => objectIdRegex.test(val), {
+      message: 'El ID del período no es un ObjectId válido.',
+    }).optional(),
+  }).strict().optional(),
+
   params: z.object({
     id: z.string().refine((val) => objectIdRegex.test(val), {
       message: 'El ID del template no es un ObjectId válido.',
-    }),
-  }),
+    }).optional(), 
+  }).optional(),
 });

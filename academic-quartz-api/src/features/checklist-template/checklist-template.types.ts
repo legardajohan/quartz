@@ -34,3 +34,9 @@ export interface IChecklistTemplateResponse {
     }[];
   }[];
 }
+
+export interface IChecklistTemplateForSession {
+  _id: string;
+  name: string;
+  periodId: string;
+}

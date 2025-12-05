@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createChecklistTemplate, getChecklistTemplateById } from './checklist-template.service';
+import { createChecklistTemplate, getChecklistTemplatesByTeacherId } from './checklist-template.service';
 
 export const createTemplateController = async (req: Request, res: Response) => {
     try {
@@ -15,16 +15,21 @@ export const createTemplateController = async (req: Request, res: Response) => {
     }
 };
 
-export const getTemplateByIdController = async (req: Request, res: Response) => {
+export const getTemplatesByTeacherController = async (req: Request, res: Response) => {
     try {
-        const { institutionId } = req.user!;
+        const { institutionId, _id: teacherId } = req.user!;
         const { id: templateId } = req.params;
-        const template = await getChecklistTemplateById(templateId, institutionId.toString());
+        const templates = await getChecklistTemplatesByTeacherId(
+            teacherId.toString(), 
+            institutionId.toString(), 
+            templateId
+        );
 
-        if (!template) {
+        if (templateId && templates.length === 0) {
             return res.status(404).json({ message: 'Checklist template not found.' });
         }
-        res.status(200).json(template);
+
+        res.status(200).json(templates);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching checklist template', error: error instanceof Error ? error.message : String(error) });
     }

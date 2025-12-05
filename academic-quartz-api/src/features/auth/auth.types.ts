@@ -44,4 +44,9 @@ export interface ISessionData {
     _id: string;
     name: string;
   }[];
+  checklistTemplates: {
+    _id: string;
+    periodId: string;
+    name: string;
+  }[];
 }

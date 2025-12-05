@@ -4,13 +4,18 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getPeriodsByInstitution } from '../period/period.service';
 import { getSubjectsByInstitution } from '../subject/subject.service';
+import { getChecklistTemplatesForSession } from '../checklist-template/checklist-template.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
 async function getSessionData(user: SafeUser): Promise<ISessionData> {
-    const [periods, subjects] = await Promise.all([
-        getPeriodsByInstitution(user.institutionId.toString()),
-        getSubjectsByInstitution(user.institutionId.toString())
+    const institutionId = user.institutionId.toString();
+    const userId = user._id.toString();
+
+    const [periods, subjects, checklistTemplates] = await Promise.all([
+        getPeriodsByInstitution(institutionId),
+        getSubjectsByInstitution(institutionId),
+        getChecklistTemplatesForSession(userId, institutionId),
     ]);
 
     const sessionData: ISessionData = {
@@ -24,7 +29,8 @@ async function getSessionData(user: SafeUser): Promise<ISessionData> {
             schoolId: user.schoolId.toString(),
         },
         periods: periods.map(p => ({ _id: p._id.toString(), name: p.name, isActive: p.isActive })),
-        subjects: subjects.map(s => ({ _id: s._id.toString(), name: s.name }))
+        subjects: subjects.map(s => ({ _id: s._id.toString(), name: s.name })),
+        checklistTemplates: checklistTemplates,
     };
 
     return sessionData;
