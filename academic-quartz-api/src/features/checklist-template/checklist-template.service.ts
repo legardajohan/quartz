@@ -23,6 +23,45 @@ function populateChecklistTemplateDetails<T>(query: Query<T, IChecklistTemplateD
         ]);
 }
 
+export const getChecklistTemplatesByTeacherId = async (
+    teacherId: string,
+    institutionId: string,
+    templateId?: string
+): Promise<IChecklistTemplateResponse[]> => {
+    const query: FilterQuery<IChecklistTemplateDocument> = {
+        teacherId: new Types.ObjectId(teacherId),
+        institutionId: new Types.ObjectId(institutionId),
+    };
+
+    if (templateId) query._id = new Types.ObjectId(templateId);
+
+    const template = await populateChecklistTemplateDetails(
+        ChecklistTemplateModel.find(query)
+    )
+        .lean<IChecklistTemplateResponse[]>()
+        .exec();
+
+    return template;
+};
+
+export const getChecklistTemplatesForSession = async (
+    teacherId: string,
+    institutionId: string
+): Promise<IChecklistTemplateForSession[]> => {
+    const templates = await ChecklistTemplateModel.find({
+        teacherId,
+        institutionId,
+    })
+        .select('_id name periodId')
+        .lean();
+
+    return templates.map(t => ({
+        _id: t._id.toString(),
+        name: t.name,
+        periodId: t.periodId.toString(),
+    }));
+};
+
 export const createChecklistTemplate = async (
     data: CreateChecklistTemplateData,
     institutionId: string,
@@ -69,43 +108,4 @@ export const createChecklistTemplate = async (
     }
 
     return populatedTemplate;
-};
-
-export const getChecklistTemplatesByTeacherId = async (
-    teacherId: string,
-    institutionId: string,
-    templateId?: string
-): Promise<IChecklistTemplateResponse[]> => {
-    const query: FilterQuery<IChecklistTemplateDocument> = {
-        teacherId: new Types.ObjectId(teacherId),
-        institutionId: new Types.ObjectId(institutionId),
-    };
-
-    if (templateId) query._id = new Types.ObjectId(templateId);
-
-    const template = await populateChecklistTemplateDetails(
-        ChecklistTemplateModel.find(query)
-    )
-        .lean<IChecklistTemplateResponse[]>()
-        .exec();
-
-    return template;
-};
-
-export const getChecklistTemplatesForSession = async (
-    teacherId: string,
-    institutionId: string
-): Promise<IChecklistTemplateForSession[]> => {
-    const templates = await ChecklistTemplateModel.find({
-        teacherId,
-        institutionId,
-    })
-        .select('_id name periodId')
-        .lean();
-
-    return templates.map(t => ({
-        _id: t._id.toString(),
-        name: t.name,
-        periodId: t.periodId.toString(),
-    }));
 };

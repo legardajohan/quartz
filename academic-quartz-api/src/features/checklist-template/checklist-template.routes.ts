@@ -8,20 +8,20 @@ import { createTemplateSchema, getTemplatesByTeacherSchema } from './checklist-t
 const router = Router();
 const allowedRoles = ['Jefe de Área', 'Docente'];
 
-router.post(
-  '/',
-  authenticateJWT,
-  authorize(allowedRoles),
-  validate(createTemplateSchema),
-  createTemplateController
-);
-
 router.get(
   '/',
   authenticateJWT,
   authorize(allowedRoles),
   validate(getTemplatesByTeacherSchema),
   getTemplatesByTeacherController
+);
+
+router.post(
+  '/',
+  authenticateJWT,
+  authorize(allowedRoles),
+  validate(createTemplateSchema),
+  createTemplateController
 );
 
 export default router;

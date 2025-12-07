@@ -15,6 +15,12 @@ export interface Period {
   isActive: boolean;
 }
 
+export interface ChecklistTemplates {
+    _id: string;
+    periodId: string;
+    name: string;
+  }
+
 export interface User {
   _id: string;
   institutionId: string;
@@ -44,4 +50,5 @@ export interface ISessionData {
     >;
   periods: Period[];
   subjects: Subject[];
+  checklistTemplates: ChecklistTemplates[];
 }
