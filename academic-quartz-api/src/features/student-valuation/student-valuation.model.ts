@@ -24,7 +24,7 @@ export interface IStudentValuationDocument extends Document {
   teacherId: Types.ObjectId;
   checklistTemplateId: Types.ObjectId;
   periodId: Types.ObjectId;
-  globalStatus: 'Completado' | 'En desarrollo' | 'No iniciado';
+  globalStatus: 'Completado' | 'En desarrollo' | 'Sin iniciar';
   valuationsBySubject: IValuationBySubject[];
 }
 
@@ -49,7 +49,7 @@ const studentValuationSchema = new Schema<IStudentValuationDocument>({
   teacherId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   checklistTemplateId: { type: Schema.Types.ObjectId, ref: 'ChecklistTemplate', required: true },
   periodId: { type: Schema.Types.ObjectId, ref: 'Period', required: true },
-  globalStatus: { type: String, enum: ['Valorado', 'Valorando', 'No iniciado'], default: 'No iniciado', index: true },
+  globalStatus: { type: String, enum: ['Completado', 'En desarrollo', 'Sin iniciar'], default: 'Sin iniciar', index: true },
   valuationsBySubject: [valuationBySubjectSchema]
 }, {
   timestamps: true,

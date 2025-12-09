@@ -6,20 +6,17 @@ import learningRoutes from './features/learning/learning.routes';
 import periodRoutes from './features/period/period.routes';
 import subjectRoutes from './features/subject/subject.routes';
 import checklistTemplatesRoutes from './features/checklist-template/checklist-template.routes';
+import studentValuationRoutes from './features/student-valuation/student-valuation.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
-
 const app = express();
-
 app.use(cors({
   origin: 'http://localhost:5173', // Frontend URL
-  credentials: true, 
+  credentials: true,
 }));
-
 app.use(express.json());
-
 // Routes for authentication
 app.use('/api/auth', authRoutes);
 // Routes for expected learning
@@ -30,6 +27,8 @@ app.use('/api/periods', periodRoutes);
 app.use('/api/subjects', subjectRoutes);
 // Routes for checklist templates
 app.use('/api/checklist-templates', checklistTemplatesRoutes);
+// Routes for student valuations
+app.use('/api/student-valuations', studentValuationRoutes);
 
 // Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;
