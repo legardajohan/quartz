@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../features/auth/useAuthStore';
 
 // Environment configuration
@@ -89,7 +89,7 @@ apiClient.interceptors.response.use(
 /**
  * GET request with automatic error handling
  */
-export const apiGet = async <T = any>(url: string, config?: InternalAxiosRequestConfig): Promise<T> => {
+export const apiGet = async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
   const response = await apiClient.get<T>(url, config);
   return response.data;
 };

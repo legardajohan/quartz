@@ -5,7 +5,7 @@ import { Dashboard } from './components/layouts/Dashboard';
 import LearningsPage from './features/learning/pages/LearningsPage';
 import ConceptsPage from './features/concept/pages/ConceptsPage';
 import ChecklistsPage from './features/checklist/pages/ChecklistsPage';
-import EvaluationsPage from './features/evaluation/pages/EvaluationsPage';
+import StudentValuationsPage from './features/student-valuation/pages/StudentValuationsPage';
 import ReportsPage from './features/report/pages/ReportsPage';
 import UsersPage from './features/user/pages/UsersPage';
 import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
@@ -42,7 +42,7 @@ function App() {
             <Route path="/academico/conceptos" element={<ConceptsPage />} />
             <Route path="/academico/lista-chequeo" element={<ChecklistsPage />} />
 
-            <Route path="/evaluacion" element={<EvaluationsPage />} />
+            <Route path="/evaluacion" element={<StudentValuationsPage />} />
             <Route path="/informes" element={<ReportsPage />} />
             <Route path="/gestion/usuarios" element={<UsersPage />} />
             <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />
