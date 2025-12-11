@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
 import {
@@ -12,8 +12,13 @@ import {
     Tooltip,
 } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
+import { useAuthStore } from "../../auth/useAuthStore";
 import type { UserDto } from "../types/api";
 import { SpinnerIcon } from "../../../components/icons";
+import ValuationChecklist from "./ValuationChecklist";
+ 
+import { apiGet } from "../../../api/apiClient";
+import type { IStudentValuationDTO } from "../types";
 
 const TABLE_HEAD = [
     "ID",
@@ -24,10 +29,15 @@ const TABLE_HEAD = [
     "Lista de chequeo",
 ];
 
-export default function StudentValuationTable({ users }: { users: UserDto[] }) {
+export default function StudentValuationTable({ users, onOpenChecklist }: { users: UserDto[]; onOpenChecklist?: (studentId: string) => void }) {
     const { isLoading, error } = useStudentValuationStore();
-    const [searchTerm, setSearchTerm] = useState("");
-    const [filteredUsers, setFilteredUsers] = useState<UserDto[]>(users || []);
+        const [searchTerm, setSearchTerm] = useState("");
+        const [filteredUsers, setFilteredUsers] = useState<UserDto[]>(users || []);
+        const sessionData = useAuthStore((s) => s.sessionData);
+
+        const handleOpenChecklist = (studentId: string) => {
+            onOpenChecklist?.(studentId);
+        };
 
     // Filter users based on search term
     useEffect(() => {
@@ -149,7 +159,7 @@ export default function StudentValuationTable({ users }: { users: UserDto[] }) {
                                         </td>
                                         <td className={classes}>
                                             <Tooltip content="Ver lista de chequeo">
-                                                <IconButton variant="text">
+                                                <IconButton variant="text" onClick={() => handleOpenChecklist(user._id)}>
                                                     <ClipboardDocumentListIcon className="h-4 w-4" />
                                                 </IconButton>
                                             </Tooltip>
@@ -169,6 +179,8 @@ export default function StudentValuationTable({ users }: { users: UserDto[] }) {
                     </tbody>
                 </table>
             </CardBody>
+
+            
 
             <CardFooter className="flex items-center justify-between border-t border-blue-gray-50 p-4">
                 <Typography variant="small" color="blue-gray" className="font-normal">

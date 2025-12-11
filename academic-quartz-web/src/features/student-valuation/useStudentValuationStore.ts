@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { apiGet } from '../../api/apiClient';
+import { apiGet, apiPatch, apiPost } from '../../api/apiClient';
 import type {
   StudentValuationState,
   GetUsersResponse,
   GetUsersQuery,
-} from './types';
+} from './types/store';
 import { useAuthStore } from '../auth/useAuthStore';
+import type { StudentValuationUpdateData, IStudentValuationDTO } from './types/api';
 
 export const useStudentValuationStore = create<StudentValuationState>((set) => ({
   // Initial state
@@ -36,6 +37,20 @@ export const useStudentValuationStore = create<StudentValuationState>((set) => (
         err.response?.data?.message ||
         err.message ||
         'Falló la carga de usuarios.';
+      set({ error: errorMessage, isLoading: false });
+      console.error(err);
+      throw new Error(errorMessage);
+    }
+  },
+  // Initialize or fetch a student valuation for a given student and active period
+  updateValuation: async (valuationId: string, payload: StudentValuationUpdateData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await apiPatch<IStudentValuationDTO, StudentValuationUpdateData>(`/student-valuations/${valuationId}`, payload);
+      set({ isLoading: false });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Falló la actualización.';
       set({ error: errorMessage, isLoading: false });
       console.error(err);
       throw new Error(errorMessage);

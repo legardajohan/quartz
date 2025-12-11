@@ -12,6 +12,7 @@ export const FormModal = ({
     open,
     onClose,
     onSubmit,
+    size = "sm",
     title,
     subtitle,
     children,
@@ -22,7 +23,7 @@ export const FormModal = ({
     isSubmitDisabled,
 }: FormModalProps) => {
     return (
-        <Dialog open={open} handler={onClose} size="sm" className="px-5 py-3" dismiss={{ enabled: false }}>
+        <Dialog open={open} handler={onClose} size={size} className="px-5 py-3" dismiss={{ enabled: false }}>
             <DialogHeader className="justify-between">
                 <div>
                     <Typography variant="h4" className="text-purple-900">
