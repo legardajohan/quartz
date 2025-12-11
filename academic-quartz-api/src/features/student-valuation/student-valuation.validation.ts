@@ -16,19 +16,37 @@ const valuationBySubjectUpdateSchema = z.object({
 
 
 export const studentValuationValidation = {
-  getValuationParams: z.object({
+  initializeValuation: z.object({
     params: z.object({
       studentId: objectIdSchema,
       periodId: objectIdSchema,
     }),
   }),
 
+  getValuationById: z.object({
+    params: z.object({
+      valuationId: objectIdSchema,
+    }),
+  }),
+
+  getValuationsByStudent: z.object({
+    params: z.object({
+      studentId: objectIdSchema,
+    }),
+  }),
+
   updateValuation: z.object({
     params: z.object({
-      id: objectIdSchema,
+      valuationId: objectIdSchema,
     }),
     body: z.object({
       valuationsBySubject: z.array(valuationBySubjectUpdateSchema),
+    }),
+  }),
+
+  deleteValuation: z.object({
+    params: z.object({
+      valuationId: objectIdSchema,
     }),
   }),
 };
