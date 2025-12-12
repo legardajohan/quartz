@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import { apiGet, apiPatch, apiPost } from '../../api/apiClient';
+import { apiGet, apiPatch } from '../../api/apiClient';
 import type {
   StudentValuationState,
-  GetUsersResponse,
   GetUsersQuery,
-} from './types/store';
+  UserDto,
+  StudentValuationUpdateData,
+  IStudentValuationDTO,
+} from './types';
 import { useAuthStore } from '../auth/useAuthStore';
-import type { StudentValuationUpdateData, IStudentValuationDTO } from './types/api';
 
 export const useStudentValuationStore = create<StudentValuationState>((set) => ({
   // Initial state
@@ -30,7 +31,7 @@ export const useStudentValuationStore = create<StudentValuationState>((set) => (
     try {
       // El objeto `finalQuery` (ej: { role: 'Estudiante', schoolId: '...' })
       // es convertido a query params por nuestro apiClient
-      const data = await apiGet<GetUsersResponse>('/users', { params: finalQuery });
+      const data = await apiGet<UserDto[]>('/users', { params: finalQuery });
       set({ users: data, isLoading: false });
     } catch (err: any) {
       const errorMessage =
@@ -46,6 +47,7 @@ export const useStudentValuationStore = create<StudentValuationState>((set) => (
   updateValuation: async (valuationId: string, payload: StudentValuationUpdateData) => {
     set({ isLoading: true, error: null });
     try {
+      console.log('Datos de valoración enviados a la API:', JSON.stringify(payload, null, 2));
       const data = await apiPatch<IStudentValuationDTO, StudentValuationUpdateData>(`/student-valuations/${valuationId}`, payload);
       set({ isLoading: false });
       return data;

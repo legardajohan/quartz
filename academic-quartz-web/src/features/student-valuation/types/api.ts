@@ -1,27 +1,3 @@
-// Query params aceptados al consumir el endpoint
-export interface GetUsersQuery {
-  id?: string; // ObjectId (24 hex)
-  role?: string; // "Estudiante" -> efectivo; otros valores devuelven array vacío
-  schoolId?: string; // ObjectId (24 hex)
-}
-
-// DTO devuelto por el backend
-export interface UserDto {
-  _id: string;
-  role: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  secondLastName?: string;
-  identificationType: string;
-  identificationNumber: number;
-  phoneNumber?: string;
-  schoolId: string;
-}
-
-// Tipo de respuesta
-export type GetUsersResponse = UserDto[];
-
 export interface ILearningValuationDTO {
   learningId: string;
   learningDescription: string;
@@ -59,18 +35,17 @@ export interface IStudentValuationDTO {
   valuationsBySubject: IValuationBySubjectDTO[];
 }
 
-// ---------- Update payload types (frontend) ----------
+// Update payload types
 export type LearningValuationUpdate = {
-  learningId: string; // Types.ObjectId | string on backend, use string in frontend
+  learningId: string;
   qualitativeValuation: 'Logrado' | 'En proceso' | 'Con dificultad' | null;
 };
 
 export type ValuationBySubjectUpdate = {
-  subjectId: string; // Types.ObjectId | string on backend
+  subjectId: string;
   learningValuations: LearningValuationUpdate[];
 };
 
 export type StudentValuationUpdateData = {
   valuationsBySubject: ValuationBySubjectUpdate[];
 };
-

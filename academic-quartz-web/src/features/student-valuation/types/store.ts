@@ -1,10 +1,35 @@
-import { GetUsersQuery, UserDto, IStudentValuationDTO, StudentValuationUpdateData } from './api';
+import type { IStudentValuationDTO, StudentValuationUpdateData } from './api';
 
+// --- Tipos de Usuario (movidos aquí) ---
+// Query params aceptados al consumir el endpoint de usuarios
+export interface GetUsersQuery {
+  id?: string;
+  role?: string;
+  schoolId?: string;
+}
+
+// DTO de usuario devuelto por el backend
+export interface UserDto {
+  _id: string;
+  role: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  identificationType: string;
+  identificationNumber: number;
+  phoneNumber?: string;
+  schoolId: string;
+}
+
+// --- Interfaz del Store ---
 export interface StudentValuationState {
   users: UserDto[];
   isLoading: boolean;
   error: string | null;
   fetchUsers: (query: GetUsersQuery) => Promise<void>;
-  // Update a student valuation (only valuationsBySubject)
-  updateValuation: (valuationId: string, payload: StudentValuationUpdateData) => Promise<IStudentValuationDTO>;
+  updateValuation: (
+    valuationId: string,
+    payload: StudentValuationUpdateData
+  ) => Promise<IStudentValuationDTO>;
 }
