@@ -17,6 +17,23 @@ type ValuationChecklistProps = {
   onChange?: (learningId: string, qualitativeValuation: string | null) => void;
 };
 
+function IconCheck() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="h-full w-full scale-105"
+    >
+      <path
+        fillRule="evenodd"
+        d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
 function Icon({ id, open }: { id: number; open: number }) {
   return (
     <svg
@@ -103,27 +120,36 @@ export default function ValuationChecklist({
                     <td className={`${classes} text-center`}>
                       <Radio
                         name={`valuation-${l.learningId}`}
+                        color="green"
+                        icon={<IconCheck />}
                         id={`${l.learningId}-Logrado`}
                         checked={selected === "Logrado"}
                         onChange={() => handleSelect(l.learningId, "Logrado")}
+                        ripple={true}
                         crossOrigin="anonymous"
                       />
                     </td>
                     <td className={`${classes} text-center`}>
                       <Radio
                         name={`valuation-${l.learningId}`}
+                        color="amber"
+                        icon={<IconCheck />}
                         id={`${l.learningId}-EnProceso`}
                         checked={selected === "En proceso"}
                         onChange={() => handleSelect(l.learningId, "En proceso")}
+                        ripple={true}
                         crossOrigin="anonymous"
                       />
                     </td>
                     <td className={`${classes} text-center`}>
                       <Radio
                         name={`valuation-${l.learningId}`}
+                        color="red"
+                        icon={<IconCheck />}
                         id={`${l.learningId}-ConDificultad`}
                         checked={selected === "Con dificultad"}
                         onChange={() => handleSelect(l.learningId, "Con dificultad")}
+                        ripple={true}
                         crossOrigin="anonymous"
                       />
                     </td>
