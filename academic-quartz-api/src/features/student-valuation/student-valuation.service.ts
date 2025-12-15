@@ -8,6 +8,8 @@ import {
   StudentValuationCreationData,
   StudentValuationUpdateData,
   IStudentValuationDTO,
+  GlobalValuationStatus,
+  QualitativeValuation,
 } from './student-valuation.types';
 import AppError from '../../utils/AppError';
 import { User } from '../auth/auth.model';
@@ -24,7 +26,7 @@ import { LearningModel } from '../learning/learning.model';
  */
 interface PopulatedLearningValuation {
   learningId: { _id: Types.ObjectId; description: string } | null;
-  qualitativeValuation: 'Logrado' | 'En proceso' | 'Con dificultad' | null;
+  qualitativeValuation: QualitativeValuation | null;
   pointsObtained: number;
 }
 
@@ -45,7 +47,7 @@ interface PopulatedValuationDoc extends Document {
   // Propiedades no pobladas de IStudentValuationDocument
   teacherId: Types.ObjectId;
   checklistTemplateId: Types.ObjectId;
-  globalStatus: 'Completado' | 'En desarrollo' | 'Sin iniciar';
+  globalStatus: GlobalValuationStatus | null;
 
   // Propiedades que ahora están pobladas (con su nuevo tipo)
   studentId: {
@@ -184,7 +186,7 @@ export async function initializeStudentValuation(
   const template = await ChecklistTemplateModel.findOne({
     teacherId: new Types.ObjectId(teacherId),
     periodId: new Types.ObjectId(periodId),
-    institutionId: new Types.ObjectId(institutionId),
+    institutionId: new Types.ObjectId(institutionId), // CRITICAL: Added institutionId filter
   }).lean(); // .lean() is fine here as we only need the data to construct the new valuation.
 
   if (!template) {
@@ -210,7 +212,7 @@ export async function initializeStudentValuation(
     teacherId: new Types.ObjectId(teacherId),
     checklistTemplateId: template._id,
     periodId: new Types.ObjectId(periodId),
-    globalStatus: 'Sin iniciar',
+    globalStatus: GlobalValuationStatus.CREADO,
     valuationsBySubject,
   };
 
@@ -263,8 +265,12 @@ export async function updateStudentValuation(
   
   // Update status and calculate scores if the valuation is complete.
   if (isComplete) {
-    valuation.globalStatus = 'Completado';
-    const pointsMapping = { 'Logrado': 3, 'En proceso': 2, 'Con dificultad': 1 };
+    valuation.globalStatus = GlobalValuationStatus.EVALUADO;
+    const pointsMapping = {
+      [QualitativeValuation.LOGRADO]: 3,
+      [QualitativeValuation.EN_PROCESO]: 2,
+      [QualitativeValuation.CON_DIFICULTAD]: 1
+    };
 
     valuation.valuationsBySubject.forEach(subject => {
       let totalPoints = 0;
@@ -280,7 +286,7 @@ export async function updateStudentValuation(
         : 0;
     });
   } else {
-    valuation.globalStatus = 'En desarrollo';
+    valuation.globalStatus = GlobalValuationStatus.EVALUANDO;
   }
 
   await valuation.save();

@@ -1,58 +1,46 @@
-import React, { useEffect, useState } from "react";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
 import {
+    Avatar,
     Card,
-    CardHeader,
-    Input,
+    Chip,
     Typography,
-    CardBody,
     CardFooter,
     IconButton,
     Tooltip,
+    Button,
 } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
-import { useAuthStore } from "../../auth/useAuthStore";
-import type { UserDto } from "../types/api";
 import { SpinnerIcon } from "../../../components/icons";
-import ValuationChecklist from "./ValuationChecklist";
- 
-import { apiGet } from "../../../api/apiClient";
-import type { IStudentValuationDTO } from "../types";
+
+import type { UserDto } from "../types/store";
+import userImage from "../../../assets/images/default-user.jpg";
+
+export const ITEMS_PER_PAGE = 10;
 
 const TABLE_HEAD = [
     "ID",
-    "Nombres",
     "Apellidos",
-    "Tipo ID",
+    "Nombres",
+    "Tipo de Id.",
     "Número",
+    "Estado",
     "Lista de chequeo",
 ];
 
-export default function StudentValuationTable({ users, onOpenChecklist }: { users: UserDto[]; onOpenChecklist?: (studentId: string) => void }) {
+interface StudentValuationTableProps {
+    users: UserDto[];
+    onOpenChecklist?: (studentId: string) => void;
+    currentPage: number;
+    totalPages: number;
+    onNextPage: () => void;
+    onPrevPage: () => void;
+}
+export default function StudentValuationTable({ users, onOpenChecklist, currentPage, totalPages, onNextPage, onPrevPage }: StudentValuationTableProps) {
     const { isLoading, error } = useStudentValuationStore();
-        const [searchTerm, setSearchTerm] = useState("");
-        const [filteredUsers, setFilteredUsers] = useState<UserDto[]>(users || []);
-        const sessionData = useAuthStore((s) => s.sessionData);
 
-        const handleOpenChecklist = (studentId: string) => {
-            onOpenChecklist?.(studentId);
-        };
-
-    // Filter users based on search term
-    useEffect(() => {
-        const filtered = (users || []).filter((user) => {
-            const fullName = `${user.firstName} ${user.middleName || ""} ${user.lastName} ${user.secondLastName || ""
-                }`.toLowerCase();
-            const searchLower = searchTerm.toLowerCase();
-            return (
-                fullName.includes(searchLower) ||
-                user._id.toLowerCase().includes(searchLower) ||
-                user.identificationNumber.toString().includes(searchTerm)
-            );
-        });
-        setFilteredUsers(filtered);
-    }, [searchTerm, users]);
+    const handleOpenChecklist = (studentId: string) => {
+        onOpenChecklist?.(studentId);
+    };
 
     if (isLoading) {
         return (
@@ -71,122 +59,119 @@ export default function StudentValuationTable({ users, onOpenChecklist }: { user
     }
 
     return (
-        <Card className="h-full w-full">
-            <CardHeader floated={false} shadow={false} className="rounded-none">
-                <div className="mb-8 flex items-center justify-between gap-8">
-                    <div>
-                        <Typography variant="h5" color="blue-gray">
-                            Estudiantes
-                        </Typography>
-                        <Typography color="gray" className="mt-1 font-normal">
-                            Lista de estudiantes de la institución
-                        </Typography>
-                    </div>
-                </div>
-                <div className="w-full">
-                    <Input
-                        label="Buscar por nombre, ID o número de identificación"
-                        icon={<MagnifyingGlassIcon className="h-5 w-5" />}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        crossOrigin="anonymous"
-                    />
-                </div>
-            </CardHeader>
-
-            <CardBody className="overflow-x-auto px-0">
-                <table className="w-full min-w-max table-auto text-left">
-                    <thead>
-                        <tr>
-                            {TABLE_HEAD.map((head) => (
-                                <th
-                                    key={head}
-                                    className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4"
+        <Card className="h-full w-full overflow-auto border border-gray-200 px-6 mt-8">
+            <table className="w-full min-w-max table-auto text-left">
+                <thead>
+                    <tr>
+                        {TABLE_HEAD.map((head) => (
+                            <th
+                                key={head}
+                                className="border-b border-blue-gray-100 bg-white p-4"
+                            >
+                                <Typography
+                                    variant="small"
+                                    color="blue-gray"
+                                    className="font-bold leading-none opacity-70"
                                 >
-                                    <Typography
-                                        variant="small"
-                                        color="blue-gray"
-                                        className="font-bold leading-none opacity-70"
-                                    >
-                                        {head}
-                                    </Typography>
-                                </th>
-                            ))}
+                                    {head}
+                                </Typography>
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {users.length > 0 ? (
+                        users.map((user, index) => {
+                            const isLast = index === users.length - 1;
+                            const classes = isLast
+                                ? "p-4"
+                                : "p-4 border-b border-blue-gray-50";
+
+                            const fullFirstName = [user.firstName, user.middleName]
+                                .filter(Boolean)
+                                .join(" ");
+
+                            const fullLastName = [user.lastName, user.secondLastName]
+                                .filter(Boolean)
+                                .join(" ");
+
+                            return (
+                                <tr key={user._id} className="hover:bg-gray-50">
+                                    <td className={classes}>
+                                        <Typography variant="small" color="blue-gray" className="font-normal">
+                                            {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                                        </Typography>
+                                    </td>
+                                    <td className={classes}>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar src={userImage} alt="user_imgage" size="sm" />
+                                            <div className="flex flex-col">
+                                                <Typography variant="small" color="blue-gray" className="font-normal">
+                                            {fullLastName}
+                                        </Typography>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className={classes}>
+                                        <Typography variant="small" color="blue-gray" className="font-normal">
+                                            {fullFirstName}
+                                        </Typography>
+                                    </td>
+                                    <td className={classes}>
+                                        <Typography variant="small" color="blue-gray" className="font-normal">
+                                            {user.identificationType}
+                                        </Typography>
+                                    </td>
+                                    <td className={classes}>
+                                        <Typography variant="small" color="blue-gray" className="font-normal">
+                                            {user.identificationNumber}
+                                        </Typography>
+                                    </td>
+                                    <td className={classes}>
+                                        <div className="w-max">
+                                            <Chip
+                                                variant="ghost"
+                                                size="sm"
+                                                value="offline"
+                                                color="green"
+                                            />
+                                        </div>
+                                    </td>
+                                    <td className={classes}>
+                                        <Tooltip content="Ver lista de chequeo">
+                                            <IconButton variant="text" onClick={() => handleOpenChecklist(user._id)}>
+                                                <ClipboardDocumentListIcon className="h-4 w-4" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </td>
+                                </tr>
+                            );
+                        })
+                    ) : (
+                        <tr>
+                            <td colSpan={TABLE_HEAD.length} className="p-4 text-center">
+                                <Typography color="blue-gray" className="font-normal">
+                                    No se encontraron estudiantes
+                                </Typography>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {filteredUsers.length > 0 ? (
-                            filteredUsers.map((user, index) => {
-                                const isLast = index === filteredUsers.length - 1;
-                                const classes = isLast
-                                    ? "p-4"
-                                    : "p-4 border-b border-blue-gray-50";
-
-                                const fullFirstName = [user.firstName, user.middleName]
-                                    .filter(Boolean)
-                                    .join(" ");
-
-                                const fullLastName = [user.lastName, user.secondLastName]
-                                    .filter(Boolean)
-                                    .join(" ");
-
-                                return (
-                                    <tr key={user._id}>
-                                        <td className={classes}>
-                                            <Typography variant="small" color="blue-gray" className="font-normal">
-                                                {index + 1}
-                                            </Typography>
-                                        </td>
-                                        <td className={classes}>
-                                            <Typography variant="small" color="blue-gray" className="font-normal">
-                                                {fullFirstName}
-                                            </Typography>
-                                        </td>
-                                        <td className={classes}>
-                                            <Typography variant="small" color="blue-gray" className="font-normal">
-                                                {fullLastName}
-                                            </Typography>
-                                        </td>
-                                        <td className={classes}>
-                                            <Typography variant="small" color="blue-gray" className="font-normal">
-                                                {user.identificationType}
-                                            </Typography>
-                                        </td>
-                                        <td className={classes}>
-                                            <Typography variant="small" color="blue-gray" className="font-normal">
-                                                {user.identificationNumber}
-                                            </Typography>
-                                        </td>
-                                        <td className={classes}>
-                                            <Tooltip content="Ver lista de chequeo">
-                                                <IconButton variant="text" onClick={() => handleOpenChecklist(user._id)}>
-                                                    <ClipboardDocumentListIcon className="h-4 w-4" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        ) : (
-                            <tr>
-                                <td colSpan={TABLE_HEAD.length} className="p-4 text-center">
-                                    <Typography color="blue-gray" className="font-normal">
-                                        No se encontraron estudiantes
-                                    </Typography>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </CardBody>
-
-            
-
+                    )}
+                </tbody>
+            </table>
             <CardFooter className="flex items-center justify-between border-t border-blue-gray-50 p-4">
                 <Typography variant="small" color="blue-gray" className="font-normal">
-                    Total: {filteredUsers.length} estudiante(s)
+                    Page {currentPage} of {totalPages}
                 </Typography>
+                <div className="flex gap-2">
+                    <Button variant="outlined" size="sm" onClick={onPrevPage} disabled={currentPage === 1}>
+                        Previous
+                    </Button>
+                    <Button variant="outlined" size="sm" onClick={onNextPage} disabled={currentPage === totalPages}>
+                        Next
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
+
     );
 }

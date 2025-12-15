@@ -9,10 +9,22 @@ import { ILearningDocument } from '../learning/learning.model';
 // I. DATA TRANSFER OBJECTS (DTOs) for enriched data
 // -----------------------------------------------------------------------------
 
+export enum QualitativeValuation {
+  LOGRADO = 'Logrado',
+  EN_PROCESO = 'En proceso',
+  CON_DIFICULTAD = 'Con dificultad',
+}
+
+export enum GlobalValuationStatus {
+  EVALUADO = 'Evaluado',
+  EVALUANDO = 'Evaluando',
+  CREADO = 'Creado',
+}
+
 export interface ILearningValuationDTO {
   learningId: string;
   learningDescription: string;
-  qualitativeValuation: 'Logrado' | 'En proceso' | 'Con dificultad' | null;
+  qualitativeValuation: QualitativeValuation | null;
   pointsObtained: number;
 }
 
@@ -42,7 +54,7 @@ export interface IStudentValuationDTO {
   checklistTemplateId: string;
   periodId: string;
   periodName: string;
-  globalStatus: 'Completado' | 'En desarrollo' | 'Sin iniciar';
+  globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubjectDTO[];
 }
 
@@ -80,13 +92,13 @@ export type StudentValuationCreationData = {
     teacherId: Types.ObjectId;
     checklistTemplateId: Types.ObjectId;
     periodId: Types.ObjectId;
-    globalStatus: 'Completado' | 'En desarrollo' | 'Sin iniciar';
+    globalStatus: GlobalValuationStatus | null;
     valuationsBySubject: IValuationBySubject[];
 };
 
 type LearningValuationUpdate = {
   learningId: Types.ObjectId | string;
-  qualitativeValuation: 'Logrado' | 'En proceso' | 'Con dificultad' | null;
+  qualitativeValuation: QualitativeValuation | null;
 };
 
 type ValuationBySubjectUpdate = {

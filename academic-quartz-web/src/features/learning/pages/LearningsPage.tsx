@@ -152,36 +152,6 @@ export default function LearningsPage() {
           Gestión de Aprendizajes Esperados
         </h1>
 
-        {/* Data from session 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6 border-t border-b border-gray-200 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700">Asignaturas Disponibles</h2>
-            <ul className="list-disc list-inside mt-2 bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
-              {subjects.length > 0 ? (
-                subjects.map((subject) => (
-                  <li key={subject._id} className="text-gray-600">{subject.name}</li>
-                ))
-              ) : (
-                <li className="text-gray-500">No hay asignaturas cargadas.</li>
-              )}
-            </ul>
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700">Períodos Académicos</h2>
-            <ul className="list-disc list-inside mt-2 bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
-              {periods.length > 0 ? (
-                periods.map((period) => (
-                  <li key={period._id} className="text-gray-600">{period.name}</li>
-                ))
-              ) : (
-                <li className="text-gray-500">No hay períodos cargados.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-      */}
-
         {renderContent()}
 
         {/* Centered container for the add button */}

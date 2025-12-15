@@ -31,7 +31,7 @@ export interface IStudentValuationDTO {
   checklistTemplateId: string;
   periodId: string;
   periodName: string;
-  globalStatus: 'Completado' | 'En desarrollo' | 'Sin iniciar';
+  globalStatus: 'Evaluado' | 'Evaluando' | 'Creado' | null;
   valuationsBySubject: IValuationBySubjectDTO[];
 }
 

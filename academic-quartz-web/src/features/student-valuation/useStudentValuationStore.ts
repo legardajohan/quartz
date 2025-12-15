@@ -9,15 +9,18 @@ import type {
 } from './types';
 import { useAuthStore } from '../auth/useAuthStore';
 
-export const useStudentValuationStore = create<StudentValuationState>((set) => ({
+export const ITEMS_PER_PAGE = 10;
+
+export const useStudentValuationStore = create<StudentValuationState>((set, get) => ({
   // Initial state
   users: [],
   isLoading: false,
   error: null,
+  currentPage: 1,
 
   // Fetch users action
   fetchUsers: async (query: GetUsersQuery) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, currentPage: 1 }); // Reset page on new fetch
 
     // Si no se provee un schoolId, usamos el de la sesión actual
     const finalQuery = { ...query };
@@ -57,5 +60,25 @@ export const useStudentValuationStore = create<StudentValuationState>((set) => (
       console.error(err);
       throw new Error(errorMessage);
     }
+  },
+
+  // Pagination actions
+  nextPage: () => {
+    set((state) => {
+      const totalPages = Math.ceil(state.users.length / ITEMS_PER_PAGE);
+      if (state.currentPage < totalPages) {
+        return { currentPage: state.currentPage + 1 };
+      }
+      return {};
+    });
+  },
+
+  prevPage: () => {
+    set((state) => {
+      if (state.currentPage > 1) {
+        return { currentPage: state.currentPage - 1 };
+      }
+      return {};
+    });
   },
 }));

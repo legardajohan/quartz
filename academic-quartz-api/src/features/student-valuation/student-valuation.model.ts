@@ -1,9 +1,10 @@
 import { Schema, model, Document, Types } from 'mongoose';
+import { GlobalValuationStatus, QualitativeValuation } from './student-valuation.types';
 
 // Interface for the nested LearningValuation
 export interface ILearningValuation {
   learningId: Types.ObjectId;
-  qualitativeValuation: 'Logrado' | 'En proceso' | 'Con dificultad' | null;
+  qualitativeValuation: QualitativeValuation | null;
   pointsObtained: number;
 }
 
@@ -24,13 +25,13 @@ export interface IStudentValuationDocument extends Document {
   teacherId: Types.ObjectId;
   checklistTemplateId: Types.ObjectId;
   periodId: Types.ObjectId;
-  globalStatus: 'Completado' | 'En desarrollo' | 'Sin iniciar';
+  globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubject[];
 }
 
 const learningValuationSchema = new Schema<ILearningValuation>({
   learningId: { type: Schema.Types.ObjectId, ref: 'Learning', required: true },
-  qualitativeValuation: { type: String, enum: ['Logrado', 'En proceso', 'Con dificultad', null], default: null },
+  qualitativeValuation: { type: String, enum: [...Object.values(QualitativeValuation), null], default: null },
   pointsObtained: { type: Number, default: 0 }
 }, { _id: false });
 
@@ -49,7 +50,7 @@ const studentValuationSchema = new Schema<IStudentValuationDocument>({
   teacherId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   checklistTemplateId: { type: Schema.Types.ObjectId, ref: 'ChecklistTemplate', required: true },
   periodId: { type: Schema.Types.ObjectId, ref: 'Period', required: true },
-  globalStatus: { type: String, enum: ['Completado', 'En desarrollo', 'Sin iniciar'], default: 'Sin iniciar', index: true },
+  globalStatus: { type: String, enum: [...Object.values(GlobalValuationStatus), null], default: null, index: true },
   valuationsBySubject: [valuationBySubjectSchema]
 }, {
   timestamps: true,

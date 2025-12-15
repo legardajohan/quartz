@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import StudentValuationTable from "../components/StudentValuationTable";
 import ValuationChecklist from "../components/ValuationChecklist";
-import { useStudentValuationStore } from "../useStudentValuationStore";
+import { useStudentValuationStore, ITEMS_PER_PAGE } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { apiPost } from "../../../api/apiClient";
 import { FormModal } from "../../../components/common/FormModal";
@@ -12,7 +12,14 @@ import type {
 } from "../types";
 
 export default function StudentValuationsPage() {
-  const { fetchUsers, users, updateValuation } = useStudentValuationStore();
+  const { 
+    fetchUsers, 
+    users, 
+    updateValuation, 
+    currentPage, 
+    nextPage, 
+    prevPage 
+  } = useStudentValuationStore();
   const { sessionData } = useAuthStore();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -31,6 +38,13 @@ export default function StudentValuationsPage() {
       });
     }
   }, [sessionData?.user.schoolId, fetchUsers]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedUsers = users.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+
 
   const handleOpenChecklist = async (studentId: string) => {
     const activePeriod = sessionData?.periods?.find((p) => p.isActive);
@@ -86,9 +100,16 @@ export default function StudentValuationsPage() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
+        <h1 className="text-2xl font-semibold text-purple-900">
+          Evaluación de estudiantes
+        </h1>
       <StudentValuationTable
-        users={users}
+        users={paginatedUsers}
         onOpenChecklist={handleOpenChecklist}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onNextPage={nextPage}
+        onPrevPage={prevPage}
       />
 
       {valuationDto && (

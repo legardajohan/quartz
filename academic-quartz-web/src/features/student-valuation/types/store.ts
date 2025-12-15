@@ -27,9 +27,12 @@ export interface StudentValuationState {
   users: UserDto[];
   isLoading: boolean;
   error: string | null;
+  currentPage: number; // Para paginación
   fetchUsers: (query: GetUsersQuery) => Promise<void>;
   updateValuation: (
     valuationId: string,
     payload: StudentValuationUpdateData
   ) => Promise<IStudentValuationDTO>;
+  nextPage: () => void; // Para paginación
+  prevPage: () => void; // Para paginación
 }
