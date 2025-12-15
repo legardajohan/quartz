@@ -42,6 +42,31 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
         onOpenChecklist?.(studentId);
     };
 
+    const getChipProps = (status: string | null | undefined) => {
+        let chipValue: string;
+        let chipColor: "green" | "blue" | "gray" | "red" | "yellow" | "amber" | "orange" | "deep-orange" | "brown" | "light-green" | "deep-purple" | "indigo" | "purple" | "pink" | "teal" | "cyan" | "light-blue";
+
+        switch (status?.toUpperCase()) {
+            case "EVALUADO":
+                chipValue = "Evaluado";
+                chipColor = "green";
+                break;
+            case "EVALUANDO":
+                chipValue = "Evaluando";
+                chipColor = "blue";
+                break;
+            case "CREADO":
+                chipValue = "Creado";
+                chipColor = "gray";
+                break;
+            default:
+                chipValue = "Sin iniciar";
+                chipColor = "gray";
+                break;
+        }
+        return { chipValue, chipColor };
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -129,12 +154,17 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                     </td>
                                     <td className={classes}>
                                         <div className="w-max">
-                                            <Chip
-                                                variant="ghost"
-                                                size="sm"
-                                                value="offline"
-                                                color="green"
-                                            />
+                                            {(() => {
+                                                const { chipValue, chipColor } = getChipProps(user.valuations[0]?.status);
+                                                return (
+                                                    <Chip
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        value={chipValue}
+                                                        color={chipColor}
+                                                    />
+                                                );
+                                            })()}
                                         </div>
                                     </td>
                                     <td className={classes}>

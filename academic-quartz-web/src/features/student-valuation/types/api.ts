@@ -1,7 +1,17 @@
+export type GlobalValuationStatus = 'Evaluado' | 'Evaluando' | 'Creado';
+
+export type QualitativeValuation = 'Logrado' | 'En proceso' | 'Con dificultad';
+
+export interface ValuationSummary {
+    _id: string;
+    periodId: string;
+    status: GlobalValuationStatus | null;
+}
+
 export interface ILearningValuationDTO {
   learningId: string;
   learningDescription: string;
-  qualitativeValuation: 'Logrado' | 'En proceso' | 'Con dificultad' | null;
+  qualitativeValuation: QualitativeValuation | null;
   pointsObtained: number;
 }
 
@@ -31,14 +41,14 @@ export interface IStudentValuationDTO {
   checklistTemplateId: string;
   periodId: string;
   periodName: string;
-  globalStatus: 'Evaluado' | 'Evaluando' | 'Creado' | null;
+  globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubjectDTO[];
 }
 
 // Update payload types
 export type LearningValuationUpdate = {
   learningId: string;
-  qualitativeValuation: 'Logrado' | 'En proceso' | 'Con dificultad' | null;
+  qualitativeValuation: QualitativeValuation | null;
 };
 
 export type ValuationBySubjectUpdate = {

@@ -1,4 +1,4 @@
-import type { IStudentValuationDTO, StudentValuationUpdateData } from './api';
+import type { IStudentValuationDTO, StudentValuationUpdateData, ValuationSummary } from './api';
 
 // --- Tipos de Usuario (movidos aquí) ---
 // Query params aceptados al consumir el endpoint de usuarios
@@ -20,6 +20,7 @@ export interface UserDto {
   identificationNumber: number;
   phoneNumber?: string;
   schoolId: string;
+  valuations: ValuationSummary[];
 }
 
 // --- Interfaz del Store ---

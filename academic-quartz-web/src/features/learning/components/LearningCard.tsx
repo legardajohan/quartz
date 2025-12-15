@@ -67,7 +67,6 @@ const LearningCard = ({ learning, onEdit, onDelete }: LearningCardProps) => {
           <Tooltip 
             content="Editar aprendizaje" 
             className="py-1 px-2 text-xs max-w-xs bg-gray-800" 
-            placement="bottom"
             open={openEditTooltip} 
           >
             <div 
@@ -87,7 +86,6 @@ const LearningCard = ({ learning, onEdit, onDelete }: LearningCardProps) => {
           <Tooltip 
             content="Eliminar aprendizaje" 
             className="py-1 px-2 text-xs max-w-xs bg-gray-800"
-            placement="bottom"
             open={openDeleteTooltip}
           >
             <div
