@@ -1,4 +1,4 @@
-export type GlobalValuationStatus = 'Evaluado' | 'Evaluando' | 'Creado';
+export type GlobalValuationStatus = 'Evaluado' | 'Evaluando' | 'Por diligenciar';
 
 export type QualitativeValuation = 'Logrado' | 'En proceso' | 'Con dificultad';
 

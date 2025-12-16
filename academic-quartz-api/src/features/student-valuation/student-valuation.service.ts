@@ -212,7 +212,7 @@ export async function initializeStudentValuation(
     teacherId: new Types.ObjectId(teacherId),
     checklistTemplateId: template._id,
     periodId: new Types.ObjectId(periodId),
-    globalStatus: GlobalValuationStatus.CREADO,
+    globalStatus: GlobalValuationStatus.CREATED,
     valuationsBySubject,
   };
 
@@ -265,11 +265,11 @@ export async function updateStudentValuation(
   
   // Update status and calculate scores if the valuation is complete.
   if (isComplete) {
-    valuation.globalStatus = GlobalValuationStatus.EVALUADO;
+    valuation.globalStatus = GlobalValuationStatus.COMPLETED;
     const pointsMapping = {
-      [QualitativeValuation.LOGRADO]: 3,
-      [QualitativeValuation.EN_PROCESO]: 2,
-      [QualitativeValuation.CON_DIFICULTAD]: 1
+      [QualitativeValuation.ACHIEVED]: 3,
+      [QualitativeValuation.IN_PROCESS]: 2,
+      [QualitativeValuation.WITH_DIFICULTY]: 1
     };
 
     valuation.valuationsBySubject.forEach(subject => {
@@ -286,7 +286,7 @@ export async function updateStudentValuation(
         : 0;
     });
   } else {
-    valuation.globalStatus = GlobalValuationStatus.EVALUANDO;
+    valuation.globalStatus = GlobalValuationStatus.IN_PROGRESS;
   }
 
   await valuation.save();

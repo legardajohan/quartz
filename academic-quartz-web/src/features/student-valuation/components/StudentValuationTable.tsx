@@ -1,8 +1,8 @@
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import {
     Avatar,
     Card,
-    Chip,
     Typography,
     CardFooter,
     IconButton,
@@ -13,6 +13,11 @@ import { useStudentValuationStore } from "../useStudentValuationStore";
 import { SpinnerIcon } from "../../../components/icons";
 
 import type { UserDto } from "../types/store";
+import {
+    API_STATUS_TO_VALUATION_STATE,
+    ValuationState,
+} from '../types/domain';
+import { ValuationStatusBadge } from './ValuationStatusBadge';
 import userImage from "../../../assets/images/default-user.jpg";
 
 export const ITEMS_PER_PAGE = 10;
@@ -42,30 +47,10 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
         onOpenChecklist?.(studentId);
     };
 
-    const getChipProps = (status: string | null | undefined) => {
-        let chipValue: string;
-        let chipColor: "green" | "blue" | "gray" | "red" | "yellow" | "amber" | "orange" | "deep-orange" | "brown" | "light-green" | "deep-purple" | "indigo" | "purple" | "pink" | "teal" | "cyan" | "light-blue";
-
-        switch (status?.toUpperCase()) {
-            case "EVALUADO":
-                chipValue = "Evaluado";
-                chipColor = "green";
-                break;
-            case "EVALUANDO":
-                chipValue = "Evaluando";
-                chipColor = "blue";
-                break;
-            case "CREADO":
-                chipValue = "Creado";
-                chipColor = "gray";
-                break;
-            default:
-                chipValue = "Sin iniciar";
-                chipColor = "gray";
-                break;
-        }
-        return { chipValue, chipColor };
-    };
+    const getValuationState = (status: string | null | undefined): ValuationState => {
+        if (!status) return 'NOT_STARTED';
+        return API_STATUS_TO_VALUATION_STATE[status] || 'NOT_STARTED';
+    }
 
     if (isLoading) {
         return (
@@ -120,6 +105,8 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                 .filter(Boolean)
                                 .join(" ");
 
+                            const valuationState = getValuationState(user.valuations[0]?.status);
+
                             return (
                                 <tr key={user._id} className="hover:bg-gray-50">
                                     <td className={classes}>
@@ -132,8 +119,8 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                             <Avatar src={userImage} alt="user_imgage" size="sm" />
                                             <div className="flex flex-col">
                                                 <Typography variant="small" color="blue-gray" className="font-normal">
-                                            {fullLastName}
-                                        </Typography>
+                                                    {fullLastName}
+                                                </Typography>
                                             </div>
                                         </div>
                                     </td>
@@ -152,25 +139,26 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                             {user.identificationNumber}
                                         </Typography>
                                     </td>
-                                    <td className={classes}>
-                                        <div className="w-max">
-                                            {(() => {
-                                                const { chipValue, chipColor } = getChipProps(user.valuations[0]?.status);
-                                                return (
-                                                    <Chip
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        value={chipValue}
-                                                        color={chipColor}
-                                                    />
-                                                );
-                                            })()}
-                                        </div>
+                                    <td className={`${classes} w-1 whitespace-nowrap`}>
+                                        <ValuationStatusBadge
+                                            status={valuationState}
+                                        />
                                     </td>
                                     <td className={classes}>
-                                        <Tooltip content="Ver lista de chequeo">
+                                        <Tooltip content={valuationState === 'NOT_STARTED' ? "Iniciar Valoración" : "Ver lista de chequeo"}>
                                             <IconButton variant="text" onClick={() => handleOpenChecklist(user._id)}>
-                                                <ClipboardDocumentListIcon className="h-4 w-4" />
+                                                {valuationState === 'NOT_STARTED' ? (
+                                                    <PlusIcon className="h-5 w-5 text-gray-400" />
+                                                ) : (
+                                                    <ClipboardDocumentListIcon
+                                                        className={`h-5 w-5 ${valuationState === 'COMPLETED'
+                                                                ? 'text-green-500'
+                                                                : valuationState === 'IN_PROGRESS'
+                                                                    ? 'text-blue-500'
+                                                                    : 'text-gray-500'
+                                                            }`}
+                                                    />
+                                                )}
                                             </IconButton>
                                         </Tooltip>
                                     </td>

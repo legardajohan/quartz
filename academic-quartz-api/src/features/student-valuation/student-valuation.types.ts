@@ -10,15 +10,15 @@ import { ILearningDocument } from '../learning/learning.model';
 // -----------------------------------------------------------------------------
 
 export enum QualitativeValuation {
-  LOGRADO = 'Logrado',
-  EN_PROCESO = 'En proceso',
-  CON_DIFICULTAD = 'Con dificultad',
+  ACHIEVED = 'Logrado',
+  IN_PROCESS = 'En proceso',
+  WITH_DIFICULTY = 'Con dificultad',
 }
 
 export enum GlobalValuationStatus {
-  EVALUADO = 'Evaluado',
-  EVALUANDO = 'Evaluando',
-  CREADO = 'Creado',
+  COMPLETED = 'Evaluado',
+  IN_PROGRESS = 'Evaluando',
+  CREATED = 'Por diligenciar',
 }
 
 export interface ILearningValuationDTO {
