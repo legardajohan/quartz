@@ -110,7 +110,7 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
       learningValuations,
     };
   });
-  
+
   // 3. Construct and return the final DTO.
   return {
     _id: populatedDoc._id.toString(),
@@ -192,7 +192,7 @@ export async function initializeStudentValuation(
   if (!template) {
     throw new AppError('No existe una plantilla de lista de chequeo para este periodo. Por favor, cree una primero.', 404);
   }
-  
+
   // Construct the initial valuation from the template.
   const valuationsBySubject = template.subjects.map(subject => ({
     subjectId: subject.subjectId,
@@ -200,7 +200,7 @@ export async function initializeStudentValuation(
     totalSubjectScore: 0,
     subjectPercentage: 0,
     learningValuations: subject.learnings.map(learning => ({
-      learningId: (learning as unknown as {_id: Types.ObjectId})._id,
+      learningId: (learning as unknown as { _id: Types.ObjectId })._id,
       qualitativeValuation: null,
       pointsObtained: 0,
     })),
@@ -217,7 +217,7 @@ export async function initializeStudentValuation(
   };
 
   const newStudentValuation = await create(StudentValuationModel, payload);
-  
+
   // Directly populate and map the newly created document without a second DB query.
   return populateAndMapValuation(newStudentValuation);
 }
@@ -245,9 +245,7 @@ export async function updateStudentValuation(
     ])
   );
 
-  let isComplete = true;
-
-  // Apply updates to the document.
+  // 1. Apply updates to the document from the payloads
   valuation.valuationsBySubject.forEach(subject => {
     const subjectUpdateMap = updateMap.get(subject.subjectId.toString());
     if (!subjectUpdateMap) return;
@@ -257,40 +255,56 @@ export async function updateStudentValuation(
       if (subjectUpdateMap.has(learningIdStr)) {
         learningVal.qualitativeValuation = subjectUpdateMap.get(learningIdStr) ?? null;
       }
-      if (learningVal.qualitativeValuation === null) {
-        isComplete = false;
-      }
     });
   });
-  
-  // Update status and calculate scores if the valuation is complete.
-  if (isComplete) {
-    valuation.globalStatus = GlobalValuationStatus.COMPLETED;
-    const pointsMapping = {
-      [QualitativeValuation.ACHIEVED]: 3,
-      [QualitativeValuation.IN_PROCESS]: 2,
-      [QualitativeValuation.WITH_DIFICULTY]: 1
-    };
 
-    valuation.valuationsBySubject.forEach(subject => {
-      let totalPoints = 0;
-      subject.learningValuations.forEach(lv => {
-        const points = lv.qualitativeValuation ? pointsMapping[lv.qualitativeValuation] : 0;
-        lv.pointsObtained = points;
-        totalPoints += points;
-      });
+  // 2. Recalculate Global Status & Scores based on the FULL document state
+  let totalLearnings = 0;
+  let valuatedLearnings = 0;
 
-      subject.totalSubjectScore = totalPoints;
-      subject.subjectPercentage = subject.maxSubjectScore > 0 
-        ? (totalPoints / subject.maxSubjectScore) * 100 
-        : 0;
+  const pointsMapping = {
+    [QualitativeValuation.ACHIEVED]: 3,
+    [QualitativeValuation.IN_PROCESS]: 2,
+    [QualitativeValuation.WITH_DIFICULTY]: 1
+  };
+
+  valuation.valuationsBySubject.forEach(subject => {
+    let totalPoints = 0;
+
+    subject.learningValuations.forEach(lv => {
+      totalLearnings++;
+
+      // Update points for EVERY learning that has a valuation
+      const points = lv.qualitativeValuation ? pointsMapping[lv.qualitativeValuation] : 0;
+      lv.pointsObtained = points;
+      totalPoints += points;
+
+      if (lv.qualitativeValuation !== null) {
+        valuatedLearnings++;
+      }
     });
+
+    // Update subject aggregates
+    subject.totalSubjectScore = totalPoints;
+    subject.subjectPercentage = subject.maxSubjectScore > 0
+      ? (totalPoints / subject.maxSubjectScore) * 100
+      : 0;
+  });
+
+  // 3. Determine Global Status
+  if (valuatedLearnings === 0) {
+    // If it was already CREATED, keep it. If it was modified but cleared, technically it's CREATED or IN_PROGRESS. 
+    // Let's stick to CREATED if absolutely nothing is valuated, or IN_PROGRESS if we want to be strict.
+    // Requirement says: "si solo esta creado sin valorar ninguno esta en Por diligenciar" -> CREATED
+    valuation.globalStatus = GlobalValuationStatus.CREATED;
+  } else if (valuatedLearnings === totalLearnings && totalLearnings > 0) {
+    valuation.globalStatus = GlobalValuationStatus.COMPLETED;
   } else {
     valuation.globalStatus = GlobalValuationStatus.IN_PROGRESS;
   }
 
   await valuation.save();
-  
+
   // Directly populate and map the updated document without a second DB query.
   return populateAndMapValuation(valuation);
 }

@@ -43,6 +43,7 @@ function App() {
             <Route path="/academico/lista-chequeo" element={<ChecklistsPage />} />
 
             <Route path="/evaluacion" element={<StudentValuationsPage />} />
+            <Route path="/evaluacion/:studentId" element={<StudentValuationsPage />} />
             <Route path="/informes" element={<ReportsPage />} />
             <Route path="/gestion/usuarios" element={<UsersPage />} />
             <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />

@@ -26,14 +26,18 @@ export interface UserDto {
 // --- Interfaz del Store ---
 export interface StudentValuationState {
   users: UserDto[];
+  currentValuation: IStudentValuationDTO | null;
   isLoading: boolean;
   error: string | null;
   currentPage: number; // Para paginación
   fetchUsers: (query: GetUsersQuery) => Promise<void>;
+  fetchValuation: (studentId: string, periodId: string) => Promise<void>;
+  clearValuation: () => void;
   updateValuation: (
     valuationId: string,
     payload: StudentValuationUpdateData
   ) => Promise<IStudentValuationDTO>;
+  deleteValuation: (valuationId: string) => Promise<void>;
   nextPage: () => void; // Para paginación
   prevPage: () => void; // Para paginación
 }
