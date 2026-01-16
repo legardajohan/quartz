@@ -107,15 +107,20 @@ export default function StudentValuationDetail() {
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex flex-col w-full gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-2">
                     <IconButton variant="text" size="md" onClick={() => navigate('/evaluacion')}>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                         </svg>
                     </IconButton>
-                    <h1 className="text-2xl font-semibold text-purple-900">
-                        Evaluación de Lista de Chequeo
-                    </h1>
+                    <div className="flex">
+                        <h1 className="text-2xl font-semibold text-purple-900 mr-1">
+                            Evaluación de Lista de Chequeo
+                        </h1>
+                        <div className="bg-pink-500 rounded-md text-white font-medium text-sm px-2 py-2 h-[18px] flex items-center justify-center w-fit">
+                            {localValuation.periodName}
+                        </div>
+                    </div>
                 </div>
                 <div className="flex w-full items-center justify-between mx-2 mb-6">
                     <div className="flex items-center gap-4">

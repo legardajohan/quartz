@@ -1,69 +1,41 @@
-# React + TypeScript + Vite
+# Quartz
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Plataforma de gestión académica e institucional diseñada para optimizar los procesos de evaluación y seguimiento estudiantil.
 
-Currently, two official plugins are available:
+## 🚀 Características Principales
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 1. Panel de Control (Dashboard)
+Una vista centralizada que ofrece acceso rápido a los módulos principales del sistema, como gestión académica, informes y configuración de usuarios.
+![Dashboard](docs/assets/dashboard.png)
 
-## Expanding the ESLint configuration
+### 2. Gestión de Evaluaciones
+Permite a los docentes realizar el seguimiento académico de los estudiantes de manera eficiente, visualizando el estado de las valoraciones por asignatura.
+![Listado de Evaluaciones](docs/assets/valuation_list.png)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 3. Evaluación Detallada (Lista de Chequeo)
+Interfaz intuitiva para la valoración de aprendizajes específicos. Incluye:
+-   **Indicadores de estado**: Colores dinámicos para distinguir asignaturas completadas, en progreso o pendientes.
+-   **Protección de datos**: Sistema de guardado y alertas para evitar la pérdida de cambios no guardados.
+-   **Navegación fluida**: Diseño optimizado para facilitar la carga de notas.
+![Detalle de Evaluación](docs/assets/valuation_detail.png)
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ Tecnología
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+Este proyecto está construido con:
+-   **React** (Vite)
+-   **TypeScript**
+-   **Tailwind CSS** (@material-tailwind/react)
+-   **Zustand** (Gestión de estado)
+-   **React Router Dom** (Enrutamiento avanzado)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📦 Instalación y Uso
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1.  Clonar el repositorio.
+2.  Instalar dependencias:
+    ```bash
+    npm install
+    ```
+3.  Iniciar el servidor de desarrollo:
+    ```bash
+    npm run dev
+    ```
