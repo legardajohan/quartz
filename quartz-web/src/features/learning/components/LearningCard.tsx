@@ -64,27 +64,27 @@ const LearningCard = ({ learning, onEdit, onDelete }: LearningCardProps) => {
         </p>
 
         <div className="flex-shrink-0 flex gap-2 items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Tooltip 
-            content="Editar aprendizaje" 
-            className="py-1 px-2 text-xs max-w-xs bg-gray-800" 
-            open={openEditTooltip} 
+          <Tooltip
+            content="Editar aprendizaje"
+            className="py-1 px-2 text-xs max-w-xs bg-gray-800"
+            open={openEditTooltip}
           >
-            <div 
-              onMouseEnter={handleEditMouseEnter} 
+            <div
+              onMouseEnter={handleEditMouseEnter}
               onMouseLeave={handleEditMouseLeave}
               className="inline-block"
             >
-                <IconButton 
-                  variant="text" 
-                  className="text-gray-400 hover:text-purple-400 transition-colors duration-200" 
-                  onClick={() => onEdit(learning._id)}
-                >
-                  <PencilIcon className="h-5 w-5"/>
-                </IconButton>
+              <IconButton
+                variant="text"
+                className="text-gray-400 hover:text-green-400 transition-colors duration-200"
+                onClick={() => onEdit(learning._id)}
+              >
+                <PencilIcon className="h-6 w-6" />
+              </IconButton>
             </div>
           </Tooltip>
-          <Tooltip 
-            content="Eliminar aprendizaje" 
+          <Tooltip
+            content="Eliminar aprendizaje"
             className="py-1 px-2 text-xs max-w-xs bg-gray-800"
             open={openDeleteTooltip}
           >
@@ -93,12 +93,12 @@ const LearningCard = ({ learning, onEdit, onDelete }: LearningCardProps) => {
               onMouseLeave={handleDeleteMouseLeave}
               className="inline-block"
             >
-              <IconButton 
-                variant="text" 
-                className="text-gray-400 hover:text-pink-400 transition-colors duration-200" 
+              <IconButton
+                variant="text"
+                className="text-gray-400 hover:text-pink-400 transition-colors duration-200"
                 onClick={() => onDelete(learning._id)}
               >
-                <TrashIcon className="h-5 w-5"/>
+                <TrashIcon className="h-6 w-6" />
               </IconButton>
             </div>
           </Tooltip>

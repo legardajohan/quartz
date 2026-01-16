@@ -8,5 +8,7 @@ export interface ConfirmationModalProps {
     body: React.ReactNode;
     confirmText?: string;
     cancelText?: string;
+    onDiscard?: () => void;
+    discardText?: string;
     confirmColor?: "pink" | "green" | "purple" | "blue";
 }

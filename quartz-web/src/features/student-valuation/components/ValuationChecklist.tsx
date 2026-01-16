@@ -7,7 +7,19 @@ import {
   Typography,
   Radio,
 } from "@material-tailwind/react";
+import {
+  LightBulbIcon,
+  UserIcon,
+  HeartIcon,
+  ChatBubbleLeftRightIcon,
+  PaintBrushIcon,
+  ScaleIcon,
+  BookOpenIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
 import type { IValuationBySubjectDTO, ILearningValuationDTO } from "../types";
+import { ValuationState } from "../types/domain";
+import { ValuationStatusBadge } from "./ValuationStatusBadge";
 
 type ValuationChecklistProps = {
   subject: IValuationBySubjectDTO;
@@ -15,6 +27,23 @@ type ValuationChecklistProps = {
   open?: boolean;
   onToggle?: () => void;
   onChange?: (learningId: string, qualitativeValuation: string | null) => void;
+};
+
+// Icon mapping based on subject name
+// Icon mapping based on subject name
+const getSubjectIcon = (subjectName: string, colorClass: string) => {
+  const lowerName = subjectName.toLowerCase();
+  const classes = `h-6 w-6 ${colorClass}`;
+
+  if (lowerName.includes("cognitiva")) return <LightBulbIcon className={classes} />;
+  if (lowerName.includes("corporal")) return <UserIcon className={classes} />;
+  if (lowerName.includes("espiritual")) return <HeartIcon className={classes} />;
+  if (lowerName.includes("comunicativa")) return <ChatBubbleLeftRightIcon className={classes} />;
+  if (lowerName.includes("estética") || lowerName.includes("estetica")) return <PaintBrushIcon className={classes} />;
+  if (lowerName.includes("ética") || lowerName.includes("etica")) return <ScaleIcon className={classes} />;
+  if (lowerName.includes("socio-afectiva")) return <SparklesIcon className={classes} />;
+
+  return <BookOpenIcon className={classes} />;
 };
 
 function IconCheck() {
@@ -34,7 +63,7 @@ function IconCheck() {
   );
 }
 
-function Icon({ id, open }: { id: number; open: number }) {
+function ArrowIcon({ id, open }: { id: number; open: number }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -42,7 +71,7 @@ function Icon({ id, open }: { id: number; open: number }) {
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
-      className={`${id === open ? "rotate-180" : ""} h-5 w-5 transition-transform`}
+      className={`${id === open ? "rotate-180" : ""} h-5 w-5 transition-transform text-gray-500`}
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
     </svg>
@@ -68,98 +97,175 @@ export default function ValuationChecklist({
 
   const learningVals: ILearningValuationDTO[] = subject?.learningValuations || [];
 
-  return (
-    <Accordion open={!!open} icon={<Icon id={1} open={open ? 1 : 0} />}>
-      <AccordionHeader onClick={onToggle}>
-        <div className="w-full flex items-center justify-between">
-          <Typography variant="h6" color="blue-gray">
-            {subject?.subjectName ?? ""}
-          </Typography>
-        </div>
-      </AccordionHeader>
-      <AccordionBody>
-        <Card className="h-full w-full overflow-auto">
-          <table className="w-full min-w-max table-auto text-left">
-            <thead>
-              <tr>
-                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-3">
-                  <Typography variant="small" color="blue-gray" className="font-bold opacity-80">
-                    Aprendizajes
-                  </Typography>
-                </th>
-                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-3 text-center">
-                  <Typography variant="small" color="blue-gray" className="font-bold opacity-80">
-                    Logrado
-                  </Typography>
-                </th>
-                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-3 text-center">
-                  <Typography variant="small" color="blue-gray" className="font-bold opacity-80">
-                    En proceso
-                  </Typography>
-                </th>
-                <th className="border-b border-blue-gray-100 bg-blue-gray-50 p-3 text-center">
-                  <Typography variant="small" color="blue-gray" className="font-bold opacity-80">
-                    Con dificultad
-                  </Typography>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {learningVals.map((l, idx) => {
-                const isLast = idx === learningVals.length - 1;
-                const classes = isLast ? "p-3" : "p-3 border-b border-blue-gray-50";
-                const selected = selections[l.learningId] ?? l.qualitativeValuation ?? null;
+  // Calculate subject status locally
+  const totalLearnings = learningVals.length;
+  const valuedLearnings = learningVals.filter(l => {
+    const val = selections[l.learningId] ?? l.qualitativeValuation;
+    return val !== null && val !== undefined;
+  }).length;
 
-                return (
-                  <tr key={l.learningId}>
-                    <td className={classes}>
-                      <Typography variant="small" color="blue-gray" className="font-normal">
-                        {l.learningDescription ?? ""}
+  let subjectStatus: ValuationState = "NOT_STARTED";
+  if (valuedLearnings === 0) {
+    subjectStatus = "NOT_STARTED";
+  } else if (valuedLearnings === totalLearnings) {
+    subjectStatus = "COMPLETED";
+  } else {
+    subjectStatus = "IN_PROGRESS";
+  }
+
+  // Helper to get status label text
+  const getStatusLabel = () => {
+    if (subjectStatus === "COMPLETED") return "Completado";
+    if (subjectStatus === "NOT_STARTED") return "Sin iniciar";
+    return `En Progreso (${valuedLearnings}/${totalLearnings})`;
+  };
+
+  // Determine styling based on status
+  const getStatusStyles = () => {
+    switch (subjectStatus) {
+      case "COMPLETED":
+        return {
+          iconColor: "text-green-500",
+          iconBg: "bg-green-50",
+          itemBorder: open ? "border-green-100" : "border-gray-200"
+        };
+      case "IN_PROGRESS":
+        return {
+          iconColor: "text-blue-500",
+          iconBg: "bg-blue-50",
+          itemBorder: open ? "border-blue-100" : "border-gray-200"
+        };
+      default:
+        return {
+          iconColor: "text-gray-500",
+          iconBg: "bg-gray-100",
+          itemBorder: "border-gray-200"
+        };
+    }
+  };
+
+  const statusStyles = getStatusStyles();
+
+  return (
+    <div className={`rounded-xl border ${statusStyles.itemBorder} bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300`}>
+      <Accordion open={!!open} icon={<ArrowIcon id={1} open={open ? 1 : 0} />}>
+        <AccordionHeader
+          onClick={onToggle}
+          className={`p-4 ${open ? 'border-b border-gray-100' : 'border-b-0'} hover:bg-gray-50/50 transition-colors rounded-xl`}
+        >
+          <div className="flex w-full items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {/* Icon Circle */}
+              <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${statusStyles.iconBg}`}>
+                {getSubjectIcon(subject?.subjectName ?? "", statusStyles.iconColor)}
+              </div>
+
+              {/* Text Info */}
+              <div className="flex flex-col items-start gap-1">
+                <Typography variant="h6" color="blue-gray" className="font-bold leading-tight">
+                  Dimensión {subject?.subjectName ?? ""}
+                </Typography>
+                <ValuationStatusBadge
+                  status={subjectStatus}
+                  customLabel={getStatusLabel()}
+                />
+              </div>
+            </div>
+          </div>
+        </AccordionHeader>
+
+        <AccordionBody className="pt-4 pb-4 px-4">
+          {learningVals.length > 0 ? (
+            <Card className="h-full w-auto mx-4 overflow-hidden shadow-none rounded-lg border border-gray-100">
+              <table className="w-full table-auto text-left">
+                <thead>
+                  <tr>
+                    <th className="border-b border-gray-200 bg-white p-2">
+                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
+                        Aprendizajes
                       </Typography>
-                    </td>
-                    <td className={`${classes} text-center`}>
-                      <Radio
-                        name={`valuation-${l.learningId}`}
-                        color="green"
-                        icon={<IconCheck />}
-                        id={`${l.learningId}-Logrado`}
-                        checked={selected === "Logrado"}
-                        onChange={() => handleSelect(l.learningId, "Logrado")}
-                        ripple={true}
-                        crossOrigin="anonymous"
-                      />
-                    </td>
-                    <td className={`${classes} text-center`}>
-                      <Radio
-                        name={`valuation-${l.learningId}`}
-                        color="amber"
-                        icon={<IconCheck />}
-                        id={`${l.learningId}-EnProceso`}
-                        checked={selected === "En proceso"}
-                        onChange={() => handleSelect(l.learningId, "En proceso")}
-                        ripple={true}
-                        crossOrigin="anonymous"
-                      />
-                    </td>
-                    <td className={`${classes} text-center`}>
-                      <Radio
-                        name={`valuation-${l.learningId}`}
-                        color="red"
-                        icon={<IconCheck />}
-                        id={`${l.learningId}-ConDificultad`}
-                        checked={selected === "Con dificultad"}
-                        onChange={() => handleSelect(l.learningId, "Con dificultad")}
-                        ripple={true}
-                        crossOrigin="anonymous"
-                      />
-                    </td>
+                    </th>
+                    <th className="border-b border-gray-200 bg-white p-2 text-center w-24">
+                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
+                        Logrado
+                      </Typography>
+                    </th>
+                    <th className="border-b border-gray-200 bg-white p-2 text-center w-24">
+                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
+                        En proceso
+                      </Typography>
+                    </th>
+                    <th className="border-b border-gray-200 bg-white p-2 text-center w-24">
+                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
+                        Con dificultad
+                      </Typography>
+                    </th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </Card>
-      </AccordionBody>
-    </Accordion>
+                </thead>
+                <tbody>
+                  {learningVals.map((l, idx) => {
+                    const isLast = idx === learningVals.length - 1;
+                    const classes = isLast ? "p-2" : "p-2 border-b border-gray-100";
+                    const selected = selections[l.learningId] ?? l.qualitativeValuation ?? null;
+
+                    return (
+                      <tr key={l.learningId} className="hover:bg-gray-50 transition-colors">
+                        <td className={classes}>
+                          <Typography variant="small" color="blue-gray" className="font-medium text-gray-700">
+                            {l.learningDescription ?? ""}
+                          </Typography>
+                        </td>
+                        <td className={`${classes} text-center`}>
+                          <Radio
+                            name={`valuation-${l.learningId}`}
+                            color="green"
+                            icon={<IconCheck />}
+                            id={`${l.learningId}-Logrado`}
+                            checked={selected === "Logrado"}
+                            onChange={() => handleSelect(l.learningId, "Logrado")}
+                            ripple={true}
+                            crossOrigin="anonymous"
+                          />
+                        </td>
+                        <td className={`${classes} text-center`}>
+                          <Radio
+                            name={`valuation-${l.learningId}`}
+                            color="amber"
+                            icon={<IconCheck />}
+                            id={`${l.learningId}-EnProceso`}
+                            checked={selected === "En proceso"}
+                            onChange={() => handleSelect(l.learningId, "En proceso")}
+                            ripple={true}
+                            crossOrigin="anonymous"
+                          />
+                        </td>
+                        <td className={`${classes} text-center`}>
+                          <Radio
+                            name={`valuation-${l.learningId}`}
+                            color="red"
+                            icon={<IconCheck />}
+                            id={`${l.learningId}-ConDificultad`}
+                            checked={selected === "Con dificultad"}
+                            onChange={() => handleSelect(l.learningId, "Con dificultad")}
+                            ripple={true}
+                            crossOrigin="anonymous"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+              <Typography variant="small" className="font-medium">
+                No hay aprendizajes asociados a esta dimensión.
+              </Typography>
+            </div>
+          )}
+        </AccordionBody>
+      </Accordion>
+    </div>
   );
 }

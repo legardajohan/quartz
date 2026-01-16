@@ -8,7 +8,7 @@ import {
 
 import type { ConfirmationModalProps } from "../interfaces/ConfirmationModalProps";
 
-export const ConfirmationModal = ({
+const ConfirmationModal = ({
     open,
     onClose,
     onConfirm,
@@ -17,6 +17,8 @@ export const ConfirmationModal = ({
     confirmText = "Confirmar",
     cancelText = "Cancelar",
     confirmColor = "pink",
+    onDiscard,
+    discardText
 }: ConfirmationModalProps) => {
     return (
         <Dialog open={open} size="sm" className="px-2 py-1" handler={onClose}>
@@ -24,23 +26,53 @@ export const ConfirmationModal = ({
             <DialogBody>
                 {typeof body === "string" ? <p className="text-gray-600">{body}</p> : body}
             </DialogBody>
-            <DialogFooter>
-                <Button
-                    variant="text"
-                    color="blue-gray"
-                    onClick={onClose}
-                    className="mr-1"
-                >
-                    <span>{cancelText}</span>
-                </Button>
-                <Button
-                    variant="gradient"
-                    color={confirmColor}
-                    onClick={onConfirm}
-                >
-                    <span>{confirmText}</span>
-                </Button>
+            <DialogFooter className={onDiscard ? "flex justify-end gap-1" : ""}>
+                {onDiscard ? (
+                    <>
+                        <Button
+                            variant="text"
+                            color="blue-gray"
+                            onClick={onClose}
+                        >
+                            <span>{cancelText}</span>
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            color="pink"
+                            onClick={onDiscard}
+                        >
+                            <span>{discardText || "No guardar"}</span>
+                        </Button>
+                        <Button
+                            variant="gradient"
+                            color={confirmColor}
+                            onClick={onConfirm}
+                        >
+                            <span>{confirmText}</span>
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button
+                            variant="text"
+                            color="blue-gray"
+                            onClick={onClose}
+                            className="mr-1"
+                        >
+                            <span>{cancelText}</span>
+                        </Button>
+                        <Button
+                            variant="gradient"
+                            color={confirmColor}
+                            onClick={onConfirm}
+                        >
+                            <span>{confirmText}</span>
+                        </Button>
+                    </>
+                )}
             </DialogFooter>
         </Dialog>
     );
 };
+
+export { ConfirmationModal };

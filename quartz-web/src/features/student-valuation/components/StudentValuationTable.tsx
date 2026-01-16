@@ -148,14 +148,14 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                         <Tooltip content={valuationState === 'NOT_STARTED' ? "Iniciar Valoración" : "Ver lista de chequeo"}>
                                             <IconButton variant="text" onClick={() => handleOpenChecklist(user._id)}>
                                                 {valuationState === 'NOT_STARTED' ? (
-                                                    <PlusIcon className="h-5 w-5 text-gray-400" />
+                                                    <PlusIcon className="h-6 w-6 text-gray-400" />
                                                 ) : (
                                                     <ClipboardDocumentListIcon
-                                                        className={`h-5 w-5 ${valuationState === 'COMPLETED'
-                                                                ? 'text-green-500'
-                                                                : valuationState === 'IN_PROGRESS'
-                                                                    ? 'text-blue-500'
-                                                                    : 'text-gray-500'
+                                                        className={`h-6 w-6 ${valuationState === 'COMPLETED'
+                                                            ? 'text-green-500'
+                                                            : valuationState === 'IN_PROGRESS'
+                                                                ? 'text-blue-500'
+                                                                : 'text-gray-500'
                                                             }`}
                                                     />
                                                 )}
