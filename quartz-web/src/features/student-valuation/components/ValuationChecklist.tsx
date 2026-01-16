@@ -9,17 +9,29 @@ import {
 } from "@material-tailwind/react";
 import {
   LightBulbIcon,
-  UserIcon,
   HeartIcon,
   ChatBubbleLeftRightIcon,
+  FireIcon,
   PaintBrushIcon,
   ScaleIcon,
   BookOpenIcon,
-  SparklesIcon,
+  UsersIcon,
 } from "@heroicons/react/24/outline";
 import type { IValuationBySubjectDTO, ILearningValuationDTO } from "../types";
 import { ValuationState } from "../types/domain";
 import { ValuationStatusBadge } from "./ValuationStatusBadge";
+
+// Export icons for parent usage
+export const SUBJECT_ICONS = [
+  LightBulbIcon,
+  HeartIcon,
+  FireIcon,
+  ChatBubbleLeftRightIcon,
+  PaintBrushIcon,
+  ScaleIcon,
+  UsersIcon,
+  BookOpenIcon,
+];
 
 type ValuationChecklistProps = {
   subject: IValuationBySubjectDTO;
@@ -27,23 +39,7 @@ type ValuationChecklistProps = {
   open?: boolean;
   onToggle?: () => void;
   onChange?: (learningId: string, qualitativeValuation: string | null) => void;
-};
-
-// Icon mapping based on subject name
-// Icon mapping based on subject name
-const getSubjectIcon = (subjectName: string, colorClass: string) => {
-  const lowerName = subjectName.toLowerCase();
-  const classes = `h-6 w-6 ${colorClass}`;
-
-  if (lowerName.includes("cognitiva")) return <LightBulbIcon className={classes} />;
-  if (lowerName.includes("corporal")) return <UserIcon className={classes} />;
-  if (lowerName.includes("espiritual")) return <HeartIcon className={classes} />;
-  if (lowerName.includes("comunicativa")) return <ChatBubbleLeftRightIcon className={classes} />;
-  if (lowerName.includes("estética") || lowerName.includes("estetica")) return <PaintBrushIcon className={classes} />;
-  if (lowerName.includes("ética") || lowerName.includes("etica")) return <ScaleIcon className={classes} />;
-  if (lowerName.includes("socio-afectiva")) return <SparklesIcon className={classes} />;
-
-  return <BookOpenIcon className={classes} />;
+  icon?: React.ElementType; // New prop for icon injection
 };
 
 function IconCheck() {
@@ -84,6 +80,7 @@ export default function ValuationChecklist({
   open = false,
   onToggle,
   onChange,
+  icon: Icon = BookOpenIcon, // Default fallback
 }: ValuationChecklistProps) {
   const [selections, setSelections] = React.useState<Record<string, string | null>>(initialSelections || {});
 
@@ -157,7 +154,7 @@ export default function ValuationChecklist({
             <div className="flex items-center gap-4">
               {/* Icon Circle */}
               <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${statusStyles.iconBg}`}>
-                {getSubjectIcon(subject?.subjectName ?? "", statusStyles.iconColor)}
+                <Icon className={`h-6 w-6 ${statusStyles.iconColor}`} />
               </div>
 
               {/* Text Info */}

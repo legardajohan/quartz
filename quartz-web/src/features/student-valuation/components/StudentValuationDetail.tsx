@@ -3,7 +3,7 @@ import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
-import ValuationChecklist from "./ValuationChecklist";
+import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
 import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import toast from "react-hot-toast";
@@ -144,7 +144,7 @@ export default function StudentValuationDetail() {
                         </Button>
                         <Button
                             variant="text"
-                            className="text-gray-400 hover:text-pink-400 transition-colors duration-200"
+                            className="text-gray-500 hover:text-pink-400 transition-colors duration-200"
                             onClick={handleDelete}
                         >
                             <TrashIcon className="h-6 w-6" />
@@ -209,6 +209,14 @@ export default function StudentValuationDetail() {
                                         : subject.subjectId
                                 )
                             }
+                            // Inject icon based on index in sessionData.subjects
+                            icon={(() => {
+                                const subjectIndex = sessionData?.subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
+                                if (subjectIndex !== -1) {
+                                    return SUBJECT_ICONS[subjectIndex % SUBJECT_ICONS.length];
+                                }
+                                return undefined; // Fallback to default in child
+                            })()}
                             initialSelections={subject.learningValuations.reduce(
                                 (acc, lv) => {
                                     acc[lv.learningId] = lv.qualitativeValuation;

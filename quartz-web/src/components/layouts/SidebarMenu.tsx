@@ -115,7 +115,7 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
         <List className="mt-4">
           {menuItems.map((item) => {
             if (!item.subItems) {
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname.startsWith(item.path!);
               return (
                 <ListItem
                   key={item.id}
