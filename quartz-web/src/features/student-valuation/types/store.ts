@@ -37,7 +37,7 @@ export interface StudentValuationState {
     valuationId: string,
     payload: StudentValuationUpdateData
   ) => Promise<IStudentValuationDTO>;
-  deleteValuation: (valuationId: string) => Promise<void>;
+  deleteValuation: (valuationId: string, userId: string) => Promise<void>;
   nextPage: () => void; // Para paginación
   prevPage: () => void; // Para paginación
 }

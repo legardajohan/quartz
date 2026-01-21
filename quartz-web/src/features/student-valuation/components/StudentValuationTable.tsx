@@ -1,5 +1,9 @@
-import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { ClipboardDocumentListIcon, TrashIcon } from "@heroicons/react/24/solid";
+import {
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    PlusIcon,
+} from "@heroicons/react/24/outline";
 import {
     Avatar,
     Card,
@@ -7,10 +11,12 @@ import {
     CardFooter,
     IconButton,
     Tooltip,
-    Button,
 } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
 import { SpinnerIcon } from "../../../components/icons";
+import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
+import toast from "react-hot-toast";
+import { useState } from "react";
 
 import type { UserDto } from "../types/store";
 import {
@@ -26,10 +32,11 @@ const TABLE_HEAD = [
     "ID",
     "Apellidos",
     "Nombres",
-    "Tipo de Id.",
+    "Tipo de ID.",
     "Número",
+    "Sede",
     "Estado",
-    "Lista de chequeo",
+    "Acciones",
 ];
 
 interface StudentValuationTableProps {
@@ -41,10 +48,36 @@ interface StudentValuationTableProps {
     onPrevPage: () => void;
 }
 export default function StudentValuationTable({ users, onOpenChecklist, currentPage, totalPages, onNextPage, onPrevPage }: StudentValuationTableProps) {
-    const { isLoading, error } = useStudentValuationStore();
+    const { isLoading, error, deleteValuation } = useStudentValuationStore();
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [selectedStudentName, setSelectedStudentName] = useState<string>("");
 
     const handleOpenChecklist = (studentId: string) => {
         onOpenChecklist?.(studentId);
+    };
+
+    const handleDeleteClick = (valuationId: string, userId: string, studentName: string) => {
+        setSelectedValuationId(valuationId);
+        setSelectedUserId(userId);
+        setSelectedStudentName(studentName);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedValuationId || !selectedUserId) return;
+
+        try {
+            await deleteValuation(selectedValuationId, selectedUserId);
+            setDeleteModalOpen(false);
+            toast.success("Evaluación eliminada con éxito");
+            setSelectedValuationId(null);
+            setSelectedUserId(null);
+            setSelectedStudentName("");
+        } catch (err: any) {
+            toast.error(`Error al eliminar la evaluación: ${err.message}`);
+        }
     };
 
     const getValuationState = (status: string | null | undefined): ValuationState => {
@@ -76,12 +109,12 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                         {TABLE_HEAD.map((head) => (
                             <th
                                 key={head}
-                                className="border-b border-blue-gray-100 bg-white p-4"
+                                className="border-b border-blue-gray-100 bg-white p-3"
                             >
                                 <Typography
                                     variant="small"
                                     color="blue-gray"
-                                    className="font-bold leading-none opacity-70"
+                                    className="font-bold text-xs uppercase opacity-70"
                                 >
                                     {head}
                                 </Typography>
@@ -145,22 +178,48 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                         />
                                     </td>
                                     <td className={classes}>
-                                        <Tooltip content={valuationState === 'NOT_STARTED' ? "Iniciar Valoración" : "Ver lista de chequeo"}>
-                                            <IconButton variant="text" onClick={() => handleOpenChecklist(user._id)}>
-                                                {valuationState === 'NOT_STARTED' ? (
-                                                    <PlusIcon className="h-6 w-6 text-gray-400" />
-                                                ) : (
-                                                    <ClipboardDocumentListIcon
-                                                        className={`h-6 w-6 ${valuationState === 'COMPLETED'
-                                                            ? 'text-green-500'
-                                                            : valuationState === 'IN_PROGRESS'
-                                                                ? 'text-blue-500'
-                                                                : 'text-gray-500'
-                                                            }`}
-                                                    />
-                                                )}
-                                            </IconButton>
-                                        </Tooltip>
+                                        <div className="flex items-center gap-2">
+                                            <Tooltip
+                                                content={valuationState === 'NOT_STARTED' ? "Iniciar Evaluación" : "Ver Evaluación"}
+                                                size="sm"
+                                            >
+                                                <IconButton
+                                                    variant="text"
+                                                    onClick={() => handleOpenChecklist(user._id)}
+                                                    size="sm"
+                                                >
+                                                    {valuationState === 'NOT_STARTED' ? (
+                                                        <PlusIcon className="h-5 w-5 text-gray-500" />
+                                                    ) : (
+
+                                                        <ClipboardDocumentListIcon
+                                                            className={`h-6 w-6 ${valuationState === 'COMPLETED'
+                                                                ? 'text-green-500'
+                                                                : valuationState === 'IN_PROGRESS'
+                                                                    ? 'text-blue-500'
+                                                                    : 'text-gray-500'
+                                                                }`}
+                                                        />
+                                                    )}
+                                                </IconButton>
+                                            </Tooltip>
+                                            {valuationState !== 'NOT_STARTED' && user.valuations[0]?._id && (
+                                                <Tooltip content="Borrar Evaluación" size="sm">
+                                                    <IconButton
+                                                        variant="text"
+                                                        onClick={() => handleDeleteClick(
+                                                            user.valuations[0]._id,
+                                                            user._id,
+                                                            `${user.firstName} ${user.lastName} ${user.secondLastName || ''}`
+                                                        )}
+                                                        size="sm"
+                                                        className="hover:bg-gray-100"
+                                                    >
+                                                        <TrashIcon className="h-5 w-5 text-gray-400 hover:text-pink-400 transition-colors" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -176,20 +235,35 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                     )}
                 </tbody>
             </table>
+            <ConfirmationModal
+                open={isDeleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="¿Deseas eliminar la Evaluación?"
+                body={
+                    <p className="text-gray-600">
+                        Lista de Chequeo de{" "}
+                        <span className="font-bold">
+                            {selectedStudentName}
+                        </span>
+                    </p>
+                }
+                confirmColor="pink"
+            />
             <CardFooter className="flex items-center justify-between border-t border-blue-gray-50 p-4">
                 <Typography variant="small" color="blue-gray" className="font-normal">
-                    Page {currentPage} of {totalPages}
+                    Página {currentPage} de {totalPages}
                 </Typography>
                 <div className="flex gap-2">
-                    <Button variant="outlined" size="sm" onClick={onPrevPage} disabled={currentPage === 1}>
-                        Previous
-                    </Button>
-                    <Button variant="outlined" size="sm" onClick={onNextPage} disabled={currentPage === totalPages}>
-                        Next
-                    </Button>
+                    <IconButton variant="outlined" size="sm" onClick={onPrevPage} disabled={currentPage === 1}>
+                        <ArrowLeftIcon className="h-4 w-4" />
+                    </IconButton>
+                    <IconButton variant="outlined" size="sm" onClick={onNextPage} disabled={currentPage === totalPages}>
+                        <ArrowRightIcon className="h-4 w-4" />
+                    </IconButton>
                 </div>
             </CardFooter>
-        </Card>
+        </Card >
 
     );
 }

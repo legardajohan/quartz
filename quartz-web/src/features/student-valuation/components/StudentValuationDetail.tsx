@@ -8,7 +8,6 @@ import type { StudentValuationUpdateData, LearningValuationUpdate } from "../typ
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import toast from "react-hot-toast";
 import userImage from "../../../assets/images/default-user.jpg";
-import { TrashIcon } from "@heroicons/react/24/solid";
 
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
@@ -17,7 +16,6 @@ export default function StudentValuationDetail() {
         currentValuation,
         fetchValuation,
         updateValuation,
-        deleteValuation,
         clearValuation,
         isLoading
     } = useStudentValuationStore();
@@ -25,8 +23,6 @@ export default function StudentValuationDetail() {
 
     const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
     const [localValuation, setLocalValuation] = useState(currentValuation);
-    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const activePeriod = sessionData?.periods?.find((p) => p.isActive);
@@ -68,23 +64,7 @@ export default function StudentValuationDetail() {
         }
     };
 
-    const handleDelete = () => {
-        setDeleteModalOpen(true);
-    };
 
-    const handleConfirmDelete = async () => {
-        if (!localValuation) return;
-
-        try {
-            await deleteValuation(localValuation._id);
-            setIsDeleting(true);
-            setDeleteModalOpen(false);
-            toast.success(<b>Evaluación eliminada con éxito</b>);
-            navigate('/evaluacion');
-        } catch (err: any) {
-            toast.error(<b>Error al eliminar la evaluación: {err.message}</b>);
-        }
-    };
 
     const hasChanges = useCallback(() => {
         if (!localValuation || !currentValuation) return false;
@@ -93,7 +73,7 @@ export default function StudentValuationDetail() {
 
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) =>
-            !isDeleting && hasChanges() && currentLocation.pathname !== nextLocation.pathname
+            hasChanges() && currentLocation.pathname !== nextLocation.pathname
     );
 
     if (isLoading) {
@@ -134,42 +114,15 @@ export default function StudentValuationDetail() {
                             </Typography>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="gradient"
-                            onClick={handleSave}
-                            color="purple"
-                        >
-                            Guardar Cambios
-                        </Button>
-                        <Button
-                            variant="text"
-                            className="text-gray-500 hover:text-pink-400 transition-colors duration-200"
-                            onClick={handleDelete}
-                        >
-                            <TrashIcon className="h-6 w-6" />
-                        </Button>
-                    </div>
+                    <Button
+                        variant="gradient"
+                        onClick={handleSave}
+                        color="purple"
+                    >
+                        Guardar Cambios
+                    </Button>
                 </div>
             </div>
-            <ConfirmationModal
-                open={isDeleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                title="¿Deseas eliminar la Evaluación?"
-                body={
-                    <p className="text-gray-600">
-                        Lista de Chequeo de{" "}
-                        <span className="font-bold">
-                            {localValuation?.studentName.firstName}{" "}
-                            {localValuation?.studentName.lastName}{" "}
-                            {localValuation?.studentName.secondLastName}
-                        </span>
-                    </p>
-                }
-                confirmColor="pink"
-            />
-
             {blocker.state === "blocked" ? (
                 <ConfirmationModal
                     open={true}

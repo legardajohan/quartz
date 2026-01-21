@@ -8,6 +8,7 @@ import subjectRoutes from './features/subject/subject.routes';
 import checklistTemplatesRoutes from './features/checklist-template/checklist-template.routes';
 import studentValuationRoutes from './features/student-valuation/student-valuation.routes';
 import usersRoutes from './features/users/users.routes';
+import schoolRoutes from './features/school/school.routes';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -32,6 +33,8 @@ app.use('/api/checklist-templates', checklistTemplatesRoutes);
 app.use('/api/student-valuations', studentValuationRoutes);
 // Routes for users (students listing by institution)
 app.use('/api/users', usersRoutes);
+// Routes for schools
+app.use('/api/schools', schoolRoutes);
 
 // Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;

@@ -89,11 +89,15 @@ export const useStudentValuationStore = create<StudentValuationState>((set, get)
     }
   },
 
-  deleteValuation: async (valuationId: string) => {
+  deleteValuation: async (valuationId: string, userId: string) => {
     try {
       await apiDelete(`/student-valuations/${valuationId}`);
       set((state) => ({
-        users: state.users.filter((user) => user._id !== valuationId),
+        users: state.users.map((user) =>
+          user._id === userId
+            ? { ...user, valuations: user.valuations.filter((v) => v._id !== valuationId) }
+            : user
+        ),
       }));
     } catch (err: any) {
       const errorMessage =
