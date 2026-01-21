@@ -16,6 +16,8 @@ export const getUsers = async (req: Request, res: Response) => {
       id,
       role,
       schoolId,
+      requestorRole: sessionUser.role,
+      requestorSchoolId: sessionUser.schoolId?.toString(),
     });
 
     res.status(200).json(users);

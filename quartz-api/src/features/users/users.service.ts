@@ -1,14 +1,17 @@
 import { Types } from 'mongoose';
-import { User } from '../auth/auth.model';
+import { IUserDocument, User } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
-import { UserWithValuations, ValuationSummary } from './users.types';
+import { UserWithValuations, School, ValuationSummary } from './users.types';
+import { SchoolModel } from '../school/school.model';
 
 export interface GetUsersFilters {
   institutionId: string;
   id?: string;
   role?: string;
   schoolId?: string;
+  requestorRole?: UserRole; // Stricter type
+  requestorSchoolId?: string;
 }
 
 export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserWithValuations[]> => {
@@ -31,7 +34,12 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
       query.role = UserRole.ESTUDIANTE;
     }
 
-    if (filters.schoolId) {
+    // Role-based filtering constraints
+    if (filters.requestorRole === UserRole.DOCENTE && filters.requestorSchoolId) {
+      // Teachers can only see students from their own school
+      query.schoolId = new Types.ObjectId(filters.requestorSchoolId);
+    } else if (filters.schoolId) {
+      // Other roles (e.g. JEFE_DE_AREA) can filter by school if provided
       query.schoolId = new Types.ObjectId(filters.schoolId);
     }
 
@@ -46,6 +54,7 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
         identificationType: 1,
         identificationNumber: 1,
         schoolId: 1,
+        gradesTaught: 1,
       })
       .lean()
       .exec();
@@ -60,6 +69,13 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
       studentId: { $in: userIds },
     })
       .select('_id studentId periodId globalStatus') // Seleccionamos los campos necesarios
+      .lean()
+      .exec();
+
+    // Fetch schools for the found users in a single query.
+    const userSchools = users.map(user => user.schoolId);
+    const schools = await SchoolModel.find({ _id: { $in: userSchools } })
+      .select('_id schoolNumber name')
       .lean()
       .exec();
 
@@ -80,10 +96,21 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
     // 4. Map users to the final DTO, enriching them with their valuations.
     const enrichedUsers = users.map(user => {
       const userValuations = valuationsMap.get(user._id.toString()) || [];
+      const userSchool = schools.find(s => s._id.toString() === user.schoolId.toString());
+
+      const schoolDTO = userSchool ? {
+        _id: userSchool._id.toString(),
+        schoolNumber: userSchool.schoolNumber,
+        name: userSchool.name
+      } : undefined;
+
+      const { schoolId, ...userWithoutSchoolId } = user; // Exclude schoolId from the result if not needed in DTO directly
+
       return {
-        ...user,
+        ...userWithoutSchoolId,
         _id: user._id.toString(),
-        schoolId: user.schoolId.toString(),
+        school: schoolDTO!, // Assert non-null because we know school exists if user exists (integrity constraint) or handle undefined
+        gradesTaught: user.gradesTaught || [], // Safe access from lean document
         valuations: userValuations,
       };
     });
