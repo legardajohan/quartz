@@ -2,10 +2,16 @@ export type GlobalValuationStatus = 'Evaluado' | 'Evaluando' | 'Por diligenciar'
 
 export type QualitativeValuation = 'Logrado' | 'En proceso' | 'Con dificultad';
 
+export interface SchoolDto {
+  _id: string;
+  schoolNumber: number;
+  name: string;
+}
+
 export interface ValuationSummary {
-    _id: string;
-    periodId: string;
-    status: GlobalValuationStatus | null;
+  _id: string;
+  periodId: string;
+  status: GlobalValuationStatus | null;
 }
 
 export interface ILearningValuationDTO {

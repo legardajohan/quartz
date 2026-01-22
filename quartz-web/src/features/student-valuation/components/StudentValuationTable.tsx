@@ -32,8 +32,8 @@ const TABLE_HEAD = [
     "ID",
     "Apellidos",
     "Nombres",
-    "Tipo de ID.",
-    "Número",
+    "Identificación",
+    "Grado",
     "Sede",
     "Estado",
     "Acciones",
@@ -164,12 +164,27 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                     </td>
                                     <td className={classes}>
                                         <Typography variant="small" color="blue-gray" className="font-normal">
+                                            {user.identificationNumber}
+                                        </Typography>
+                                        <Typography variant="small" color="blue-gray" className="font-normal opacity-70">
                                             {user.identificationType}
                                         </Typography>
                                     </td>
                                     <td className={classes}>
                                         <Typography variant="small" color="blue-gray" className="font-normal">
-                                            {user.identificationNumber}
+                                            {user.gradesTaught[0]}
+                                        </Typography>
+                                    </td>
+                                    <td className={classes}>
+                                        <Typography variant="small" color="blue-gray" className="font-normal">
+                                            {user.school.name}
+                                        </Typography>
+                                        <Typography
+                                            variant="small"
+                                            color="blue-gray"
+                                            className="font-normal opacity-70"
+                                        >
+                                            Sede {user.school.schoolNumber}
                                         </Typography>
                                     </td>
                                     <td className={`${classes} w-1 whitespace-nowrap`}>

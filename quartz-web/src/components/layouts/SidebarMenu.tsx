@@ -13,9 +13,9 @@ import {
 } from "@material-tailwind/react";
 import {
   AcademicCapIcon,
-  DocumentArrowDownIcon,
   DocumentCheckIcon,
   HomeIcon,
+  PresentationChartBarIcon,
   ShieldCheckIcon
 } from "@heroicons/react/24/solid";
 import {
@@ -58,7 +58,7 @@ const menuItems = [
   },
   {
     id: 4,
-    icon: <DocumentArrowDownIcon className="h-5 w-5" />,
+    icon: <PresentationChartBarIcon className="h-5 w-5" />,
     label: "Informes",
     path: "/informes",
   },
