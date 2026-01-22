@@ -1,25 +1,26 @@
-import type { IStudentValuationDTO, StudentValuationUpdateData, ValuationSummary } from './api';
+import { UserRole, IdentificationType } from '@/types/domain';
+import type { IStudentValuationDTO, SchoolDto, StudentValuationUpdateData, ValuationSummary } from './api';
 
-// --- Tipos de Usuario (movidos aquí) ---
 // Query params aceptados al consumir el endpoint de usuarios
 export interface GetUsersQuery {
   id?: string;
-  role?: string;
+  role?: UserRole;
   schoolId?: string;
 }
 
 // DTO de usuario devuelto por el backend
 export interface UserDto {
   _id: string;
-  role: string;
+  role: UserRole;
   firstName: string;
   middleName?: string;
   lastName: string;
   secondLastName?: string;
-  identificationType: string;
+  identificationType: IdentificationType;
   identificationNumber: number;
   phoneNumber?: string;
-  schoolId: string;
+  school: SchoolDto;
+  gradesTaught: string[];
   valuations: ValuationSummary[];
 }
 

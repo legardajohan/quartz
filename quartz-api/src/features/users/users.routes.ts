@@ -11,12 +11,14 @@ const router = Router();
 /**
  * GET /api/users
  * Query params: id, role, schoolId
- * Only accessible by Jefe de Área. Returns students belonging to the same institution as req.user.
+ * Only accessible by Jefe de Área and Docente.
+ * Jefe de Área: Returns all students in the institution, strictly filtered by schoolId if provided.
+ * Docente: Returns students strictly from their assigned school.
  */
 router.get(
   '/',
   authenticateJWT,
-  authorize([UserRole.JEFE_DE_AREA]),
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(getUsersSchema),
   getUsers
 );

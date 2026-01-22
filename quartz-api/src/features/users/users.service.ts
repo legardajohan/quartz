@@ -35,12 +35,22 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
     }
 
     // Role-based filtering constraints
-    if (filters.requestorRole === UserRole.DOCENTE && filters.requestorSchoolId) {
-      // Teachers can only see students from their own school
-      query.schoolId = new Types.ObjectId(filters.requestorSchoolId);
-    } else if (filters.schoolId) {
-      // Other roles (e.g. JEFE_DE_AREA) can filter by school if provided
-      query.schoolId = new Types.ObjectId(filters.schoolId);
+    if (filters.requestorRole === UserRole.DOCENTE) {
+      if (filters.requestorSchoolId) {
+        // Teachers can ONLY see students from their own school.
+        // We strictly use the schoolId from the user's session, ignoring any passed query param.
+        query.schoolId = new Types.ObjectId(filters.requestorSchoolId);
+      } else {
+        // If a Docente has no schoolId, they shouldn't see any students.
+        return [];
+      }
+    } else {
+      // JEFE_DE_AREA (or other future allowed roles)
+      // Verify if a specific school was requested for filtering
+      if (filters.schoolId) {
+        query.schoolId = new Types.ObjectId(filters.schoolId);
+      }
+      // If no schoolId filter is provided, they will see all users in the institution (default behavior)
     }
 
     // 1. Fetch the base user data.

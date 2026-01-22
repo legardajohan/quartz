@@ -7,7 +7,8 @@ import type {
   StudentValuationUpdateData,
   IStudentValuationDTO,
 } from './types';
-import { useAuthStore } from '../auth/useAuthStore';
+
+
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -25,12 +26,12 @@ export const useStudentValuationStore = create<StudentValuationState>((set, get)
 
     // Si no se provee un schoolId, usamos el de la sesión actual
     const finalQuery = { ...query };
-    if (!finalQuery.schoolId) {
-      const sessionSchoolId = useAuthStore.getState().sessionData?.user.schoolId;
-      if (sessionSchoolId) {
-        finalQuery.schoolId = sessionSchoolId;
-      }
-    }
+    // if (!finalQuery.schoolId) {
+    //   const sessionSchoolId = useAuthStore.getState().sessionData?.user.schoolId;
+    //   if (sessionSchoolId) {
+    //     finalQuery.schoolId = sessionSchoolId;
+    //   }
+    // }
 
     try {
       // El objeto `finalQuery` (ej: { role: 'Estudiante', schoolId: '...' })
