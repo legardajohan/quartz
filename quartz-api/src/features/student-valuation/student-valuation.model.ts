@@ -20,6 +20,7 @@ export interface IValuationBySubject {
 
 // Interface for the StudentValuation document
 export interface IStudentValuationDocument extends Document {
+  _id: Types.ObjectId;
   institutionId: Types.ObjectId;
   studentId: Types.ObjectId;
   teacherId: Types.ObjectId;

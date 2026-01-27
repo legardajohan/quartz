@@ -6,6 +6,7 @@ import {
   Card,
   Typography,
   Radio,
+  Progress,
 } from "@material-tailwind/react";
 import {
   LightBulbIcon,
@@ -19,7 +20,6 @@ import {
 } from "@heroicons/react/24/outline";
 import type { IValuationBySubjectDTO, ILearningValuationDTO } from "../types";
 import { ValuationState } from "../types/domain";
-import { ValuationStatusBadge } from "./ValuationStatusBadge";
 
 // Export icons for parent usage
 export const SUBJECT_ICONS = [
@@ -31,6 +31,13 @@ export const SUBJECT_ICONS = [
   ScaleIcon,
   UsersIcon,
   BookOpenIcon,
+];
+
+const TABLE_HEAD = [
+  "Aprendizajes",
+  "Logrado",
+  "En proceso",
+  "Con dificultad"
 ];
 
 type ValuationChecklistProps = {
@@ -110,13 +117,6 @@ export default function ValuationChecklist({
     subjectStatus = "IN_PROGRESS";
   }
 
-  // Helper to get status label text
-  const getStatusLabel = () => {
-    if (subjectStatus === "COMPLETED") return "Completado";
-    if (subjectStatus === "NOT_STARTED") return "Sin iniciar";
-    return `En Progreso (${valuedLearnings}/${totalLearnings})`;
-  };
-
   // Determine styling based on status
   const getStatusStyles = () => {
     switch (subjectStatus) {
@@ -143,66 +143,80 @@ export default function ValuationChecklist({
 
   const statusStyles = getStatusStyles();
 
+  // Progress Bar Color Logic
+  const getProgressColor = () => {
+    if (subjectStatus === "COMPLETED") return "green";
+    if (subjectStatus === "IN_PROGRESS") return "blue";
+    return "blue-gray"; // or gray
+  };
+
+  const completionPercentage = totalLearnings > 0 ? (valuedLearnings / totalLearnings) * 100 : 0;
+
+
   return (
     <div className={`rounded-xl border ${statusStyles.itemBorder} bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300`}>
       <Accordion open={!!open} icon={<ArrowIcon id={1} open={open ? 1 : 0} />}>
         <AccordionHeader
           onClick={onToggle}
-          className={`p-4 ${open ? 'border-b border-gray-100' : 'border-b-0'} hover:bg-gray-50/50 transition-colors rounded-xl`}
+          className={`p-4 border-b-0 hover:bg-gray-50/50 transition-colors rounded-xl`}
         >
           <div className="flex w-full items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {/* Icon Circle */}
-              <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${statusStyles.iconBg}`}>
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${statusStyles.iconBg}`}>
                 <Icon className={`h-6 w-6 ${statusStyles.iconColor}`} />
               </div>
 
               {/* Text Info */}
-              <div className="flex flex-col items-start gap-1">
+              <div className="flex flex-col items-start gap-1 w-full max-w-[200px]">
                 <Typography variant="h6" color="blue-gray" className="font-bold leading-tight">
                   Dimensión {subject?.subjectName ?? ""}
                 </Typography>
-                <ValuationStatusBadge
-                  status={subjectStatus}
-                  customLabel={getStatusLabel()}
-                />
+                <div className="w-full flex items-center gap-3">
+                  <Progress
+                    value={completionPercentage}
+                    size="sm"
+                    color={getProgressColor()}
+                    className="bg-gray-100 w-32"
+                  />
+                  <Typography
+                    variant="small"
+                    className="font-medium text-[10px] text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                  >
+                    {valuedLearnings}/{totalLearnings} valorados
+                  </Typography>
+                </div>
               </div>
             </div>
           </div>
         </AccordionHeader>
 
-        <AccordionBody className="pt-4 pb-4 px-4">
+        <AccordionBody className="pt-2 pb-6 px-4">
           {learningVals.length > 0 ? (
-            <Card className="h-full w-auto mx-4 overflow-hidden shadow-none rounded-lg border border-gray-100">
+            <Card className="h-full w-full overflow-hidden shadow-none rounded-lg">
               <table className="w-full table-auto text-left">
                 <thead>
                   <tr>
-                    <th className="border-b border-gray-200 bg-white p-2">
-                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
-                        Aprendizajes
-                      </Typography>
-                    </th>
-                    <th className="border-b border-gray-200 bg-white p-2 text-center w-24">
-                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
-                        Logrado
-                      </Typography>
-                    </th>
-                    <th className="border-b border-gray-200 bg-white p-2 text-center w-24">
-                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
-                        En proceso
-                      </Typography>
-                    </th>
-                    <th className="border-b border-gray-200 bg-white p-2 text-center w-24">
-                      <Typography variant="small" color="blue-gray" className="font-bold text-xs uppercase opacity-90">
-                        Con dificultad
-                      </Typography>
-                    </th>
+                    {TABLE_HEAD.map((head) => (
+                      <th
+                        key={head}
+                        className="border-b border-gray-200 bg-white px-6 pt-4 p-2"
+                      >
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-bold text-xs uppercase opacity-90"
+                        >
+                          {head}
+                        </Typography>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {learningVals.map((l, idx) => {
                     const isLast = idx === learningVals.length - 1;
-                    const classes = isLast ? "p-2" : "p-2 border-b border-gray-100";
+                    const classes = isLast ? "py-2 px-6" : "py-2 px-6 border-b border-gray-100";
                     const selected = selections[l.learningId] ?? l.qualitativeValuation ?? null;
 
                     return (

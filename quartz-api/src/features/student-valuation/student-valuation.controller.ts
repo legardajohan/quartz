@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { 
-  initializeStudentValuation, 
+import {
+  initializeStudentValuation,
   updateStudentValuation,
   deleteStudentValuation,
   getStudentValuationById,
@@ -81,7 +81,10 @@ export async function initializeValuationController(req: Request, res: Response)
 
     res.status(200).json(valuation);
   } catch (error: any) {
-      if (error.message.includes('plantilla de lista de chequeo')) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    if (error.message && error.message.includes('plantilla de lista de chequeo')) {
       return res.status(400).json({ message: error.message });
     }
     console.error("Error in controller to initialize StudentValuation: ", error);

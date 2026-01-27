@@ -180,7 +180,11 @@ export async function initializeStudentValuation(
   }
 
   // Validate that related documents exist before creation.
-  await validateAllExist([[Period, periodId, 'Periodo'], [User, studentId, 'Estudiante']]);
+  try {
+    await validateAllExist([[Period, periodId, 'Periodo'], [User, studentId, 'Estudiante']]);
+  } catch (error: any) {
+    throw new AppError(error.message, 404);
+  }
 
   // Find the corresponding checklist template.
   const template = await ChecklistTemplateModel.findOne({
@@ -216,10 +220,28 @@ export async function initializeStudentValuation(
     valuationsBySubject,
   };
 
-  const newStudentValuation = await create(StudentValuationModel, payload);
+  let valuationId: string;
 
-  // Directly populate and map the newly created document without a second DB query.
-  return populateAndMapValuation(newStudentValuation);
+  try {
+    const newStudentValuation = await create(StudentValuationModel, payload);
+    valuationId = newStudentValuation._id.toString();
+  } catch (error: any) {
+    if (error.code === 11000 || error.codeName === 'DuplicateKey') {
+      // Race condition handled: If it was created by another request in the meantime, find it.
+      const existing = await StudentValuationModel.findOne({
+        studentId: new Types.ObjectId(studentId),
+        periodId: new Types.ObjectId(periodId),
+        institutionId: new Types.ObjectId(institutionId),
+      });
+      if (!existing) throw error; // Should not happen if 11000 occurred
+      valuationId = existing._id.toString();
+    } else {
+      throw error;
+    }
+  }
+
+  // Return the fresh, fully populated document from the database
+  return getStudentValuationById(valuationId, institutionId);
 }
 
 

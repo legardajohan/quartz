@@ -13,7 +13,6 @@ import {
     Tooltip,
 } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
-import { SpinnerIcon } from "../../../components/icons";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import toast from "react-hot-toast";
 import { useState } from "react";
@@ -47,6 +46,8 @@ interface StudentValuationTableProps {
     onNextPage: () => void;
     onPrevPage: () => void;
 }
+import { Loading } from "../../../components/ui/Loading";
+
 export default function StudentValuationTable({ users, onOpenChecklist, currentPage, totalPages, onNextPage, onPrevPage }: StudentValuationTableProps) {
     const { isLoading, error, deleteValuation } = useStudentValuationStore();
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -88,7 +89,7 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <SpinnerIcon />
+                <Loading />
             </div>
         );
     }

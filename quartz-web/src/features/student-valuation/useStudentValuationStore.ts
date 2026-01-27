@@ -70,16 +70,14 @@ export const useStudentValuationStore = create<StudentValuationState>((set, get)
 
   // Initialize or fetch a student valuation for a given student and active period
   updateValuation: async (valuationId: string, payload: StudentValuationUpdateData) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       console.log('Datos de valoración enviados a la API:', JSON.stringify(payload, null, 2));
       const data = await apiPatch<IStudentValuationDTO, StudentValuationUpdateData>(`/student-valuations/${valuationId}`, payload);
       // Actualizar currentValuation si es la misma
       const current = get().currentValuation;
       if (current && current._id === valuationId) {
-        set({ currentValuation: data, isLoading: false });
-      } else {
-        set({ isLoading: false });
+        set({ currentValuation: data });
       }
       return data;
     } catch (err: any) {
