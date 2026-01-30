@@ -3,6 +3,7 @@ import { create } from '../../repositories/base.repository';
 import { LearningModel, ILearningDocument } from "./learning.model";
 import { Subject } from '../subject/subject.model';
 import { Period } from '../period/period.model';
+import { User } from '../auth/auth.model';
 import type { LearningData, UpdateLearningData } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
 
@@ -18,6 +19,11 @@ function populateLearningDetails<T>(query: Query<T, ILearningDocument>) {
             path: 'periodId',
             model: Period,
             select: 'name'
+        })
+        .populate({
+            path: 'userId',
+            model: User,
+            select: 'firstName lastName role'
         });
 }
 
@@ -29,7 +35,7 @@ export async function getAllLearnings(
         ...filter,
         institutionId: new Types.ObjectId(institutionId),
     });
-    
+
     const learnings = await populateLearningDetails(query).exec();
     return learnings;
 }
@@ -107,7 +113,7 @@ export async function updateLearning(
     const populatedLearning = await populateLearningDetails(
         LearningModel.findById(updatedLearning._id)
     ).exec();
-    
+
     return populatedLearning;
 }
 
@@ -119,6 +125,6 @@ export async function deleteLearning(
         _id: new Types.ObjectId(learningId),
         institutionId: new Types.ObjectId(institutionId)
     };
-    
+
     return LearningModel.findOneAndDelete(query);
 }

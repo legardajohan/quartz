@@ -3,6 +3,12 @@ import { NewLearning, UpdateLearning } from ".";
 export interface Learning {
   _id: string;
   description: string;
+  author: {
+    _id: string;
+    name: string;
+    role: string;
+  };
+  grade: string;
   subject: {
     _id: string;
     name: string;

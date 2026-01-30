@@ -1,15 +1,16 @@
-import { useEffect, useState, useCallback } from "react";
-import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import LearningCard from "../components/LearningCard";
-import { LearningForm } from "../components/LearningForm";
 import { useLearningStore } from "../useLearningStore";
 import { useAuthStore } from "../../auth/useAuthStore";
-import { SpinnerIcon } from "../../../components/icons";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
 import { Learning, NewLearning, UpdateLearning } from "../types";
+import { LearningForm } from "../components/LearningForm";
+import { LearningsTable } from "../components/LearningsTable";
+import { LearningsFilters } from "../components/LearningsFilters";
+import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 
 export default function LearningsPage() {
   const { learnings, isLoading, isSubmitting, error, createLearning, updateLearning, deleteLearning } =
@@ -25,31 +26,43 @@ export default function LearningsPage() {
   const [selectedLearning, setSelectedLearning] = useState<Learning | null>(null);
   const [learningToDelete, setLearningToDelete] = useState<Learning | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
-  
+
+  // Filters
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const hasInitializedFilter = useRef(false);
 
   useEffect(() => {
     useLearningStore.getState().fetchLearnings();
   }, []);
+
+  // Set default active period filter
+  useEffect(() => {
+    if (!hasInitializedFilter.current && periods.length > 0) {
+      const activePeriod = periods.find(p => p.isActive);
+      if (activePeriod) {
+        setSelectedPeriods([activePeriod._id]);
+      }
+      hasInitializedFilter.current = true;
+    }
+  }, [periods]);
 
   const handleOpenCreateModal = () => {
     setSelectedLearning(null);
     setFormModalOpen(true);
   }
 
-  const handleEdit = (id: string) => {
-    const learning = learnings.find((l) => l._id === id);
-    if (learning) {
-      setSelectedLearning(learning);
-      setFormModalOpen(true);
-    }
+  const handleEdit = (learning: Learning) => {
+    setSelectedLearning(learning);
+    setFormModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    const learning = learnings.find((l) => l._id === id);
-    if (learning) {
-      setLearningToDelete(learning);
-      setDeleteModalOpen(true);
-    }
+  const handleDelete = (learning: Learning) => {
+    setLearningToDelete(learning);
+    setDeleteModalOpen(true);
   };
 
   const handleCloseModals = () => {
@@ -93,12 +106,12 @@ export default function LearningsPage() {
       toast.promise(promise, {
         loading: "Actualizando aprendizaje...",
         success: <b>¡Aprendizaje actualizado con éxito!</b>,
-        error: (err) => <b>{ err.toString() }</b>,
+        error: (err) => <b>{err.toString()}</b>,
       });
     } else {
       const learningToCreate: NewLearning = {
         ...learningFormData,
-        grade: "Transición", 
+        grade: "Transición",
       };
       promise = createLearning(learningToCreate);
       toast.promise(promise, {
@@ -111,62 +124,82 @@ export default function LearningsPage() {
     handleCloseModals();
   };
 
-  const renderContent = () => {
-    if (isLoading && learnings.length === 0) {
-      return (
-        <div className="flex justify-center items-center mt-10">
-          <SpinnerIcon className="h-12 w-12" />
-        </div>
-      );
-    }
-
-    if (error) {
-      return <p className="mt-4 text-red-500">{error}</p>;
-    }
-
-    if (learnings.length === 0) {
-      return <p className="mt-4 text-gray-500">No se encontraron aprendizajes. ¡Crea uno nuevo!</p>;
-    }
-
-    return (
-      <div className="flex flex-col gap-6 mt-6">
-        {learnings.map((learning) => (
-          <LearningCard
-            key={learning._id}
-            learning={learning}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
+  const togglePeriodFilter = (periodId: string) => {
+    setSelectedPeriods(prev =>
+      prev.includes(periodId)
+        ? prev.filter(id => id !== periodId)
+        : [...prev, periodId]
     );
+    setCurrentPage(1);
   };
+
+  const toggleSubjectFilter = (subjectId: string) => {
+    setSelectedSubjects(prev =>
+      prev.includes(subjectId)
+        ? prev.filter(id => id !== subjectId)
+        : [...prev, subjectId]
+    );
+    setCurrentPage(1);
+  };
+
+  const filteredLearnings = useMemo(() => {
+    return learnings.filter(learning => {
+      const matchPeriod = selectedPeriods.length === 0 || selectedPeriods.includes(learning.period._id);
+      const matchSubject = selectedSubjects.length === 0 || selectedSubjects.includes(learning.subject._id);
+      return matchPeriod && matchSubject;
+    });
+  }, [learnings, selectedPeriods, selectedSubjects]);
+
+  const totalPages = Math.ceil(filteredLearnings.length / ITEMS_PER_PAGE);
+  const paginatedLearnings = filteredLearnings.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const isEditMode = !!selectedLearning;
   const isSubmitDisabled = isSubmitting || (isEditMode && !isFormDirty);
 
   return (
     <>
-      <div className="bg-white p-6 rounded-lg shadow-sm relative">
-        <h1 className="text-2xl font-semibold text-purple-900">
-          Gestión de Aprendizajes Esperados
-        </h1>
+      <div className="w-full relative">
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex flex-col gap-4">
+            <h1 className="text-2xl font-semibold text-purple-900">
+              Gestión de Aprendizajes Esperados
+            </h1>
 
-        {renderContent()}
+            <LearningsFilters
+              periods={periods}
+              subjects={subjects}
+              selectedPeriods={selectedPeriods}
+              selectedSubjects={selectedSubjects}
+              onTogglePeriod={togglePeriodFilter}
+              onToggleSubject={toggleSubjectFilter}
+            />
+          </div>
 
-        {/* Centered container for the add button */}
-        <div className="mt-8 flex justify-center">
           <button
             onClick={handleOpenCreateModal}
             aria-label="Crear nuevo aprendizaje"
-            className="group relative flex justify-center rounded-full focus:outline-none"
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
           >
-            <PlusCircleIcon
-              className="h-11 w-11 text-purple-500 transition-all duration-300 ease-in-out group-hover:text-purple-700 group-hover:drop-shadow-purple-700 group-hover:scale-110"
-              strokeWidth={1}
-            />
+            <PlusIcon className="h-6 w-6" strokeWidth={2} />
+            Crear
           </button>
         </div>
+
+        {error && <p className="mt-4 text-red-500">{error}</p>}
+
+        <LearningsTable
+          learnings={paginatedLearnings}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+          onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
+          isLoading={isLoading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </div>
 
       <ConfirmationModal
@@ -188,9 +221,9 @@ export default function LearningsPage() {
         isSubmitting={isSubmitting}
         isSubmitDisabled={isSubmitDisabled}
       >
-        <LearningForm 
+        <LearningForm
           initialData={selectedLearning}
-          onFormChange={handleFormChange} 
+          onFormChange={handleFormChange}
           subjects={subjects}
           periods={periods}
         />

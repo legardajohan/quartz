@@ -167,7 +167,7 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                         <Typography variant="small" color="blue-gray" className="font-normal">
                                             {user.identificationNumber}
                                         </Typography>
-                                        <Typography variant="small" color="blue-gray" className="font-normal opacity-70">
+                                        <Typography variant="small" color="blue-gray" className="font-normal opacity-70 text-xs">
                                             {user.identificationType}
                                         </Typography>
                                     </td>
@@ -183,7 +183,7 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                         <Typography
                                             variant="small"
                                             color="blue-gray"
-                                            className="font-normal opacity-70"
+                                            className="font-normal opacity-70 text-xs"
                                         >
                                             Sede {user.school.schoolNumber}
                                         </Typography>
@@ -203,13 +203,15 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                                     variant="text"
                                                     onClick={() => handleOpenChecklist(user._id)}
                                                     size="sm"
+                                                    color="white"
+                                                    className="shadow-none hover:shadow-md bg-white transition-all border border-gray-200"
                                                 >
                                                     {valuationState === 'NOT_STARTED' ? (
                                                         <PlusIcon className="h-5 w-5 text-gray-500" />
                                                     ) : (
 
                                                         <ClipboardDocumentListIcon
-                                                            className={`h-6 w-6 ${valuationState === 'COMPLETED'
+                                                            className={`h-5 w-5 ${valuationState === 'COMPLETED'
                                                                 ? 'text-green-500'
                                                                 : valuationState === 'IN_PROGRESS'
                                                                     ? 'text-blue-500'
@@ -228,10 +230,11 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                                             user._id,
                                                             `${user.firstName} ${user.lastName} ${user.secondLastName || ''}`
                                                         )}
+                                                        color="white"
                                                         size="sm"
-                                                        className="hover:bg-gray-100"
+                                                        className="text-gray-500 shadow-none hover:shadow-md hover:text-pink-500 transition-all border border-gray-200"
                                                     >
-                                                        <TrashIcon className="h-5 w-5 text-gray-400 hover:text-pink-400 transition-colors" />
+                                                        <TrashIcon className="h-4 w-4" />
                                                     </IconButton>
                                                 </Tooltip>
                                             )}

@@ -14,6 +14,12 @@ function mapLearningToResponse(learning: ILearningDocument): ILearningResponse {
     return {
         _id: learningObject._id.toString(),
         description: learningObject.description,
+        grade: learningObject.grade,
+        author: {
+            _id: learningObject.userId._id.toString(),
+            name: `${learningObject.userId.firstName} ${learningObject.userId.lastName}`,
+            role: learningObject.userId.role,
+        },
         subject: {
             _id: learningObject.subjectId._id.toString(),
             name: learningObject.subjectId.name,
