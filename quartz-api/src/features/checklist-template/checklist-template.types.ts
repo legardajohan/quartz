@@ -7,14 +7,20 @@ export interface IChecklistTemplate {
   teacherId: Types.ObjectId;
   name: string;
   subjects: {
-    subjectId: Types.ObjectId;
-    learnings: Types.ObjectId[];
+    subject: {
+      _id: Types.ObjectId;
+      name: string;
+    };
+    learnings: {
+      _id?: Types.ObjectId;
+      description: string;
+    }[];
   }[];
 }
 
 export type CreateChecklistTemplateData = {
-    name: string;
-    periodId: Types.ObjectId;
+  name: string;
+  periodId: Types.ObjectId;
 };
 
 export interface IChecklistTemplateResponse {
@@ -24,13 +30,13 @@ export interface IChecklistTemplateResponse {
   teacherId: string;
   name: string;
   subjects: {
-    subjectId: {
-        _id: string;
-        name: string;
+    subject: {
+      _id: string;
+      name: string;
     };
     learnings: {
-        _id: string;
-        description: string;
+      _id: string;
+      description: string;
     }[];
   }[];
 }

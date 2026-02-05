@@ -1,26 +1,16 @@
 import { ChecklistTemplateModel, IChecklistTemplateDocument } from './checklist-template.model';
 import { CreateChecklistTemplateData, IChecklistTemplateResponse, IChecklistTemplateForSession } from './checklist-template.types';
 import { LearningModel } from '../learning/learning.model';
-import { FilterQuery, Types, Query } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 import { create } from '../../repositories/base.repository';
 
-interface LeanLearning {
+interface PopulatedLearning {
     _id: Types.ObjectId;
-    subjectId: Types.ObjectId;
-}
-
-function populateChecklistTemplateDetails<T>(query: Query<T, IChecklistTemplateDocument>) {
-    return query
-        .populate<{ subjects: IChecklistTemplateResponse['subjects'] }>([
-            {
-                path: 'subjects.subjectId',
-                select: 'name'
-            },
-            {
-                path: 'subjects.learnings',
-                select: 'description'
-            }
-        ]);
+    subjectId: {
+        _id: Types.ObjectId;
+        name: string;
+    };
+    description: string;
 }
 
 export const getChecklistTemplatesByTeacherId = async (
@@ -35,9 +25,7 @@ export const getChecklistTemplatesByTeacherId = async (
 
     if (templateId) query._id = new Types.ObjectId(templateId);
 
-    const template = await populateChecklistTemplateDetails(
-        ChecklistTemplateModel.find(query)
-    )
+    const template = await ChecklistTemplateModel.find(query)
         .lean<IChecklistTemplateResponse[]>()
         .exec();
 
@@ -71,24 +59,41 @@ export const createChecklistTemplate = async (
     const learningsInPeriod = await LearningModel.find({
         periodId: data.periodId,
         institutionId: institutionId
-    }).select('_id subjectId').lean<LeanLearning[]>();
+    })
+        .select('subjectId description')
+        .populate('subjectId', 'name')
+        .lean<PopulatedLearning[]>();
 
     if (learningsInPeriod.length === 0) {
         throw new Error(`No learnings found for periodId: ${data.periodId}. Cannot create an empty template.`);
     }
 
-    const subjectsMap = new Map<string, Types.ObjectId[]>();
+    // Map keys are Subject IDs (string)
+    const subjectsMap = new Map<string, { name: string, learnings: string[] }>();
+
     for (const learning of learningsInPeriod) {
-        const subjectIdStr = learning.subjectId.toString();
-        if (!subjectsMap.has(subjectIdStr)) {
-            subjectsMap.set(subjectIdStr, []);
+        // Ensure subjectId is populated and has a name
+        if (learning.subjectId && 'name' in learning.subjectId) {
+            const subjectIdStr = learning.subjectId._id.toString();
+            const subjectName = learning.subjectId.name;
+
+            if (!subjectsMap.has(subjectIdStr)) {
+                subjectsMap.set(subjectIdStr, {
+                    name: subjectName,
+                    learnings: []
+                });
+            }
+            subjectsMap.get(subjectIdStr)!.learnings.push(learning.description);
         }
-        subjectsMap.get(subjectIdStr)!.push(learning._id);
     }
 
-    const subjectsArray = Array.from(subjectsMap.entries()).map(([subjectId, learnings]) => ({
-        subjectId: new Types.ObjectId(subjectId),
-        learnings: learnings,
+    const subjectsArray = Array.from(subjectsMap.entries()).map(([subjectId, data]) => ({
+        subject: {
+            _id: new Types.ObjectId(subjectId),
+            name: data.name
+        },
+        // Map strings to objects for the new schema
+        learnings: data.learnings.map(desc => ({ description: desc })),
     }));
 
     const newTemplate = await create(ChecklistTemplateModel, {
@@ -99,13 +104,19 @@ export const createChecklistTemplate = async (
         teacherId: new Types.ObjectId(teacherId),
     });
 
-    const populatedTemplate = await populateChecklistTemplateDetails(
-        ChecklistTemplateModel.findById(newTemplate._id) 
-    ).lean<IChecklistTemplateResponse>().exec();
+    // Since we are storing snapshots, we don't need to populate the result deeply again, 
+    // but the generic create returns the document. 
+    // We want to return IChecklistTemplateResponse matching the interface.
+    // The created document already has the structure we want (strings).
 
-    if (!populatedTemplate) {
-         throw new Error('Failed to retrieve and populate newly created template.');
+    // We can just findById to ensure we return a plain object/lean if 'create' returns a Mongoose document.
+    const createdTemplate = await ChecklistTemplateModel.findById(newTemplate._id)
+        .lean<IChecklistTemplateResponse>()
+        .exec();
+
+    if (!createdTemplate) {
+        throw new Error('Failed to retrieve newly created template.');
     }
 
-    return populatedTemplate;
+    return createdTemplate;
 };

@@ -2,21 +2,20 @@ import { Schema, model, Document, Types } from 'mongoose';
 import { IChecklistTemplate } from './checklist-template.types';
 
 export interface IChecklistTemplateDocument extends IChecklistTemplate, Document {
-  _id: Types.ObjectId; 
+  _id: Types.ObjectId;
 }
 
+const learningSchema = new Schema({
+  description: { type: String, required: true }
+}); // _id is enabled by default
+
 const subjectInTemplateSchema = new Schema({
-  subjectId: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Subject', 
-    required: true 
+  subject: {
+    _id: { type: Schema.Types.ObjectId, required: true },
+    name: { type: String, required: true }
   },
-  learnings: [{ 
-    type: Schema.Types.ObjectId, 
-    ref: 'Learning', 
-    required: true 
-  }]
-}, { _id: false }); // _id is not needed for this subdocument
+  learnings: [learningSchema]
+}, { _id: false }); // _id is not needed for the subject wrapper, but learnings WILL have _id by default
 
 const ChecklistTemplateSchema = new Schema<IChecklistTemplateDocument>({
   institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },

@@ -63,15 +63,9 @@ export interface IStudentValuationDTO {
 // II. POPULATED DOCUMENT TYPES (for service-layer transformations)
 // -----------------------------------------------------------------------------
 
-// Populated version of ILearningValuation
-interface IPopulatedLearningValuation extends Omit<ILearningValuation, 'learningId'> {
-  learningId: ILearningDocument;
-}
-
 // Populated version of IValuationBySubject
-interface IPopulatedValuationBySubject extends Omit<IValuationBySubject, 'subjectId' | 'learningValuations'> {
+interface IPopulatedValuationBySubject extends Omit<IValuationBySubject, 'subjectId'> {
   subjectId: ISubjectDocument;
-  learningValuations: IPopulatedLearningValuation[];
 }
 
 // Fully populated StudentValuation document
@@ -87,13 +81,13 @@ export type PopulatedValuation = Omit<IStudentValuationDocument, 'studentId' | '
 // -----------------------------------------------------------------------------
 
 export type StudentValuationCreationData = {
-    institutionId: Types.ObjectId;
-    studentId: Types.ObjectId;
-    teacherId: Types.ObjectId;
-    checklistTemplateId: Types.ObjectId;
-    periodId: Types.ObjectId;
-    globalStatus: GlobalValuationStatus | null;
-    valuationsBySubject: IValuationBySubject[];
+  institutionId: Types.ObjectId;
+  studentId: Types.ObjectId;
+  teacherId: Types.ObjectId;
+  checklistTemplateId: Types.ObjectId;
+  periodId: Types.ObjectId;
+  globalStatus: GlobalValuationStatus | null;
+  valuationsBySubject: IValuationBySubject[];
 };
 
 type LearningValuationUpdate = {

@@ -45,7 +45,7 @@ export function LearningsTable({
                     <Typography variant="small" className="font-normal">
                         {item.author?.name || 'Desconocido'}
                     </Typography>
-                    <Typography variant="small" className="font-normal text-pink-500 opacity-70 text-xs">
+                    <Typography variant="small" className="font-normal text-purple-500 opacity-70 uppercase text-xs">
                         {item.author?.role || ''}
                     </Typography>
                 </div>
@@ -83,7 +83,7 @@ export function LearningsTable({
                         <IconButton
                             size="sm"
                             color="white"
-                            className="text-gray-600 shadow-none hover:shadow-md hover:text-blue-500 transition-all border border-gray-200"
+                            className="text-gray-600 shadow-none hover:shadow-md hover:text-green-500 transition-all border border-gray-200"
                             onClick={() => onEdit(item)}
                         >
                             <PencilIcon className="h-4 w-4" />

@@ -3,7 +3,8 @@ import { GlobalValuationStatus, QualitativeValuation } from './student-valuation
 
 // Interface for the nested LearningValuation
 export interface ILearningValuation {
-  learningId: Types.ObjectId;
+  _id?: Types.ObjectId; // Auto-generated ID for the valuation item
+  learningDescription: string;
   qualitativeValuation: QualitativeValuation | null;
   pointsObtained: number;
 }
@@ -31,10 +32,10 @@ export interface IStudentValuationDocument extends Document {
 }
 
 const learningValuationSchema = new Schema<ILearningValuation>({
-  learningId: { type: Schema.Types.ObjectId, ref: 'Learning', required: true },
+  learningDescription: { type: String, required: true },
   qualitativeValuation: { type: String, enum: [...Object.values(QualitativeValuation), null], default: null },
   pointsObtained: { type: Number, default: 0 }
-}, { _id: false });
+}); // _id is enabled by default
 
 const valuationBySubjectSchema = new Schema<IValuationBySubject>({
   subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
