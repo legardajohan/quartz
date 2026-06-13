@@ -1,0 +1,59 @@
+# Quartz — Dominio (reglas invariantes)
+
+> Reglas de negocio **estables que todo feature debe respetar**. No las redefinas en specs ni en código: refiérete a este archivo. Detalle de datos en [data-model.md](data-model.md).
+
+## Fase y alcance
+- **Actual:** Grado **Transición**, valoración **cualitativa** (Lista de Chequeo → Carta Comunicativa).
+- **Futuro (no implementar aún):** Grados 1°–11°, valoración **cuantitativa** (0.0–5.0).
+
+## Roles
+| Rol | Puede |
+|---|---|
+| **Jefe de Área** (admin) | Todo lo del Docente + gestión de usuarios, aprendizajes, conceptos, ítems, períodos y sedes; carga masiva de estudiantes; consolidados. |
+| **Docente** | Ver estudiantes (su sede por defecto; filtra otras sedes sin editar); valorar y modificar la Lista de Chequeo; previsualizar/descargar informes de sus grupos. |
+| **Estudiante** | Sin acciones en esta fase. |
+
+## 7 Dimensiones
+Modeladas como `Subject` (`type: Dimensión`), **fijas**: Cognitiva · Espiritual · Estética · Comunicativa · Socioafectiva · Corporal · Ética.
+
+## Jerarquía de la Lista de Chequeo
+`Período → Dimensión (Subject) → Aprendizaje Esperado (Learning)`
+El docente compone su Lista de Chequeo **personal** (`ChecklistTemplate`) eligiendo `Learning`s por dimensión.
+
+## Valoración cualitativa (por ítem / `Learning`)
+| Valoración | Puntos |
+|---|---|
+| Logrado | 3 |
+| En proceso | 2 |
+| Con dificultad | 1 |
+
+## Concepto por dimensión (calculado)
+1. `totalSubjectScore` = suma de puntos de los ítems valorados de la dimensión.
+2. `maxSubjectScore` = nº de ítems de la dimensión × 3.
+3. `subjectPercentage` = `totalSubjectScore / maxSubjectScore × 100`.
+4. Concepto según el porcentaje:
+
+| % del máximo | Concepto |
+|---|---|
+| 80–100 | Logrado |
+| 46–79 | En proceso |
+| 0–45 | Con dificultad |
+
+*Ejemplo:* 5 ítems → máx 15 pts. Logrado 12–15 · En proceso 7–11 · Con dificultad 0–6.
+
+## `globalStatus` (estado de la Lista de Chequeo, calculado)
+| Estado | Color | Condición |
+|---|---|---|
+| Evaluado | Verde | Todos los ítems de todas las dimensiones valorados. |
+| Evaluando | Azul | Faltan ítems o dimensiones por valorar. |
+| Por diligenciar | Gris | Sin ninguna valoración iniciada. |
+
+## Informes
+- **Carta Comunicativa** y **Lista de Chequeo** se generan como **PDF dinámico bajo demanda**, con la valoración más reciente.
+- **Nunca** se almacenan PDFs ni versiones previas.
+- La previsualización de la Carta exige la Lista de Chequeo **completa**.
+
+## Invariantes transversales
+- **Multi-tenancy:** todo dato institucional referencia y se filtra por `institutionId` del **token**. Una fuga entre instituciones es un fallo crítico. (Implementación backend: `quartz-api/CLAUDE.md`.)
+- **Un solo `Period` activo** por institución a la vez.
+- **Dimensiones** (`Subject` con `institutionId`) son por institución; las materias **globales** futuras llevan `institutionId` nulo.
