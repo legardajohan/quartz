@@ -9,6 +9,7 @@ import checklistTemplatesRoutes from './features/checklist-template/checklist-te
 import studentValuationRoutes from './features/student-valuation/student-valuation.routes';
 import usersRoutes from './features/users/users.routes';
 import schoolRoutes from './features/school/school.routes';
+import { errorHandler } from './middlewares/error.middleware';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -35,6 +36,8 @@ app.use('/api/student-valuations', studentValuationRoutes);
 app.use('/api/users', usersRoutes);
 // Routes for schools
 app.use('/api/schools', schoolRoutes);
+
+app.use(errorHandler);
 
 // Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;
