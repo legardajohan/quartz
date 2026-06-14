@@ -1,5 +1,11 @@
-import { FilterQuery, Model, Types, Query } from 'mongoose';
-import { create } from '../../repositories/base.repository';
+import { FilterQuery, Types, Query } from 'mongoose';
+import {
+    findScoped,
+    findByIdScoped,
+    createScoped,
+    findOneAndUpdateScoped,
+    findOneAndDeleteScoped,
+} from '../../repositories/base.repository';
 import { LearningModel, ILearningDocument } from "./learning.model";
 import { Subject } from '../subject/subject.model';
 import { Period } from '../period/period.model';
@@ -31,11 +37,7 @@ export async function getAllLearnings(
     institutionId: string,
     filter: FilterQuery<ILearningDocument>
 ): Promise<ILearningDocument[]> {
-    const query = LearningModel.find({
-        ...filter,
-        institutionId: new Types.ObjectId(institutionId),
-    });
-
+    const query = findScoped(LearningModel, institutionId, filter);
     const learnings = await populateLearningDetails(query).exec();
     return learnings;
 }
@@ -54,7 +56,6 @@ export async function createLearning(
     ]);
 
     const payload = {
-        institutionId: new Types.ObjectId(institutionId),
         userId: new Types.ObjectId(userId),
         subjectId: new Types.ObjectId(subjectId),
         periodId: new Types.ObjectId(periodId),
@@ -62,13 +63,10 @@ export async function createLearning(
         grade
     };
 
-    const newLearning = await create(
-        LearningModel,
-        payload
-    );
+    const newLearning = await createScoped(LearningModel, institutionId, payload);
 
     const populatedLearning = await populateLearningDetails(
-        LearningModel.findById(newLearning._id)
+        findByIdScoped(LearningModel, institutionId, newLearning._id as Types.ObjectId)
     ).exec();
 
     if (!populatedLearning) {
@@ -84,7 +82,7 @@ export async function updateLearning(
     updateData: UpdateLearningData
 ): Promise<ILearningDocument | null> {
 
-    const validations: [Model<any>, string | Types.ObjectId, string][] = [];
+    const validations: [any, string | Types.ObjectId, string][] = [];
     if (updateData.subjectId) {
         validations.push([Subject, updateData.subjectId, 'Subject']);
     }
@@ -95,13 +93,10 @@ export async function updateLearning(
         await validateAllExist(validations);
     }
 
-    const query = {
-        _id: new Types.ObjectId(learningId),
-        institutionId: new Types.ObjectId(institutionId)
-    };
-
-    const updatedLearning = await LearningModel.findOneAndUpdate(
-        query,
+    const updatedLearning = await findOneAndUpdateScoped(
+        LearningModel,
+        institutionId,
+        { _id: new Types.ObjectId(learningId) },
         updateData,
         { new: true }
     );
@@ -111,7 +106,7 @@ export async function updateLearning(
     }
 
     const populatedLearning = await populateLearningDetails(
-        LearningModel.findById(updatedLearning._id)
+        findByIdScoped(LearningModel, institutionId, updatedLearning._id as Types.ObjectId)
     ).exec();
 
     return populatedLearning;
@@ -121,10 +116,7 @@ export async function deleteLearning(
     learningId: string,
     institutionId: string
 ): Promise<ILearningDocument | null> {
-    const query = {
-        _id: new Types.ObjectId(learningId),
-        institutionId: new Types.ObjectId(institutionId)
-    };
-
-    return LearningModel.findOneAndDelete(query);
+    return findOneAndDeleteScoped(LearningModel, institutionId, {
+        _id: new Types.ObjectId(learningId)
+    });
 }

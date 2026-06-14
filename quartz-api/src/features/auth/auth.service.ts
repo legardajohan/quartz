@@ -38,6 +38,8 @@ async function getSessionData(user: SafeUser): Promise<ISessionData> {
 
 export async function login(email: string, password: string) {
     try {
+        // Pre-autenticación: el tenant aún no se conoce en esta etapa. Esta es la única
+        // consulta que debe quedar fuera del repositorio tenant-safe de forma deliberada.
         const user = await User.findOne({ email }).select('+passwordHash') as IUserDocument | null;
 
         if (!user || !user.passwordHash) return null;

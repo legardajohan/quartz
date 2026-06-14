@@ -1,43 +1,77 @@
-import { Model, Document, FilterQuery, UpdateQuery } from "mongoose";
+import { Model, Document, FilterQuery, UpdateQuery, Types } from "mongoose";
 
-// Create document
-export async function create<T extends Document>(
-  model: Model<T>, 
-  data: Omit<T, keyof Document>
-): Promise<T> {
-  const newDocument = new model(data);
-  return await newDocument.save();
-}
+type TenantId = string | Types.ObjectId;
 
-// Update by ID
-export async function updateById<T extends Document>(
+// ─── Lecturas tenant-safe ─────────────────────────────────────────────────────
+// Devuelven el Query sin ejecutar para que el llamador pueda encadenar
+// .populate() / .sort() / .select() / .lean() antes de hacer await.
+// institutionId siempre prevalece sobre cualquier valor en el filtro del llamador.
+
+export function findScoped<T>(
   model: Model<T>,
-  id: string,
-  data: UpdateQuery<T>
-): Promise<T | null> {
-  return await model.findByIdAndUpdate(id, data, { new: true }).exec();
-}
-
-// Delete by ID
-export async function deleteById<T extends Document>(
-  model: Model<T>,
-  id: string
-): Promise<T | null> {
-  return await model.findByIdAndDelete(id).exec();
-}
-
-// Get by ID
-export async function getById<T extends Document>(
-  model: Model<T>,
-  id: string
-): Promise<T | null> {
-  return await model.findById(id).exec();
-}
-
-// Get all with optional filtering
-export async function getAll<T extends Document>(
-  model: Model<T>,
+  institutionId: TenantId,
   filter: FilterQuery<T> = {}
-): Promise<T[]> {
-  return await model.find(filter).exec();
+) {
+  return model.find({ ...filter, institutionId } as FilterQuery<T>);
+}
+
+export function findOneScoped<T>(
+  model: Model<T>,
+  institutionId: TenantId,
+  filter: FilterQuery<T> = {}
+) {
+  return model.findOne({ ...filter, institutionId } as FilterQuery<T>);
+}
+
+export function findByIdScoped<T>(
+  model: Model<T>,
+  institutionId: TenantId,
+  id: string | Types.ObjectId
+) {
+  return model.findOne({ _id: id, institutionId } as FilterQuery<T>);
+}
+
+// ─── Escritura tenant-safe ────────────────────────────────────────────────────
+// institutionId se fuerza en el payload al final, sobrescribiendo cualquier
+// valor que el llamador pudiera haber incluido en data.
+
+export async function createScoped<T extends Document>(
+  model: Model<T>,
+  institutionId: TenantId,
+  data: Record<string, any>
+): Promise<T> {
+  const doc = new model({ ...data, institutionId });
+  return doc.save() as unknown as Promise<T>;
+}
+
+// ─── Updates / Deletes tenant-safe ───────────────────────────────────────────
+
+export function findOneAndUpdateScoped<T>(
+  model: Model<T>,
+  institutionId: TenantId,
+  filter: FilterQuery<T>,
+  update: UpdateQuery<T>,
+  options: Record<string, any> = {}
+) {
+  return model.findOneAndUpdate(
+    { ...filter, institutionId } as FilterQuery<T>,
+    update,
+    options
+  );
+}
+
+export function findOneAndDeleteScoped<T>(
+  model: Model<T>,
+  institutionId: TenantId,
+  filter: FilterQuery<T>
+) {
+  return model.findOneAndDelete({ ...filter, institutionId } as FilterQuery<T>);
+}
+
+export function deleteOneScoped<T>(
+  model: Model<T>,
+  institutionId: TenantId,
+  filter: FilterQuery<T>
+) {
+  return model.deleteOne({ ...filter, institutionId } as FilterQuery<T>);
 }

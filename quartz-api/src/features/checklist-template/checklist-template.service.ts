@@ -2,7 +2,11 @@ import { ChecklistTemplateModel, IChecklistTemplateDocument } from './checklist-
 import { CreateChecklistTemplateData, IChecklistTemplateResponse, IChecklistTemplateForSession } from './checklist-template.types';
 import { LearningModel } from '../learning/learning.model';
 import { FilterQuery, Types } from 'mongoose';
-import { create } from '../../repositories/base.repository';
+import {
+    findScoped,
+    findByIdScoped,
+    createScoped,
+} from '../../repositories/base.repository';
 
 interface PopulatedLearning {
     _id: Types.ObjectId;
@@ -18,14 +22,13 @@ export const getChecklistTemplatesByTeacherId = async (
     institutionId: string,
     templateId?: string
 ): Promise<IChecklistTemplateResponse[]> => {
-    const query: FilterQuery<IChecklistTemplateDocument> = {
+    const filter: FilterQuery<IChecklistTemplateDocument> = {
         teacherId: new Types.ObjectId(teacherId),
-        institutionId: new Types.ObjectId(institutionId),
     };
 
-    if (templateId) query._id = new Types.ObjectId(templateId);
+    if (templateId) filter._id = new Types.ObjectId(templateId);
 
-    const template = await ChecklistTemplateModel.find(query)
+    const template = await findScoped(ChecklistTemplateModel, institutionId, filter)
         .lean<IChecklistTemplateResponse[]>()
         .exec();
 
@@ -36,17 +39,14 @@ export const getChecklistTemplatesForSession = async (
     teacherId: string,
     institutionId: string
 ): Promise<IChecklistTemplateForSession[]> => {
-    const templates = await ChecklistTemplateModel.find({
-        teacherId,
-        institutionId,
-    })
+    const templates = await findScoped(ChecklistTemplateModel, institutionId, { teacherId })
         .select('_id name periodId')
         .lean();
 
     return templates.map(t => ({
-        _id: t._id.toString(),
-        name: t.name,
-        periodId: t.periodId.toString(),
+        _id: (t._id as Types.ObjectId).toString(),
+        name: (t as any).name,
+        periodId: (t as any).periodId.toString(),
     }));
 };
 
@@ -56,9 +56,8 @@ export const createChecklistTemplate = async (
     teacherId: string
 ): Promise<IChecklistTemplateResponse> => {
 
-    const learningsInPeriod = await LearningModel.find({
+    const learningsInPeriod = await findScoped(LearningModel, institutionId, {
         periodId: data.periodId,
-        institutionId: institutionId
     })
         .select('subjectId description')
         .populate('subjectId', 'name')
@@ -87,30 +86,22 @@ export const createChecklistTemplate = async (
         }
     }
 
-    const subjectsArray = Array.from(subjectsMap.entries()).map(([subjectId, data]) => ({
+    const subjectsArray = Array.from(subjectsMap.entries()).map(([subjectId, subjectData]) => ({
         subject: {
             _id: new Types.ObjectId(subjectId),
-            name: data.name
+            name: subjectData.name
         },
-        // Map strings to objects for the new schema
-        learnings: data.learnings.map(desc => ({ description: desc })),
+        learnings: subjectData.learnings.map(desc => ({ description: desc })),
     }));
 
-    const newTemplate = await create(ChecklistTemplateModel, {
+    const newTemplate = await createScoped(ChecklistTemplateModel, institutionId, {
         name: data.name,
         periodId: data.periodId,
         subjects: subjectsArray,
-        institutionId: new Types.ObjectId(institutionId),
         teacherId: new Types.ObjectId(teacherId),
     });
 
-    // Since we are storing snapshots, we don't need to populate the result deeply again, 
-    // but the generic create returns the document. 
-    // We want to return IChecklistTemplateResponse matching the interface.
-    // The created document already has the structure we want (strings).
-
-    // We can just findById to ensure we return a plain object/lean if 'create' returns a Mongoose document.
-    const createdTemplate = await ChecklistTemplateModel.findById(newTemplate._id)
+    const createdTemplate = await findByIdScoped(ChecklistTemplateModel, institutionId, newTemplate._id)
         .lean<IChecklistTemplateResponse>()
         .exec();
 
