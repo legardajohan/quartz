@@ -23,9 +23,12 @@ allowed-tools: Read, Edit(specs/**), Bash(git status *), Bash(git branch *), Bas
    - Backend: `types → model → validation → service → controller → routes → montar en app.ts`.
    - Frontend: `types → store → components → page → ruta en App.tsx`.
 5. Marca en el spec los criterios cubiertos y cambia `status: implemented`.
+6. **Verificación final:** ejecuta `npx tsc --noEmit` en cada paquete modificado y arranca el servidor en modo desarrollo; confirma que no hay errores de compilación ni de runtime en consola antes de dar el feature por completado.
 
 ## Checklist de salida
 - [ ] Rama `feat/<feature>` creada.
 - [ ] Código en `src/features/<feature>/` de los paquetes que apliquen, conforme a las skills y los `CLAUDE.md`.
 - [ ] `specs/<feature>.spec.md` con `status: implemented` y criterios marcados.
+- [ ] `npx tsc --noEmit` pasa sin errores en todos los paquetes modificados.
+- [ ] El servidor arranca sin errores en consola (sin errores de compilación ni de runtime en `ts-node`/`nodemon`).
 - [ ] Sin tests ni documentación (van en `/sdd-release`).
