@@ -184,8 +184,8 @@ export async function initializeStudentValuation(
   // Validate that related documents exist before creation.
   try {
     await validateAllExist([[Period, periodId, 'Periodo'], [User, studentId, 'Estudiante']]);
-  } catch (error: any) {
-    throw new AppError(error.message, 404);
+  } catch (error: unknown) {
+    throw new AppError(error instanceof Error ? error.message : 'Error desconocido', 404);
   }
 
   // Find the corresponding checklist template.
@@ -226,8 +226,10 @@ export async function initializeStudentValuation(
   try {
     const newStudentValuation = await createScoped(StudentValuationModel, institutionId, payload);
     valuationId = newStudentValuation._id.toString();
-  } catch (error: any) {
-    if (error.code === 11000 || error.codeName === 'DuplicateKey') {
+  } catch (error: unknown) {
+    // MongoServerError para race condition en creación concurrente; cast seguro porque re-lanzamos si no es duplicado
+    const mongoError = error as { code?: number; codeName?: string };
+    if (mongoError.code === 11000 || mongoError.codeName === 'DuplicateKey') {
       // Race condition handled
       const existing = await findOneScoped(StudentValuationModel, institutionId, {
         studentId: new Types.ObjectId(studentId),

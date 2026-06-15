@@ -12,6 +12,7 @@ import { Period } from '../period/period.model';
 import { User } from '../auth/auth.model';
 import type { LearningData, UpdateLearningData } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
+import AppError from '../../utils/AppError';
 
 // --- Helper Function ---
 function populateLearningDetails<T>(query: Query<T, ILearningDocument>) {
@@ -50,10 +51,14 @@ export async function createLearning(
 
     const { subjectId, periodId, description, grade } = learningData;
 
-    await validateAllExist([
-        [Subject, subjectId, 'Subject'],
-        [Period, periodId, 'Period'],
-    ]);
+    try {
+        await validateAllExist([
+            [Subject, subjectId, 'Subject'],
+            [Period, periodId, 'Period'],
+        ]);
+    } catch (error: unknown) {
+        throw new AppError(error instanceof Error ? error.message : 'Referencia inválida', 400);
+    }
 
     const payload = {
         userId: new Types.ObjectId(userId),
@@ -82,7 +87,7 @@ export async function updateLearning(
     updateData: UpdateLearningData
 ): Promise<ILearningDocument | null> {
 
-    const validations: [any, string | Types.ObjectId, string][] = [];
+    const validations: Parameters<typeof validateAllExist>[0] = [];
     if (updateData.subjectId) {
         validations.push([Subject, updateData.subjectId, 'Subject']);
     }
@@ -90,7 +95,11 @@ export async function updateLearning(
         validations.push([Period, updateData.periodId, 'Period']);
     }
     if (validations.length > 0) {
-        await validateAllExist(validations);
+        try {
+            await validateAllExist(validations);
+        } catch (error: unknown) {
+            throw new AppError(error instanceof Error ? error.message : 'Referencia inválida', 400);
+        }
     }
 
     const updatedLearning = await findOneAndUpdateScoped(
