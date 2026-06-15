@@ -8,6 +8,18 @@ import { getChecklistTemplatesForSession } from '../checklist-template/checklist
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
+export function toSessionUser(user: SafeUser): ISessionData['user'] {
+    return {
+        _id: user._id.toString(),
+        institutionId: user.institutionId.toString(),
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        secondLastName: user.secondLastName,
+        schoolId: user.schoolId.toString(),
+    };
+}
+
 async function getSessionData(user: SafeUser): Promise<ISessionData> {
     const institutionId = user.institutionId.toString();
     const userId = user._id.toString();
@@ -19,15 +31,7 @@ async function getSessionData(user: SafeUser): Promise<ISessionData> {
     ]);
 
     const sessionData: ISessionData = {
-        user: {
-            _id: user._id.toString(),
-            institutionId: user.institutionId.toString(),
-            role: user.role,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            secondLastName: user.secondLastName,
-            schoolId: user.schoolId.toString(),
-        },
+        user: toSessionUser(user),
         periods: periods.map(p => ({ _id: p._id.toString(), name: p.name, isActive: p.isActive })),
         subjects: subjects.map(s => ({ _id: s._id.toString(), name: s.name })),
         checklistTemplates: checklistTemplates,
