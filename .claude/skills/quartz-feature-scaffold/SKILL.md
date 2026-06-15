@@ -15,8 +15,8 @@ Crea los 6 archivos (`<feature>` en kebab-case, singular del dominio):
 2. **`<feature>.model.ts`** — `Schema` Mongoose + `I<X>Document extends I<X>, Document`. Incluye `institutionId: { type: ObjectId, ref: '...', required: true }`. Campos sensibles con `select: false`.
 3. **`<feature>.validation.ts`** — esquemas Zod con forma `z.object({ body, params, query })`. Deriva DTOs con `z.infer`.
 4. **`<feature>.service.ts`** — funciones `export async function`. **Toda** operación recibe y filtra `institutionId`. Lecturas con `.lean()`. Errores esperables → `throw new AppError(msg, code)`.
-5. **`<feature>.controller.ts`** — funciones `<accion>Controller`. Extraen `req.user.institutionId.toString()`, llaman al service, mapean a HTTP. `try/catch` con manejo de `AppError`.
-6. **`<feature>.routes.ts`** — `const router = Router()`; cada ruta encadena `authenticateJWT → authorize([roles]) → validate(schema) → controller`. `export default router`.
+5. **`<feature>.controller.ts`** — funciones `<accion>Controller`. Extraen `req.user!.institutionId.toString()`, llaman al service, responden. **Sin `try/catch`** y **sin** guarda `if (!user...)`: los errores se propagan al `errorHandler` central vía `asyncHandler` (cableado en routes), y `requireTenant` garantiza `req.user`. Errores esperables se lanzan en el **service** como `AppError`; el controller nunca mapea errores con `res.status(500)` ni por texto del mensaje.
+6. **`<feature>.routes.ts`** — `const router = Router()`; cada ruta encadena `authenticateJWT → requireTenant → authorize([roles]) → validate(schema) → asyncHandler(controller)`. `requireTenant` va **inmediatamente después** de `authenticateJWT` (omitir solo en rutas públicas como `login`); todo controller se envuelve con `asyncHandler` aquí. `export default router`.
 
 Finalmente **monta el router en `app.ts`**: `app.use('/api/<plural>', <feature>Routes);`.
 
@@ -36,7 +36,7 @@ Finalmente **monta el router en `app.ts`**: `app.use('/api/<plural>', <feature>R
 
 ## Plantilla mínima de service (referencia)
 ```typescript
-import { AppError } from '../../utils/AppError';
+import AppError from '../../utils/AppError';
 import { <X>Model } from './<feature>.model';
 import type { Create<X>DTO, I<X>Response } from './<feature>.types';
 
@@ -52,4 +52,59 @@ export async function get<X>ById(id: string, institutionId: string): Promise<I<X
   if (!doc) throw new AppError('<X> no encontrado.', 404);
   return doc;
 }
+```
+
+## Plantilla mínima de controller (referencia)
+Delgado, sin `try/catch`, sin guarda `!user`. El tenant siempre sale del token.
+```typescript
+import { Request, Response } from 'express';
+import { create<X>, get<X>ById } from './<feature>.service';
+
+export async function get<X>ByIdController(req: Request, res: Response) {
+  const { id } = req.params;
+  const institutionId = req.user!.institutionId.toString();
+  const result = await get<X>ById(id, institutionId);
+  res.status(200).json(result);
+}
+
+export async function create<X>Controller(req: Request, res: Response) {
+  const institutionId = req.user!.institutionId.toString();
+  const created = await create<X>(req.body, institutionId);
+  res.status(201).json(created);
+}
+```
+
+## Plantilla mínima de routes (referencia)
+`requireTenant` tras `authenticateJWT`; controllers envueltos con `asyncHandler`.
+```typescript
+import { Router } from 'express';
+import { get<X>ByIdController, create<X>Controller } from './<feature>.controller';
+import { authenticateJWT } from '../../middlewares/auth.middleware';
+import { requireTenant } from '../../middlewares/require-tenant.middleware';
+import { authorize } from '../../middlewares/role.middleware';
+import { validate } from '../../middlewares/validate.middleware';
+import { asyncHandler } from '../../middlewares/async-handler.middleware';
+import { get<X>Schema, create<X>Schema } from './<feature>.validation';
+
+const router = Router();
+
+router.get(
+  '/:id',
+  authenticateJWT,
+  requireTenant,
+  authorize(['Jefe de Área']),
+  validate(get<X>Schema),
+  asyncHandler(get<X>ByIdController)
+);
+
+router.post(
+  '/',
+  authenticateJWT,
+  requireTenant,
+  authorize(['Jefe de Área']),
+  validate(create<X>Schema),
+  asyncHandler(create<X>Controller)
+);
+
+export default router;
 ```

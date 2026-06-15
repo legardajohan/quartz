@@ -21,12 +21,12 @@ src/features/<feature>/
 ```
 **Regla de oro:** un *feature* nuevo replica exactamente este conjunto de 6 archivos. No se crean carpetas técnicas globales (`/controllers`, `/services` planos).
 
-Transversales: `middlewares/` (authenticateJWT, authorize, validate), `repositories/base.repository.ts`, `utils/AppError.ts`, `services/` (soporte no atado a feature), `types/`.
+Transversales: `middlewares/` (authenticateJWT, **requireTenant**, authorize, validate, **asyncHandler**, **errorHandler**), `repositories/base.repository.ts`, `utils/AppError.ts`, `services/` (soporte no atado a feature), `types/`.
 
 ## Responsabilidades por capa
-1. **Routes** — método + path; encadena `authenticateJWT → authorize([roles]) → validate(schema) → controller`. Sin lógica.
-2. **Controller** — solo HTTP: extrae `req.user`/`params`/`body`, obtiene `institutionId` del token, llama al service, mapea a HTTP. Captura `AppError` → `res.status(err.statusCode)`.
-3. **Service** — solo negocio: orquesta modelos (directo o vía `base.repository`), **siempre** con filtro `institutionId`, `.lean()` en lecturas. Lanza `AppError(msg, code)` para fallos esperables.
+1. **Routes** — método + path; encadena `authenticateJWT → requireTenant → authorize([roles]) → validate(schema) → asyncHandler(controller)`. Sin lógica. `requireTenant` va **inmediatamente después** de `authenticateJWT` en toda ruta que dependa del tenant (omitir solo en rutas públicas, p. ej. `POST /login`). Todo controller se envuelve con `asyncHandler` **aquí**, no en el archivo de controller.
+2. **Controller** — solo HTTP: extrae `req.user!`/`params`/`body`, obtiene `institutionId` con `req.user!.institutionId.toString()`, llama al service, responde. **Sin `try/catch`** y **sin** guarda `if (!user...)` (de eso se encargan `asyncHandler` + `requireTenant`). Los errores se propagan a `next` vía `asyncHandler` y los resuelve el `errorHandler` central; **nunca** mapear errores con `res.status(500)`/`console.error` ni por coincidencia de texto del mensaje.
+3. **Service** — solo negocio: orquesta modelos (directo o vía `base.repository`), **siempre** con filtro `institutionId`, `.lean()` en lecturas. Lanza `AppError(msg, code)` para fallos esperables (incluido el statusCode exacto, p. ej. `422`); el `errorHandler` central lo traduce a HTTP.
 4. **Model** — schema Mongoose + interfaces `I<X>` / `I<X>Document` + métodos (`toSafeUser`). Campos sensibles con `select: false`.
 
 ## Multi-tenancy (CRÍTICO)
@@ -49,7 +49,7 @@ Nunca aceptar `institutionId` del body/params.
 
 ## Validación y errores
 - **Zod** para todo input (`{ body, params, query }`); deriva DTOs con `z.infer`. (No Joi/express-validator.)
-- Errores esperables → `throw new AppError(msg, statusCode)`; el controller traduce a HTTP.
+- Errores esperables → `throw new AppError(msg, statusCode)` desde el **service**; el `errorHandler` central (destino de `asyncHandler`) lo traduce a `res.status(statusCode).json({ message })`. El controller **no** captura ni mapea errores.
 
 ## Orden al crear un feature
 1. `*.types.ts` → 2. `*.model.ts` → 3. `*.validation.ts` → 4. `*.service.ts` → 5. `*.controller.ts` → 6. `*.routes.ts` → 7. montar en `app.ts` (`app.use('/api/<plural>', <feature>Routes)`).

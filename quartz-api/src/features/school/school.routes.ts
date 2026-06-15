@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { getSchoolsByInstitutionController } from "./school.controller";
 import { authenticateJWT } from '../../middlewares/auth.middleware';
+import { requireTenant } from '../../middlewares/require-tenant.middleware';
+import { asyncHandler } from '../../middlewares/async-handler.middleware';
 
 const router = Router();
 
-router.get("/", authenticateJWT, getSchoolsByInstitutionController);
+router.get("/", authenticateJWT, requireTenant, asyncHandler(getSchoolsByInstitutionController));
 
 export default router;

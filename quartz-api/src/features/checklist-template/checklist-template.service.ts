@@ -7,6 +7,7 @@ import {
     findByIdScoped,
     createScoped,
 } from '../../repositories/base.repository';
+import AppError from '../../utils/AppError';
 
 interface PopulatedLearning {
     _id: Types.ObjectId;
@@ -64,7 +65,7 @@ export const createChecklistTemplate = async (
         .lean<PopulatedLearning[]>();
 
     if (learningsInPeriod.length === 0) {
-        throw new Error(`No learnings found for periodId: ${data.periodId}. Cannot create an empty template.`);
+        throw new AppError(`No learnings found for periodId: ${data.periodId}. Cannot create an empty template.`, 422);
     }
 
     // Map keys are Subject IDs (string)
