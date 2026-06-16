@@ -30,9 +30,9 @@ Transversal: `components/{ui,common,layouts,router,icons}`, `api/apiClient.ts`, 
 |---|---|---|
 | Autenticación | `auth/` | `auth/` |
 | Aprendizajes esperados | `learning/` | `learning/` |
-| Plantillas de checklist | `checklist-template/` | `checklist/` |
+| Plantillas de checklist | `checklist-template/` | `checklist-template/` |
 | Valoración de estudiantes | `student-valuation/` | `student-valuation/` |
-| Usuarios | `users/` | `user/` |
+| Usuarios | `users/` | `users/` |
 | Periodos / Materias / Colegios | `period/`, `subject/`, `school/` | (consumidos vía `sessionData`) |
 
 ## Estado (Zustand)

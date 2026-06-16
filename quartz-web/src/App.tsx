@@ -4,10 +4,10 @@ import { ProtectedRoute } from './components/router/ProtectedRoute';
 import { Dashboard } from './components/layouts/Dashboard';
 import LearningsPage from './features/learning/pages/LearningsPage';
 import ConceptsPage from './features/concept/pages/ConceptsPage';
-import ChecklistsPage from './features/checklist/pages/ChecklistsPage';
+import ChecklistsPage from './features/checklist-template/pages/ChecklistsPage';
 import StudentValuationsPage from './features/student-valuation/pages/StudentValuationsPage';
 import ReportsPage from './features/report/pages/ReportsPage';
-import UsersPage from './features/user/pages/UsersPage';
+import UsersPage from './features/users/pages/UsersPage';
 import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
 import { Toaster } from 'react-hot-toast';
 
