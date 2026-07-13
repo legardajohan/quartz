@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { apiGet, apiPost, apiPatch, apiDelete, extractErrorMessage } from '../../api/apiClient';
+import { apiGet, apiPost, apiPatch, apiDelete, extractErrorMessage, isAxiosError } from '../../api/apiClient';
 import type {
   ChecklistTemplateState,
   ChecklistTemplateDto,
@@ -36,7 +36,10 @@ export const useChecklistTemplateStore = create<ChecklistTemplateState>((set) =>
         isSubmitting: false,
       }));
     } catch (err: unknown) {
-      const errorMessage = extractErrorMessage(err, 'Falló la creación de la plantilla.');
+      const errorMessage =
+        isAxiosError(err) && err.response?.status === 409
+          ? extractErrorMessage(err, 'Máximo 2 plantillas por período alcanzado.')
+          : extractErrorMessage(err, 'Falló la creación de la plantilla.');
       set({ error: errorMessage, isSubmitting: false });
       throw new Error(errorMessage);
     }

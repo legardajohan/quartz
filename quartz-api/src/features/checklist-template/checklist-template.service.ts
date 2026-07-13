@@ -88,6 +88,16 @@ export async function createChecklistTemplate(
   institutionId: string,
   teacherId: string
 ): Promise<IChecklistTemplateDocument> {
+  const existingCount = await ChecklistTemplateModel.countDocuments({
+    institutionId: new Types.ObjectId(institutionId),
+    periodId: new Types.ObjectId(data.periodId),
+    teacherId: new Types.ObjectId(teacherId),
+  });
+
+  if (existingCount >= 2) {
+    throw new AppError('Máximo 2 plantillas por período alcanzado.', 409);
+  }
+
   const learnings = await findScoped(LearningModel, institutionId, {
     periodId: new Types.ObjectId(data.periodId),
     grade: data.grade,

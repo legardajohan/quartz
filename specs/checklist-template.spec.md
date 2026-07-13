@@ -100,3 +100,48 @@ created: 2026-06-27
 - Backend:  quartz-api/src/features/checklist-template/
 - Frontend: quartz-web/src/features/checklist-template/
 - Branch:   feat/checklist-template
+
+---
+
+## Ajuste (2026-07-13) — Límite de plantillas por período y pulido de edición
+
+### Problema
+- Como Docente, quiero que el sistema me impida crear más de 2 plantillas por período para mantener el
+  banco de listas de chequeo acotado y obligarme a editar o eliminar una existente en lugar de acumular.
+- Como Docente, quiero que la pantalla de edición se sienta ordenada y clara —con acciones que floten al
+  modificar y una activación de edición fluida— para trabajar cómodamente en plantillas largas.
+
+### Solución (visión general)
+- **Límite backend:** al crear, el sistema cuenta las plantillas existentes del mismo
+  `institutionId + periodId + teacherId`; si ya hay 2, rechaza con `409` y el mensaje
+  "Máximo 2 plantillas por período alcanzado." El frontend captura ese `409` y lo muestra al usuario.
+- **Pulido UX (referencia `student-valuation`):** espaciado más aireado en los ítems (filas con
+  separadores tipo tabla); **barra de acciones flotante** (`sticky`) que aparece solo cuando hay cambios,
+  con indicador "Hay cambios pendientes" y acciones Deshacer/Guardar; **X de cierre** persistente en el
+  header del modal.
+- **Color e interacción (Emil Kowalski):** el título del modal y los ítems en **reposo van en gris
+  neutro**; el **morado aparece solo al entrar en edición** (foco del título, subrayado del ítem) con
+  transición fluida y sin salto de layout. Los íconos y el botón Guardar conservan el morado de marca.
+  Se corrige el hover "pegado" del ícono de editar al abrir el modal (sin ripple, `blur()` al abrir,
+  estados `active:`/`focus-visible:` reales).
+
+### Criterios de aceptación (EARS)
+- [x] Si un Docente ya tiene 2 plantillas en un período (misma institución, período y docente) e intenta
+  crear otra, el sistema rechaza la operación con `409` y el mensaje "Máximo 2 plantillas por período
+  alcanzado."; con 0 o 1 plantillas, permite la creación.
+- [x] Cuando la creación falla con `409`, el frontend expone el mensaje del backend al usuario
+  (variable `error` del store y toast).
+- [x] Mientras el usuario edita una plantilla, cuando existen cambios respecto al estado guardado, el
+  sistema muestra una barra de acciones flotante con "Hay cambios pendientes", Deshacer y Guardar; cuando
+  no hay cambios, la barra permanece oculta.
+- [x] Cuando el usuario abre el editor, el sistema ofrece siempre una acción de cierre (X) en el header,
+  incluso con el descarte por clic-fuera deshabilitado.
+- [x] Mientras un ítem o el título están en reposo, el sistema los muestra en gris neutro; cuando el
+  usuario los enfoca para editar, aplica el acento morado con una transición fluida y sin salto de layout.
+- [x] Cuando el usuario pasa el cursor por el ícono de editar y abre el modal, al regresar el sistema no
+  conserva el estado de hover de forma indebida.
+
+### Trazabilidad del ajuste
+- Backend:  quartz-api/src/features/checklist-template/checklist-template.service.ts
+- Frontend: useChecklistTemplateStore.ts · components/ChecklistEditor.tsx ·
+  components/EditableLearningItem.tsx · components/ChecklistCard.tsx · pages/ChecklistsPage.tsx

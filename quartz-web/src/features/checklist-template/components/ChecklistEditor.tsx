@@ -35,7 +35,7 @@ export type ChecklistEditorProps = {
   name: string;
   isSubmitting: boolean;
   onSave: (subjects: SubjectSnapshot[]) => void;
-  onCancel: () => void;
+  onReset: () => void;
 };
 
 type EditingKey = `${number}-${number}`;
@@ -60,7 +60,7 @@ export default function ChecklistEditor({
   name,
   isSubmitting,
   onSave,
-  onCancel,
+  onReset,
 }: ChecklistEditorProps) {
   const savedSubjectsJson = JSON.stringify(initialTemplate.subjects);
 
@@ -122,10 +122,21 @@ export default function ChecklistEditor({
     onSave(subjects);
   };
 
+  const handleReset = () => {
+    setSubjects(
+      initialTemplate.subjects.map((s) => ({
+        subject: s.subject,
+        learnings: s.learnings.map((l) => ({ _id: l._id, description: l.description })),
+      }))
+    );
+    setEditingKey(null);
+    onReset();
+  };
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* Acordeones por dimensión */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {subjects.map((s, si) => {
           const Icon = SUBJECT_ICONS[si % SUBJECT_ICONS.length];
           const isOpen = openIndex === si;
@@ -150,8 +161,8 @@ export default function ChecklistEditor({
                   </div>
                 </AccordionHeader>
 
-                <AccordionBody className="px-4 pb-4 pt-0">
-                  <div className="flex flex-col">
+                <AccordionBody className="px-4 pb-4 pt-1">
+                  <div className="flex flex-col divide-y divide-gray-100">
                     {s.learnings.map((l, li) => (
                       <EditableLearningItem
                         key={li}
@@ -191,22 +202,41 @@ export default function ChecklistEditor({
         })}
       </div>
 
-      {/* Acciones */}
-      <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-sm text-gray-600 hover:text-gray-800 font-medium px-4 py-2 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={!canSave}
-          className="text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-2 rounded-full transition-colors"
-        >
-          Guardar cambios
-        </button>
+      {/* Barra flotante de acciones — aparece solo al haber cambios */}
+      <div
+        className={`sticky bottom-0 z-10 -mx-1 px-1 pt-3 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+          isDirty
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-4 opacity-0"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white px-5 py-3 shadow-lg">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+            </span>
+            <span className="text-sm font-semibold text-gray-700">
+              Hay cambios pendientes
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800"
+            >
+              Deshacer cambios
+            </button>
+            <button
+              type="submit"
+              disabled={!canSave}
+              className="rounded-full bg-purple-600 px-5 py-2 text-sm font-bold text-white shadow-purple-500/20 transition-[background-color,transform] duration-150 hover:bg-purple-700 hover:shadow-purple-500/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Guardar cambios
+            </button>
+          </div>
+        </div>
       </div>
     </form>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { Dialog, DialogHeader, DialogBody } from "@material-tailwind/react";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { Dialog, DialogHeader, DialogBody, IconButton } from "@material-tailwind/react";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { useChecklistTemplateStore } from "../useChecklistTemplateStore";
@@ -199,14 +199,29 @@ export default function ChecklistsPage() {
           className="px-5 py-3"
           dismiss={{ enabled: false }}
         >
-          {/* Título editable — mismo estilo Google Forms */}
-          <DialogHeader className="pb-0">
-            <input
-              value={editorName}
-              onChange={(e) => setEditorName(e.target.value)}
-              placeholder="Nombre de la plantilla…"
-              className="w-full text-2xl font-bold text-purple-900 bg-transparent border-b-2 border-purple-200 focus:border-purple-500 focus:outline-none pb-1 placeholder:text-gray-300 placeholder:font-normal transition-colors"
-            />
+          {/* Título editable — morado, como en los demás modales */}
+          <DialogHeader className="items-start gap-3 pb-0">
+            <div className="relative w-full">
+              <input
+                value={editorName}
+                onChange={(e) => setEditorName(e.target.value)}
+                placeholder="Nombre de la plantilla…"
+                className="peer w-full border-0 bg-transparent pb-1 text-2xl font-bold text-purple-900 placeholder:font-normal placeholder:text-gray-300 focus:outline-none"
+              />
+              {/* Baseline gris, fina */}
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gray-200" />
+              {/* Subrayado morado que crece desde el centro al enfocar */}
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-center scale-x-0 bg-purple-500 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] peer-focus:scale-x-100 motion-reduce:transition-none" />
+            </div>
+            <IconButton
+              variant="text"
+              ripple={false}
+              onClick={handleCloseEditor}
+              className="flex-shrink-0 text-gray-400 transition-colors hover:bg-transparent hover:text-gray-700"
+              aria-label="Cerrar"
+            >
+              <XMarkIcon className="h-5 w-5" strokeWidth={2} />
+            </IconButton>
           </DialogHeader>
 
           <DialogBody className="overflow-y-auto max-h-[70vh] px-1 pt-4">
@@ -215,7 +230,7 @@ export default function ChecklistsPage() {
               name={editorName}
               isSubmitting={isSubmitting}
               onSave={handleEditorSave}
-              onCancel={handleCloseEditor}
+              onReset={() => setEditorName(selectedTemplate.name)}
             />
           </DialogBody>
         </Dialog>
