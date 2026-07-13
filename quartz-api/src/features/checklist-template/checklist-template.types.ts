@@ -5,6 +5,7 @@ export interface IChecklistTemplate {
   institutionId: Types.ObjectId;
   periodId: Types.ObjectId;
   teacherId: Types.ObjectId;
+  grade: string;
   name: string;
   subjects: {
     subject: {
@@ -18,17 +19,36 @@ export interface IChecklistTemplate {
   }[];
 }
 
-export type CreateChecklistTemplateData = {
+export interface SubjectSnapshotData {
+  subject: { _id: string; name: string };
+  learnings: { description: string }[];
+}
+
+export interface CreateChecklistTemplateData {
   name: string;
-  periodId: Types.ObjectId;
-};
+  periodId: string;
+  grade: string;
+}
+
+export interface UpdateChecklistTemplateData {
+  name?: string;
+  subjects?: SubjectSnapshotData[];
+}
 
 export interface IChecklistTemplateResponse {
   _id: string;
   institutionId: string;
-  periodId: string;
-  teacherId: string;
+  grade: string;
   name: string;
+  period: {
+    _id: string;
+    name: string;
+  };
+  author: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
   subjects: {
     subject: {
       _id: string;

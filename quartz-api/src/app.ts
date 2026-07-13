@@ -9,6 +9,7 @@ import checklistTemplatesRoutes from './features/checklist-template/checklist-te
 import studentValuationRoutes from './features/student-valuation/student-valuation.routes';
 import usersRoutes from './features/users/users.routes';
 import schoolRoutes from './features/school/school.routes';
+import conceptRoutes from './features/concept/concept.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import dotenv from 'dotenv';
 
@@ -36,6 +37,8 @@ app.use('/api/student-valuations', studentValuationRoutes);
 app.use('/api/users', usersRoutes);
 // Routes for schools
 app.use('/api/schools', schoolRoutes);
+// Routes for concepts
+app.use('/api/concepts', conceptRoutes);
 
 app.use(errorHandler);
 
