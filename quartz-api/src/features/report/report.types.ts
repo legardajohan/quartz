@@ -1,26 +1,26 @@
-import { Types } from "mongoose";
 import { GlobalValuationStatus, IValuationBySubjectDTO } from "../student-valuation/student-valuation.types";
 
 // Definicion de interfaces de evaluacion de estudiante
 
 export interface IInstitution {
-    _id: Types.ObjectId;
+    _id: string;
     name: string;
     daneCode: string;
     address: string;
     rectorName: string;
     email: string;
-    shield?: string; // URL del escudo
+    shield?: string; // URL del escudo. Sin mecanismo de subida aun: el informe reserva el espacio.
 }
 
 export interface IPeriod {
-    _id: Types.ObjectId;
+    _id: string;
     name: string;
-    isActive: boolean; // Verificar la Evaluación activa
+    year: number; // Derivado de startDate, el modelo Period no lo almacena
+    isActive: boolean;
 }
 
 export interface ITeacher {
-    _id: Types.ObjectId;
+    _id: string;
     firstName: string;
     middleName?: string;
     lastName: string;
@@ -29,7 +29,7 @@ export interface ITeacher {
 }
 
 export interface IStudent {
-    _id: Types.ObjectId;
+    _id: string;
     identificationType: string;
     identificationNumber: number;
     firstName: string;
@@ -37,7 +37,7 @@ export interface IStudent {
     lastName: string;
     secondLastName?: string;
     school: {
-        _id: Types.ObjectId;
+        _id: string;
         schoolNumber: number;
         name: string;
     }
@@ -45,21 +45,20 @@ export interface IStudent {
 }
 
 export interface IStudentValuation {
-    _id: Types.ObjectId;
-    name: string;
+    _id: string;
+    name: string; // Nombre de la plantilla de Lista de Chequeo
     globalStatus: GlobalValuationStatus | null;
     valuationsBySubject: IValuationBySubjectDTO[];
-    // timestamp
 }
 
 // Interface padre de Reportes
 
 export interface IReportTemplate {
-    _id: Types.ObjectId;
+    _id: string;
     institution: IInstitution;
     period: IPeriod;
     teacher: ITeacher;
     student: IStudent;
     valuation: IStudentValuation;
-    // timestamp
+    generatedAt: string; // Fecha de generación/impresión (ISO), calculada al momento de la petición
 }

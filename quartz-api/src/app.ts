@@ -10,6 +10,7 @@ import studentValuationRoutes from './features/student-valuation/student-valuati
 import usersRoutes from './features/users/users.routes';
 import schoolRoutes from './features/school/school.routes';
 import conceptRoutes from './features/concept/concept.routes';
+import reportRoutes from './features/report/report.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import dotenv from 'dotenv';
 
@@ -39,6 +40,8 @@ app.use('/api/users', usersRoutes);
 app.use('/api/schools', schoolRoutes);
 // Routes for concepts
 app.use('/api/concepts', conceptRoutes);
+// Routes for reports (dynamic PDFs, never persisted)
+app.use('/api/reports', reportRoutes);
 
 app.use(errorHandler);
 
