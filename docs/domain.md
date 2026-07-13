@@ -20,6 +20,12 @@ Modeladas como `Subject` (`type: Dimensión`), **fijas**: Cognitiva · Espiritua
 `Período → Dimensión (Subject) → Aprendizaje Esperado (Learning)`
 El docente compone su Lista de Chequeo **personal** (`ChecklistTemplate`) eligiendo `Learning`s por dimensión.
 
+## ChecklistTemplate (Plantilla)
+- **Qué es:** Instantánea (snapshot) de las dimensiones y aprendizajes esperados para un período y grado específicos. Contiene nombre, período, grado, autor (docente) y dimensiones con sus aprendizajes embebidos como copia independiente.
+- **Propósito:** Base para que el docente construya su Lista de Chequeo personal; no incluye valoraciones de estudiantes ni referencias a `Learning` originales.
+- **Regla clave:** Modificar aprendizajes en la tabla `Learning` **no afecta** plantillas ya creadas — cada una tiene su propio snapshot.
+- **Límite:** Máximo **2 plantillas por período** por docente.
+
 ## Valoración cualitativa (por ítem / `Learning`)
 | Valoración | Puntos |
 |---|---|

@@ -7,7 +7,7 @@ export interface IChecklistTemplateDocument extends IChecklistTemplate, Document
 
 const learningSchema = new Schema({
   description: { type: String, required: true }
-}); // _id is enabled by default
+});
 
 const subjectInTemplateSchema = new Schema({
   subject: {
@@ -15,16 +15,23 @@ const subjectInTemplateSchema = new Schema({
     name: { type: String, required: true }
   },
   learnings: [learningSchema]
-}, { _id: false }); // _id is not needed for the subject wrapper, but learnings WILL have _id by default
+}, { _id: false });
 
 const ChecklistTemplateSchema = new Schema<IChecklistTemplateDocument>({
   institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
   periodId: { type: Schema.Types.ObjectId, ref: 'Period', required: true },
   teacherId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  grade: { type: String, required: true },
   name: { type: String, required: true, trim: true },
   subjects: [subjectInTemplateSchema]
 }, {
   timestamps: true
 });
 
-export const ChecklistTemplateModel = model<IChecklistTemplateDocument>('ChecklistTemplate', ChecklistTemplateSchema, 'checklistTemplates');
+ChecklistTemplateSchema.index({ institutionId: 1 });
+
+export const ChecklistTemplateModel = model<IChecklistTemplateDocument>(
+  'ChecklistTemplate',
+  ChecklistTemplateSchema,
+  'checklistTemplates'
+);

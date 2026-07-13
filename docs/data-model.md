@@ -26,6 +26,8 @@ Por cada subject en `valuationsBySubject[]`:
 - `globalStatus` (raíz del documento) → Evaluado | Evaluando | Por diligenciar.
 
 ## Estado de implementación
-- **Con modelo en código (8):** Institution, School, User (`auth`), Period, Subject, Learning, ChecklistTemplate, StudentValuation.
-- **Definidos en diseño, sin modelo aún:** `Concept` (texto del concepto por dimensión/período), `Notification` (alertas in-app/email).
+- **Con modelo en código (8):** Institution, School, User (`auth`), Period, Subject, Learning, ChecklistTemplate, StudentValuation. La verdad de sus campos vive en los `*.model.ts`.
+- **Definidos en diseño, sin modelo aún:** `Concept` (texto del concepto por dimensión/período), `Notification` (alertas in-app/email). **Spec de campos en [data-base.md](data-base.md).**
 - **Sin colección (por diseño):** `report` — los informes son PDF dinámico y **no** se persisten.
+
+> **Diseño embebido (snapshot):** `ChecklistTemplate` y `StudentValuation` **embeben** el texto de `Subject`/`Learning` en lugar de referenciarlo. Detalle e implicaciones en [data-base.md](data-base.md#2-decisiones-de-diseño-embebido-vs-referencia-patrón-snapshot).
