@@ -23,11 +23,11 @@ function formatFullName(person: PersonName): string {
 }
 
 function formatPrintDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  const date = new Date(iso);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 interface ChecklistReportDocumentProps {
@@ -36,6 +36,7 @@ interface ChecklistReportDocumentProps {
 
 export default function ChecklistReportDocument({ report }: ChecklistReportDocumentProps) {
   const { institution, period, teacher, student, valuation, generatedAt } = report;
+  const hasObservations = !!valuation.observations && valuation.observations.trim().length > 0;
 
   return (
     <Document title={`Lista de Chequeo - ${formatFullName(student)}`}>
@@ -56,47 +57,51 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
               Lista de Chequeo · {period.name} {period.year}
             </Text>
           </View>
+          <View style={styles.studentPhotoBox}>
+            <Text style={styles.shieldPlaceholderText}>Foto</Text>
+          </View>
         </View>
 
         <View style={styles.metaRow}>
-          <View style={styles.metaColumn}>
+          <View style={styles.metaColumnStudent}>
             <Text style={styles.metaLabel}>Estudiante</Text>
-            <Text style={styles.metaValue}>{formatFullName(student)}</Text>
+            <Text style={styles.metaValue} wrap={false}>{formatFullName(student)}</Text>
           </View>
-          <View style={styles.metaColumn}>
+          <View style={styles.metaColumnGrade}>
             <Text style={styles.metaLabel}>Grado</Text>
             <Text style={styles.metaValue}>{student.grade}</Text>
           </View>
-          <View style={styles.metaColumn}>
+          <View style={styles.metaColumnSchool}>
             <Text style={styles.metaLabel}>Sede</Text>
             <Text style={styles.metaValue}>{student.school.name}</Text>
           </View>
-          <View style={styles.metaColumnLast}>
+          <View style={styles.metaColumnDate}>
             <Text style={styles.metaLabel}>Fecha de impresión</Text>
             <Text style={styles.metaValue}>{formatPrintDate(generatedAt)}</Text>
           </View>
         </View>
 
-        <View style={styles.legend}>
-          {VALUATION_ORDER.map((label) => (
-            <View style={styles.legendItem} key={label}>
-              <View style={[styles.legendDot, { backgroundColor: VALUATION_COLORS[label] }]} />
-              <Text style={styles.legendText}>{label}</Text>
-            </View>
-          ))}
+        <View style={styles.legendSection}>
+          <Text style={styles.metaLabel}>Escala de valoración</Text>
+          <View style={styles.legend}>
+            {VALUATION_ORDER.map((label) => (
+              <View style={styles.legendItem} key={label}>
+                <View style={[styles.legendDot, { backgroundColor: VALUATION_COLORS[label] }]} />
+                <Text style={styles.legendText}>{label}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {valuation.valuationsBySubject.map((subject) => (
-          <View style={styles.subjectBlock} key={subject.subjectId} wrap={false}>
+          <View style={styles.subjectBlock} key={subject.subjectId}>
             <Text style={styles.subjectHeader}>{subject.subjectName}</Text>
             <View style={styles.tableHeaderRow}>
-              <Text style={[styles.colNo, styles.headerCell]}>No</Text>
               <Text style={[styles.colLearning, styles.headerCell]}>Aprendizajes</Text>
               <Text style={[styles.colValuation, styles.headerCell]}>Valoración</Text>
             </View>
-            {subject.learningValuations.map((lv, index) => (
-              <View style={styles.tableRow} key={lv.learningId}>
-                <Text style={styles.colNo}>{index + 1}</Text>
+            {subject.learningValuations.map((lv) => (
+              <View style={styles.tableRow} key={lv.learningId} wrap={false}>
                 <Text style={styles.colLearning}>{lv.learningDescription}</Text>
                 <View style={styles.colValuation}>
                   {lv.qualitativeValuation && (
@@ -109,6 +114,15 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
             ))}
           </View>
         ))}
+
+        {hasObservations && (
+          <View style={styles.observationsBlock} wrap={false}>
+            <Text style={styles.subjectHeader}>Observaciones</Text>
+            <View style={styles.observationsBox}>
+              <Text style={styles.observationsText}>{valuation.observations}</Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.footer}>
           <View style={styles.signatureBlock}>
@@ -155,6 +169,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 16,
   },
+  studentPhotoBox: {
+    width: 50,
+    height: 64,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderStyle: "dashed",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 16,
+  },
   shieldPlaceholderText: {
     fontSize: 6,
     color: "#9ca3af",
@@ -184,13 +209,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 14,
   },
-  metaColumn: {
+  metaColumnStudent: {
     flexDirection: "column",
-    width: "25%",
+    width: "42%",
   },
-  metaColumnLast: {
+  metaColumnGrade: {
     flexDirection: "column",
-    width: "25%",
+    width: "15%",
+  },
+  metaColumnSchool: {
+    flexDirection: "column",
+    width: "23%",
+  },
+  metaColumnDate: {
+    flexDirection: "column",
+    width: "20%",
   },
   metaLabel: {
     fontSize: 7,
@@ -202,9 +235,12 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     marginTop: 2,
   },
+  legendSection: {
+    marginBottom: 14,
+  },
   legend: {
     flexDirection: "row",
-    marginBottom: 14,
+    marginTop: 4,
   },
   legendItem: {
     flexDirection: "row",
@@ -245,32 +281,43 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e5e7eb",
     borderBottomStyle: "solid",
   },
-  colNo: {
-    width: "8%",
-    padding: 5,
-    fontSize: 8,
-  },
   colLearning: {
-    width: "72%",
-    padding: 5,
-    fontSize: 8,
+    width: "78%",
+    padding: 6,
+    fontSize: 11,
   },
   colValuation: {
-    width: "20%",
-    padding: 5,
+    width: "22%",
+    padding: 6,
     alignItems: "center",
     justifyContent: "center",
   },
   headerCell: {
-    fontSize: 7.5,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
     color: "#581c87",
     textTransform: "uppercase",
+    textAlign: "center",
   },
   radio: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  observationsBlock: {
+    marginBottom: 12,
+  },
+  observationsBox: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderStyle: "solid",
+    borderTopWidth: 0,
+    padding: 8,
+  },
+  observationsText: {
+    fontSize: 9,
+    color: "#374151",
+    lineHeight: 1.4,
   },
   footer: {
     marginTop: 24,
@@ -290,7 +337,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   teacherName: {
-    fontSize: 9,
+    fontSize: 10,
     fontFamily: "Helvetica-Bold",
   },
   teacherRole: {

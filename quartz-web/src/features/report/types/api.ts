@@ -66,6 +66,7 @@ export interface IReportValuation {
   name: string;
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubjectDTO[];
+  observations: string | null;
 }
 
 export interface IReportTemplate {

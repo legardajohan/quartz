@@ -102,6 +102,7 @@ export async function getChecklistReport(
       name: templateDoc.name,
       globalStatus: valuation.globalStatus,
       valuationsBySubject: valuation.valuationsBySubject,
+      observations: valuation.observations,
     },
     generatedAt: new Date().toISOString(),
   };

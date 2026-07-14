@@ -49,6 +49,7 @@ export interface IStudentValuation {
     name: string; // Nombre de la plantilla de Lista de Chequeo
     globalStatus: GlobalValuationStatus | null;
     valuationsBySubject: IValuationBySubjectDTO[];
+    observations: string | null;
 }
 
 // Interface padre de Reportes

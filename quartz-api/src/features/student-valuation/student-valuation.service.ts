@@ -53,6 +53,7 @@ interface PopulatedValuationDoc extends Document {
   teacherId: Types.ObjectId;
   checklistTemplateId: Types.ObjectId;
   globalStatus: GlobalValuationStatus | null;
+  observations: string | null;
 
   // Propiedades que ahora están pobladas (con su nuevo tipo)
   studentId: {
@@ -129,6 +130,7 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
     periodName: populatedDoc.periodId ? populatedDoc.periodId.name : 'Periodo no disponible',
     globalStatus: populatedDoc.globalStatus,
     valuationsBySubject,
+    observations: populatedDoc.observations,
   };
 }
 
@@ -318,7 +320,13 @@ export async function updateStudentValuation(
       : 0;
   });
 
-  // 3. Determine Global Status
+  // 3. Persist optional free-text observations, normalizing blank input to null.
+  if (updateData.observations !== undefined) {
+    const trimmedObservations = updateData.observations?.trim() ?? '';
+    valuation.observations = trimmedObservations.length > 0 ? trimmedObservations : null;
+  }
+
+  // 4. Determine Global Status
   if (valuatedLearnings === 0) {
     valuation.globalStatus = GlobalValuationStatus.CREATED;
   } else if (valuatedLearnings === totalLearnings && totalLearnings > 0) {

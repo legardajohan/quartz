@@ -29,6 +29,7 @@ export interface IStudentValuationDocument extends Document {
   periodId: Types.ObjectId;
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubject[];
+  observations: string | null;
 }
 
 const learningValuationSchema = new Schema<ILearningValuation>({
@@ -53,7 +54,8 @@ const studentValuationSchema = new Schema<IStudentValuationDocument>({
   checklistTemplateId: { type: Schema.Types.ObjectId, ref: 'ChecklistTemplate', required: true },
   periodId: { type: Schema.Types.ObjectId, ref: 'Period', required: true },
   globalStatus: { type: String, enum: [...Object.values(GlobalValuationStatus), null], default: null, index: true },
-  valuationsBySubject: [valuationBySubjectSchema]
+  valuationsBySubject: [valuationBySubjectSchema],
+  observations: { type: String, default: null }
 }, {
   timestamps: true,
 });
