@@ -13,7 +13,7 @@ import { ConceptsFilters } from "../components/ConceptsFilters";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 
 export default function ConceptsPage() {
-  const { concepts, isLoading, isSubmitting, error, fetchConcepts, createConcept, updateConcept, deleteConcept } =
+  const { concepts, isLoading, isSubmitting, error, createConcept, updateConcept, deleteConcept } =
     useConceptStore();
   const { sessionData } = useAuthStore();
 

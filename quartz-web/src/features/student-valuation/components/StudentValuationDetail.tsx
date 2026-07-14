@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
-import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
+import { Button, IconButton, Typography, Avatar, Progress, Textarea } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
 import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
@@ -9,6 +9,9 @@ import { ConfirmationModal } from "../../../components/common/ConfirmationModal"
 import toast from "react-hot-toast";
 import userImage from "../../../assets/images/default-user.jpg";
 import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
+import { ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
+
+const OBSERVATIONS_MAX_LENGTH = 2000;
 
 import { Loading } from "../../../components/ui/Loading";
 
@@ -68,6 +71,7 @@ export default function StudentValuationDetail() {
                         ),
                     }))
                     .filter((subject) => subject.learningValuations.length > 0),
+                observations: localValuation.observations ?? "",
             };
 
             await updateValuation(localValuation._id, payload);
@@ -84,7 +88,10 @@ export default function StudentValuationDetail() {
 
     const hasChanges = useCallback(() => {
         if (!localValuation || !currentValuation) return false;
-        return JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(currentValuation.valuationsBySubject);
+        return (
+            JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(currentValuation.valuationsBySubject) ||
+            (localValuation.observations ?? "") !== (currentValuation.observations ?? "")
+        );
     }, [localValuation, currentValuation]);
 
     const blocker = useBlocker(
@@ -242,6 +249,34 @@ export default function StudentValuationDetail() {
                 ))}
             </div>
 
+            <div className="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm p-6 transition-colors duration-200 hover:border-gray-300">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50">
+                        <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                        <Typography variant="h6" color="blue-gray" className="font-bold leading-tight">
+                            Observaciones
+                        </Typography>
+                        <Typography variant="small" className="text-gray-500 text-xs">
+                            Opcional · comentarios adicionales sobre la valoración del estudiante
+                        </Typography>
+                    </div>
+                </div>
+                <Textarea
+                    color="purple"
+                    label="Escribe aquí tus observaciones..."
+                    value={localValuation.observations ?? ""}
+                    onChange={(e) => {
+                        const value = e.target.value.slice(0, OBSERVATIONS_MAX_LENGTH);
+                        setLocalValuation((prev) => (prev ? { ...prev, observations: value } : prev));
+                    }}
+                    rows={4}
+                />
+                <Typography variant="small" className="mt-1 text-right text-[11px] text-gray-400">
+                    {(localValuation.observations ?? "").length}/{OBSERVATIONS_MAX_LENGTH}
+                </Typography>
+            </div>
 
             {/* Conditional Footer for Saving Changes */}
             {/* Sticky Footer for Saving Changes */}

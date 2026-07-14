@@ -56,6 +56,7 @@ export interface IStudentValuationDTO {
   periodName: string;
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubjectDTO[];
+  observations: string | null;
 }
 
 
@@ -102,4 +103,5 @@ type ValuationBySubjectUpdate = {
 
 export type StudentValuationUpdateData = {
   valuationsBySubject: ValuationBySubjectUpdate[];
+  observations?: string | null;
 };
