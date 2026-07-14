@@ -1,17 +1,42 @@
 # Specs — Spec-Driven Development
 
-Cada feature de negocio tiene **una** especificación: `specs/<feature>.spec.md`. Es la **fuente de verdad del diseño**, se versiona en git y se revisa en PR **antes** de implementar.
+Cada feature se planea **antes** de implementarse. El spec es la **fuente de verdad del diseño**: se versiona en git y se revisa en PR.
 
 ## Flujo (comandos de Claude Code)
-1. `/sdd-spec <feature> — <requerimiento>` → genera el spec (problema, solución, criterios EARS).
-2. `/sdd-implement <feature>` → crea `feat/<feature>` e implementa en `quartz-api/src/features/` y/o `quartz-web/src/features/`.
-3. `/sdd-release <feature>` → versiona (semver), actualiza `CHANGELOG`/`README`, etiqueta y fusiona a `main`.
+1. `/sdd-spec <ID>-<slug> — <requerimiento>` → crea `specs/<ID>-<slug>/` con la tríada **spec** (QUÉ) + **plan** (CÓMO) + **tasks** (checklist). Sin código.
+2. `/sdd-implement <ID>-<slug>` → crea `feat/<ID>-<slug>` desde `develop` y ejecuta las tasks en `quartz-api/` y/o `quartz-web/`. PR → `develop`.
+3. `/sdd-release [<ID>-<slug> ...]` → **release consolidado desde `develop`**: revisa lo acumulado, versiona (semver), actualiza `CHANGELOG.md`, etiqueta y fusiona `develop` → `main`.
 
-## Convención del archivo
-- **Nombre:** `<feature>.spec.md` (kebab-case, singular del dominio).
-- **Frontmatter de tracking:** `feature`, `status` (`draft → approved → implemented → released`), `created`.
-- **Secciones:** Problema (≤3 historias) · Solución · Criterios de aceptación (EARS) · Trazabilidad (rutas back/front + rama).
+## Estructura
+```
+specs/<ID>-<slug>/
+├── spec.md    # Objetivo · Alcance · Criterios EARS · Dependencias · Trazabilidad
+├── plan.md    # Archivos exactos · Contratos (tipos, modelo, Zod, endpoints) · Verificación
+└── tasks.md   # Checklist ordenado (backend → frontend → verificación)
+```
 
-La plantilla canónica vive en el comando `/sdd-spec` (no se duplica aquí). Trazabilidad: spec ↔ rama `feat/<feature>` ↔ PR ↔ tests.
+**ID:** `<AREA>-<NN>-<slug>` · `NN` consecutivo de 2 dígitos por área.
 
-> Las **reglas invariantes** de negocio y datos no van en el spec: se referencian desde [`docs/domain.md`](../docs/domain.md) y [`docs/data-model.md`](../docs/data-model.md). El spec solo lleva lo **propio del feature**.
+| Área | Dominio |
+|---|---|
+| `AUTH` | autenticación, sesión, roles |
+| `USR` | usuarios |
+| `LRN` | aprendizajes esperados (`learning`) |
+| `CHK` | plantillas de lista de chequeo |
+| `VAL` | valoración de estudiantes |
+| `RPT` | informes / PDF |
+| `ACAD` | periodos, materias/dimensiones, colegios y sedes |
+| `INF` | transversal: middlewares, `apiClient`, layout, router |
+
+## Tracking
+`status` en el frontmatter de `spec.md`: `draft → approved → implemented → released`.
+Trazabilidad: spec ↔ rama `feat/<ID>-<slug>` ↔ PR ↔ release.
+
+## Reglas
+- Las plantillas canónicas viven en el comando `/sdd-spec`; **no se duplican aquí**.
+- Las **reglas invariantes** de negocio y datos **no van en el spec**: se referencian desde [`docs/domain.md`](../docs/domain.md), [`docs/data-model.md`](../docs/data-model.md) y [`docs/data-base.md`](../docs/data-base.md). El spec solo lleva lo **propio del feature**.
+- Todo spec de backend lleva criterio de **aislamiento multi-tenant** (`institutionId` desde el token).
+- **Tests:** pendientes de runner. Hoy la verificación es `npx tsc --noEmit` (api), `npm run build && npm run lint` (web) y arranque limpio del servidor.
+
+## Specs legacy (formato anterior)
+`checklist-template` · `concepts` · `reports` · `valuation-observations` viven como archivo único `<feature>.spec.md`. Ya están implementados y **se conservan tal cual**; el formato de tríada aplica a los features nuevos.

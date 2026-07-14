@@ -23,3 +23,16 @@ MERN + TypeScript.
 Las reglas técnicas viven en el `CLAUDE.md` de cada paquete (Claude lo carga al trabajar dentro):
 - `quartz-api/CLAUDE.md` — backend: arquitectura modular funcional, multi-tenancy, capas, Zod, `AppError`, nombrado.
 - `quartz-web/CLAUDE.md` — frontend: `apiClient`/Zustand, estructura por feature, exports ESM, inmutabilidad, Tailwind.
+
+## 4. Forma de trabajo — SDD (Spec-Driven Development)
+Todo feature pasa por la tríada, en orden. **No se codea sin spec aprobado.**
+
+1. `/sdd-spec <ID>-<slug> — <requerimiento>` → `specs/<ID>-<slug>/` con **spec** (QUÉ) + **plan** (CÓMO) + **tasks** (checklist). Sin código.
+2. `/sdd-implement <ID>-<slug>` → rama `feat/<ID>-<slug>` desde `develop`, ejecuta las tasks. PR → `develop`.
+3. `/sdd-release [<ID>-<slug> ...]` → release **consolidado** desde `develop`: semver, `CHANGELOG.md`, tag, merge → `main`.
+
+**Ramas:** `feat/<ID>-<slug>` → `develop` (por PR) → `main` (solo por release).
+**Estado del spec:** `draft → approved → implemented → released`.
+**Verificación (sin runner de tests aún):** `npx tsc --noEmit` en `quartz-api`, `npm run build && npm run lint` en `quartz-web`, arranque limpio del servidor.
+
+> Convenciones, IDs por área y plantillas: [`specs/README.md`](specs/README.md).
