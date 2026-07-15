@@ -12,7 +12,8 @@ const learningValuationUpdateSchema = z.object({
 // Schema for the nested subject valuation update
 const valuationBySubjectUpdateSchema = z.object({
   subjectId: objectIdSchema,
-  learningValuations: z.array(learningValuationUpdateSchema),
+  learningValuations: z.array(learningValuationUpdateSchema).default([]),
+  performanceDescription: z.string().max(2000, 'La descripción no puede superar los 2000 caracteres').nullable().optional(),
 });
 
 

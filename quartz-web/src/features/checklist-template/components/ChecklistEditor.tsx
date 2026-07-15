@@ -179,22 +179,24 @@ export default function ChecklistEditor({
                     ))}
                   </div>
 
-                  {/* Botón "+" centrado */}
-                  <div className="flex justify-center pt-2 mt-1 border-t border-gray-100">
-                    <Tooltip
-                      content="Agregar aprendizaje"
-                      className="py-1 px-2 text-xs bg-gray-800"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => addLearning(si)}
-                        className="text-gray-300 hover:text-purple-600 hover:bg-purple-50 transition-colors p-1.5 rounded-full"
-                        aria-label="Agregar aprendizaje"
+                  {/* Botón "+" centrado — no aplica a dimensiones en modo descripción */}
+                  {s.subject.evaluationMode !== "description" && (
+                    <div className="flex justify-center pt-2 mt-1 border-t border-gray-100">
+                      <Tooltip
+                        content="Agregar aprendizaje"
+                        className="py-1 px-2 text-xs bg-gray-800"
                       >
-                        <PlusIcon className="h-5 w-5" strokeWidth={2} />
-                      </button>
-                    </Tooltip>
-                  </div>
+                        <button
+                          type="button"
+                          onClick={() => addLearning(si)}
+                          className="text-gray-300 hover:text-purple-600 hover:bg-purple-50 transition-colors p-1.5 rounded-full"
+                          aria-label="Agregar aprendizaje"
+                        >
+                          <PlusIcon className="h-5 w-5" strokeWidth={2} />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  )}
                 </AccordionBody>
               </Accordion>
             </div>

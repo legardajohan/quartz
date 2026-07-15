@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { GlobalValuationStatus, QualitativeValuation } from './student-valuation.types';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 
 // Interface for the nested LearningValuation
 export interface ILearningValuation {
@@ -12,7 +13,9 @@ export interface ILearningValuation {
 // Interface for the nested ValuationBySubject
 export interface IValuationBySubject {
   subjectId: Types.ObjectId;
+  evaluationMode: SubjectEvaluationMode;
   learningValuations: ILearningValuation[];
+  performanceDescription: string | null;
   totalSubjectScore: number;
   maxSubjectScore: number;
   subjectPercentage: number;
@@ -40,7 +43,9 @@ const learningValuationSchema = new Schema<ILearningValuation>({
 
 const valuationBySubjectSchema = new Schema<IValuationBySubject>({
   subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
+  evaluationMode: { type: String, enum: Object.values(SubjectEvaluationMode), required: true, default: SubjectEvaluationMode.CHECKLIST },
   learningValuations: [learningValuationSchema],
+  performanceDescription: { type: String, default: null },
   totalSubjectScore: { type: Number, default: 0 },
   maxSubjectScore: { type: Number, default: 0 },
   subjectPercentage: { type: Number, default: 0 },

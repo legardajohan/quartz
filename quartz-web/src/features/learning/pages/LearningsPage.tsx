@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { Typography } from "@material-tailwind/react";
+import { PlusIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { useLearningStore } from "../useLearningStore";
@@ -159,6 +160,12 @@ export default function LearningsPage() {
   const isEditMode = !!selectedLearning;
   const isSubmitDisabled = isSubmitting || (isEditMode && !isFormDirty);
 
+  const singleSelectedSubject =
+    selectedSubjects.length === 1
+      ? subjects.find((s) => s._id === selectedSubjects[0])
+      : undefined;
+  const isDescriptionModeSelected = singleSelectedSubject?.evaluationMode === "description";
+
   return (
     <>
       <div className="w-full relative">
@@ -178,28 +185,44 @@ export default function LearningsPage() {
             />
           </div>
 
-          <button
-            onClick={handleOpenCreateModal}
-            aria-label="Crear nuevo aprendizaje"
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
-          >
-            <PlusIcon className="h-6 w-6" strokeWidth={2} />
-            Crear
-          </button>
+          {!isDescriptionModeSelected && (
+            <button
+              onClick={handleOpenCreateModal}
+              aria-label="Crear nuevo aprendizaje"
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
+            >
+              <PlusIcon className="h-6 w-6" strokeWidth={2} />
+              Crear
+            </button>
+          )}
         </div>
 
         {error && <p className="mt-4 text-red-500">{error}</p>}
 
-        <LearningsTable
-          learnings={paginatedLearnings}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-          onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
-          isLoading={isLoading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        {isDescriptionModeSelected ? (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50">
+              <ChatBubbleBottomCenterTextIcon className="h-6 w-6 text-purple-600" />
+            </div>
+            <Typography variant="h6" color="blue-gray" className="font-bold">
+              Descripción personalizada del desempeño por parte del docente
+            </Typography>
+            <Typography variant="small" className="max-w-md text-gray-500">
+              Esta dimensión no gestiona aprendizajes: se valora con una descripción libre del desempeño en la Lista de Chequeo.
+            </Typography>
+          </div>
+        ) : (
+          <LearningsTable
+            learnings={paginatedLearnings}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
+            isLoading={isLoading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
       </div>
 
       <ConfirmationModal

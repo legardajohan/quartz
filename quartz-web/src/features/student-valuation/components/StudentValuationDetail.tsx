@@ -1,17 +1,15 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
-import { Button, IconButton, Typography, Avatar, Progress, Textarea } from "@material-tailwind/react";
+import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
 import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
 import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
+import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
 import toast from "react-hot-toast";
 import userImage from "../../../assets/images/default-user.jpg";
 import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
-import { ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
-
-const OBSERVATIONS_MAX_LENGTH = 2000;
 
 import { Loading } from "../../../components/ui/Loading";
 
@@ -64,13 +62,20 @@ export default function StudentValuationDetail() {
         try {
             const payload: StudentValuationUpdateData = {
                 valuationsBySubject: localValuation.valuationsBySubject
+                    .filter(
+                        (subject) =>
+                            subject.evaluationMode === "description" ||
+                            subject.learningValuations.some((lv) => lv.qualitativeValuation !== null)
+                    )
                     .map((subject) => ({
                         subjectId: subject.subjectId,
                         learningValuations: subject.learningValuations.filter(
                             (lv) => lv.qualitativeValuation !== null
                         ),
-                    }))
-                    .filter((subject) => subject.learningValuations.length > 0),
+                        ...(subject.evaluationMode === "description"
+                            ? { performanceDescription: subject.performanceDescription }
+                            : {}),
+                    })),
                 observations: localValuation.observations ?? "",
             };
 
@@ -226,7 +231,7 @@ export default function StudentValuationDetail() {
                                     const next = {
                                         ...prev,
                                         valuationsBySubject: prev.valuationsBySubject.map((s) => {
-                                            if (s.subjectId !== subject.subjectId) return s;
+                                            if (s.subjectId !== subject.subjectId || s.evaluationMode !== "checklist") return s;
                                             return {
                                                 ...s,
                                                 learningValuations: s.learningValuations.map((lv) =>
@@ -244,38 +249,33 @@ export default function StudentValuationDetail() {
                                     return next;
                                 });
                             }}
+                            onDescriptionChange={(subjectId, value) => {
+                                setLocalValuation((prev) => {
+                                    if (!prev) return prev;
+                                    return {
+                                        ...prev,
+                                        valuationsBySubject: prev.valuationsBySubject.map((s) => {
+                                            if (s.subjectId !== subjectId || s.evaluationMode !== "description") return s;
+                                            return { ...s, performanceDescription: value };
+                                        }),
+                                    };
+                                });
+                            }}
                         />
                     </div>
                 ))}
             </div>
 
-            <div className="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm p-6 transition-colors duration-200 hover:border-gray-300">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-50">
-                        <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                        <Typography variant="h6" color="blue-gray" className="font-bold leading-tight">
-                            Observaciones
-                        </Typography>
-                        <Typography variant="small" className="text-gray-500 text-xs">
-                            Opcional · comentarios adicionales sobre la valoración del estudiante
-                        </Typography>
-                    </div>
-                </div>
-                <Textarea
-                    color="purple"
-                    label="Escribe aquí tus observaciones..."
+            <div className="mt-4">
+                <PerformanceTextarea
+                    title="Observaciones"
+                    subtitle="Opcional · comentarios adicionales sobre la valoración del estudiante"
+                    placeholder="Escribe aquí tus observaciones..."
                     value={localValuation.observations ?? ""}
-                    onChange={(e) => {
-                        const value = e.target.value.slice(0, OBSERVATIONS_MAX_LENGTH);
-                        setLocalValuation((prev) => (prev ? { ...prev, observations: value } : prev));
-                    }}
-                    rows={4}
+                    onChange={(value) =>
+                        setLocalValuation((prev) => (prev ? { ...prev, observations: value } : prev))
+                    }
                 />
-                <Typography variant="small" className="mt-1 text-right text-[11px] text-gray-400">
-                    {(localValuation.observations ?? "").length}/{OBSERVATIONS_MAX_LENGTH}
-                </Typography>
             </div>
 
             {/* Conditional Footer for Saving Changes */}

@@ -72,14 +72,16 @@ copia `name` de la dimensión y `description` de cada aprendizaje en el momento 
 ```
 subjects: [
   {
-    subject:  { _id, name },                 // snapshot del Subject (no es un ref poblable)
+    subject:  { _id, name, evaluationMode },  // snapshot del Subject (no es un ref poblable)
     learnings: [ { _id, description } ]       // snapshot del texto del Learning; _id propio del subdocumento
+                                               // []  si evaluationMode === 'description'
   }
 ]
 ```
 
 **Implicación:** editar un `Learning` global **no** retro-modifica los templates ya creados. El template es una
-foto del momento en que el docente lo compuso.
+foto del momento en que el docente lo compuso. Lo mismo aplica a `evaluationMode`: cambiarlo en `Subject` (Configuración)
+no altera templates ya generados (`VAL-03-description-mode`).
 
 ### 2.2. `StudentValuation` embebe `learningDescription`, no `learningId`
 
@@ -91,6 +93,17 @@ Campos `nullable` relevantes (presentes en código, no obvios en el diseño):
 
 **Implicación:** la valoración es autocontenida y reproducible aunque cambien los `Learning` de origen, lo que
 permite generar la Carta Comunicativa (PDF dinámico) de forma consistente con lo que el docente valoró.
+
+**`evaluationMode` como discriminador (`VAL-03-description-mode`).** Cada elemento de `valuationsBySubject` copia
+el `evaluationMode` del `Subject` (vía el snapshot del `ChecklistTemplate`) y gana `performanceDescription: string | null`:
+
+- `evaluationMode: 'checklist'` → `learningValuations` con los ítems snapshot; `performanceDescription` siempre `null`.
+- `evaluationMode: 'description'` → `learningValuations: []`; `performanceDescription` es la descripción libre del
+  docente (`null` mientras no se escriba, texto normalizado —blanco → `null`— cuando se guarda).
+
+Una dimensión en modo `description` **nunca** acumula `totalSubjectScore`/`maxSubjectScore`/`subjectPercentage`
+(quedan en `0`) ni recibe `assignedConceptId`: no hay puntaje que interpretar. Para `globalStatus`, cuenta como
+una unidad valorable, valorada si y solo si `performanceDescription !== null`.
 
 ### 2.3. Índices únicos relevantes (en código)
 

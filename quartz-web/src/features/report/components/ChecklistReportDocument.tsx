@@ -96,22 +96,32 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
         {valuation.valuationsBySubject.map((subject) => (
           <View style={styles.subjectBlock} key={subject.subjectId}>
             <Text style={styles.subjectHeader}>{subject.subjectName}</Text>
-            <View style={styles.tableHeaderRow}>
-              <Text style={[styles.colLearning, styles.headerCell]}>Aprendizajes</Text>
-              <Text style={[styles.colValuation, styles.headerCell]}>Valoración</Text>
-            </View>
-            {subject.learningValuations.map((lv) => (
-              <View style={styles.tableRow} key={lv.learningId} wrap={false}>
-                <Text style={styles.colLearning}>{lv.learningDescription}</Text>
-                <View style={styles.colValuation}>
-                  {lv.qualitativeValuation && (
-                    <View
-                      style={[styles.radio, { backgroundColor: VALUATION_COLORS[lv.qualitativeValuation] }]}
-                    />
-                  )}
-                </View>
+            {subject.evaluationMode === "description" ? (
+              <View style={styles.observationsBox}>
+                <Text style={styles.observationsText}>
+                  {subject.performanceDescription ?? "Sin descripción registrada."}
+                </Text>
               </View>
-            ))}
+            ) : (
+              <>
+                <View style={styles.tableHeaderRow}>
+                  <Text style={[styles.colLearning, styles.headerCell]}>Aprendizajes</Text>
+                  <Text style={[styles.colValuation, styles.headerCell]}>Valoración</Text>
+                </View>
+                {subject.learningValuations.map((lv) => (
+                  <View style={styles.tableRow} key={lv.learningId} wrap={false}>
+                    <Text style={styles.colLearning}>{lv.learningDescription}</Text>
+                    <View style={styles.colValuation}>
+                      {lv.qualitativeValuation && (
+                        <View
+                          style={[styles.radio, { backgroundColor: VALUATION_COLORS[lv.qualitativeValuation] }]}
+                        />
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
           </View>
         ))}
 

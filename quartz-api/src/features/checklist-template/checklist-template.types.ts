@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 
 export interface IChecklistTemplate {
   _id: Types.ObjectId;
@@ -11,6 +12,7 @@ export interface IChecklistTemplate {
     subject: {
       _id: Types.ObjectId;
       name: string;
+      evaluationMode: SubjectEvaluationMode;
     };
     learnings: {
       _id?: Types.ObjectId;
@@ -20,7 +22,7 @@ export interface IChecklistTemplate {
 }
 
 export interface SubjectSnapshotData {
-  subject: { _id: string; name: string };
+  subject: { _id: string; name: string; evaluationMode: SubjectEvaluationMode };
   learnings: { description: string }[];
 }
 
@@ -53,6 +55,7 @@ export interface IChecklistTemplateResponse {
     subject: {
       _id: string;
       name: string;
+      evaluationMode: SubjectEvaluationMode;
     };
     learnings: {
       _id: string;
