@@ -15,6 +15,7 @@ import {
   UsersIcon,
   BookOpenIcon,
   PlusIcon,
+  ChatBubbleBottomCenterTextIcon,
 } from "@heroicons/react/24/outline";
 import EditableLearningItem from "./EditableLearningItem";
 import type { SubjectSnapshot, ChecklistTemplateDto } from "../types";
@@ -162,40 +163,54 @@ export default function ChecklistEditor({
                 </AccordionHeader>
 
                 <AccordionBody className="px-4 pb-4 pt-1">
-                  <div className="flex flex-col divide-y divide-gray-100">
-                    {s.learnings.map((l, li) => (
-                      <EditableLearningItem
-                        key={li}
-                        description={l.description}
-                        isEditing={editingKey === `${si}-${li}`}
-                        onActivate={() => setEditingKey(`${si}-${li}`)}
-                        onChange={(val) => updateDescription(si, li, val)}
-                        onRemove={
-                          s.learnings.length > 1
-                            ? () => removeLearning(si, li)
-                            : undefined
-                        }
-                      />
-                    ))}
-                  </div>
-
-                  {/* Botón "+" centrado — no aplica a dimensiones en modo descripción */}
-                  {s.subject.evaluationMode !== "description" && (
-                    <div className="flex justify-center pt-2 mt-1 border-t border-gray-100">
-                      <Tooltip
-                        content="Agregar aprendizaje"
-                        className="py-1 px-2 text-xs bg-gray-800"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => addLearning(si)}
-                          className="text-gray-300 hover:text-purple-600 hover:bg-purple-50 transition-colors p-1.5 rounded-full"
-                          aria-label="Agregar aprendizaje"
-                        >
-                          <PlusIcon className="h-5 w-5" strokeWidth={2} />
-                        </button>
-                      </Tooltip>
+                  {s.subject.evaluationMode === "description" ? (
+                    <div className="flex flex-col items-center gap-2 rounded-lg bg-purple-50/60 px-4 py-6 text-center">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100">
+                        <ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-purple-500" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">
+                        Esta dimensión se valora con una descripción libre del desempeño, sin lista de aprendizajes.
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Se edita directamente en la evaluación de cada estudiante, en Evaluación.
+                      </p>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-col divide-y divide-gray-100">
+                        {s.learnings.map((l, li) => (
+                          <EditableLearningItem
+                            key={li}
+                            description={l.description}
+                            isEditing={editingKey === `${si}-${li}`}
+                            onActivate={() => setEditingKey(`${si}-${li}`)}
+                            onChange={(val) => updateDescription(si, li, val)}
+                            onRemove={
+                              s.learnings.length > 1
+                                ? () => removeLearning(si, li)
+                                : undefined
+                            }
+                          />
+                        ))}
+                      </div>
+
+                      {/* Botón "+" centrado */}
+                      <div className="flex justify-center pt-2 mt-1 border-t border-gray-100">
+                        <Tooltip
+                          content="Agregar aprendizaje"
+                          className="py-1 px-2 text-xs bg-gray-800"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => addLearning(si)}
+                            className="text-gray-300 hover:text-purple-600 hover:bg-purple-50 transition-colors p-1.5 rounded-full"
+                            aria-label="Agregar aprendizaje"
+                          >
+                            <PlusIcon className="h-5 w-5" strokeWidth={2} />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </>
                   )}
                 </AccordionBody>
               </Accordion>
