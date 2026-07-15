@@ -1,36 +1,65 @@
 import { Types } from 'mongoose';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 
 export interface IChecklistTemplate {
   _id: Types.ObjectId;
   institutionId: Types.ObjectId;
   periodId: Types.ObjectId;
   teacherId: Types.ObjectId;
+  grade: string;
   name: string;
   subjects: {
-    subjectId: Types.ObjectId;
-    learnings: Types.ObjectId[];
+    subject: {
+      _id: Types.ObjectId;
+      name: string;
+      evaluationMode: SubjectEvaluationMode;
+    };
+    learnings: {
+      _id?: Types.ObjectId;
+      description: string;
+    }[];
   }[];
 }
 
-export type CreateChecklistTemplateData = {
-    name: string;
-    periodId: Types.ObjectId;
-};
+export interface SubjectSnapshotData {
+  subject: { _id: string; name: string; evaluationMode: SubjectEvaluationMode };
+  learnings: { description: string }[];
+}
+
+export interface CreateChecklistTemplateData {
+  name: string;
+  periodId: string;
+  grade: string;
+}
+
+export interface UpdateChecklistTemplateData {
+  name?: string;
+  subjects?: SubjectSnapshotData[];
+}
 
 export interface IChecklistTemplateResponse {
   _id: string;
   institutionId: string;
-  periodId: string;
-  teacherId: string;
+  grade: string;
   name: string;
+  period: {
+    _id: string;
+    name: string;
+  };
+  author: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
   subjects: {
-    subjectId: {
-        _id: string;
-        name: string;
+    subject: {
+      _id: string;
+      name: string;
+      evaluationMode: SubjectEvaluationMode;
     };
     learnings: {
-        _id: string;
-        description: string;
+      _id: string;
+      description: string;
     }[];
   }[];
 }

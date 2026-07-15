@@ -19,16 +19,15 @@ export default function StudentValuationsPage() {
 
   // Fetch users when component mounts or when navigating back to list
   useEffect(() => {
-    const schoolId = sessionData?.user.schoolId;
+    const user = sessionData?.user;
     // Only fetch if we are in the list view (no studentId)
     // allowing the list to be fresh when we return.
-    if (schoolId && !studentId) {
+    if (user && !studentId) {
       fetchUsers({
         role: "Estudiante",
-        schoolId: schoolId,
       });
     }
-  }, [sessionData?.user.schoolId, fetchUsers, studentId]);
+  }, [sessionData?.user, fetchUsers, studentId]);
 
   // Render detail view if a student is selected via URL
   if (studentId) {

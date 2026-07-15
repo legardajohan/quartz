@@ -1,9 +1,11 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { GlobalValuationStatus, QualitativeValuation } from './student-valuation.types';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 
 // Interface for the nested LearningValuation
 export interface ILearningValuation {
-  learningId: Types.ObjectId;
+  _id?: Types.ObjectId; // Auto-generated ID for the valuation item
+  learningDescription: string;
   qualitativeValuation: QualitativeValuation | null;
   pointsObtained: number;
 }
@@ -11,7 +13,9 @@ export interface ILearningValuation {
 // Interface for the nested ValuationBySubject
 export interface IValuationBySubject {
   subjectId: Types.ObjectId;
+  evaluationMode: SubjectEvaluationMode;
   learningValuations: ILearningValuation[];
+  performanceDescription: string | null;
   totalSubjectScore: number;
   maxSubjectScore: number;
   subjectPercentage: number;
@@ -20,6 +24,7 @@ export interface IValuationBySubject {
 
 // Interface for the StudentValuation document
 export interface IStudentValuationDocument extends Document {
+  _id: Types.ObjectId;
   institutionId: Types.ObjectId;
   studentId: Types.ObjectId;
   teacherId: Types.ObjectId;
@@ -27,17 +32,20 @@ export interface IStudentValuationDocument extends Document {
   periodId: Types.ObjectId;
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubject[];
+  observations: string | null;
 }
 
 const learningValuationSchema = new Schema<ILearningValuation>({
-  learningId: { type: Schema.Types.ObjectId, ref: 'Learning', required: true },
+  learningDescription: { type: String, required: true },
   qualitativeValuation: { type: String, enum: [...Object.values(QualitativeValuation), null], default: null },
   pointsObtained: { type: Number, default: 0 }
-}, { _id: false });
+}); // _id is enabled by default
 
 const valuationBySubjectSchema = new Schema<IValuationBySubject>({
   subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
+  evaluationMode: { type: String, enum: Object.values(SubjectEvaluationMode), required: true, default: SubjectEvaluationMode.CHECKLIST },
   learningValuations: [learningValuationSchema],
+  performanceDescription: { type: String, default: null },
   totalSubjectScore: { type: Number, default: 0 },
   maxSubjectScore: { type: Number, default: 0 },
   subjectPercentage: { type: Number, default: 0 },
@@ -51,7 +59,8 @@ const studentValuationSchema = new Schema<IStudentValuationDocument>({
   checklistTemplateId: { type: Schema.Types.ObjectId, ref: 'ChecklistTemplate', required: true },
   periodId: { type: Schema.Types.ObjectId, ref: 'Period', required: true },
   globalStatus: { type: String, enum: [...Object.values(GlobalValuationStatus), null], default: null, index: true },
-  valuationsBySubject: [valuationBySubjectSchema]
+  valuationsBySubject: [valuationBySubjectSchema],
+  observations: { type: String, default: null }
 }, {
   timestamps: true,
 });

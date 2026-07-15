@@ -1,18 +1,47 @@
 import { Request, Response } from 'express';
-import { getPeriodsByInstitution } from './period.service';
+import {
+    getPeriodsByInstitution,
+    createPeriod,
+    updatePeriod,
+    deletePeriod,
+} from './period.service';
+import { PlainPeriodObject } from './period.model';
+import { IPeriodDTO } from './period.types';
+
+function mapPeriodToDTO(period: PlainPeriodObject): IPeriodDTO {
+    return {
+        _id: period._id.toString(),
+        name: period.name,
+        year: period.year,
+        startDate: period.startDate.toISOString(),
+        endDate: period.endDate.toISOString(),
+        closingAlertDate: period.closingAlertDate ? period.closingAlertDate.toISOString() : null,
+        isActive: period.isActive,
+    };
+}
 
 export const getPeriods = async (req: Request, res: Response) => {
-    try {
-        const user = req.user;
-        if (!user || !user.institutionId) {
-            return res.status(401).json({ message: 'Unauthorized: User not authenticated.' });
-        }
+    const institutionId = req.user!.institutionId.toString();
+    const periods = await getPeriodsByInstitution(institutionId);
+    res.status(200).json(periods.map(mapPeriodToDTO));
+};
 
-        const institutionId = user.institutionId.toString();
-        const periods = await getPeriodsByInstitution(institutionId);
+export const createPeriodController = async (req: Request, res: Response) => {
+    const institutionId = req.user!.institutionId.toString();
+    const period = await createPeriod(institutionId, req.body);
+    res.status(201).json(mapPeriodToDTO(period));
+};
 
-        res.status(200).json(periods);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching periods', error: error instanceof Error ? error.message : String(error) });
-    }
+export const updatePeriodController = async (req: Request, res: Response) => {
+    const { periodId } = req.params;
+    const institutionId = req.user!.institutionId.toString();
+    const period = await updatePeriod(periodId, institutionId, req.body);
+    res.status(200).json(mapPeriodToDTO(period));
+};
+
+export const deletePeriodController = async (req: Request, res: Response) => {
+    const { periodId } = req.params;
+    const institutionId = req.user!.institutionId.toString();
+    await deletePeriod(periodId, institutionId);
+    res.status(204).send();
 };

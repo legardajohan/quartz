@@ -1,14 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
-import { Button, IconButton, Typography, Avatar } from "@material-tailwind/react";
+import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
-import ValuationChecklist from "./ValuationChecklist";
+import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
 import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
+import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
 import toast from "react-hot-toast";
 import userImage from "../../../assets/images/default-user.jpg";
-import { TrashIcon } from "@heroicons/react/24/solid";
+import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
+
+import { Loading } from "../../../components/ui/Loading";
 
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
@@ -17,16 +20,15 @@ export default function StudentValuationDetail() {
         currentValuation,
         fetchValuation,
         updateValuation,
-        deleteValuation,
         clearValuation,
-        isLoading
+        isLoading,
+        error
     } = useStudentValuationStore();
     const { sessionData } = useAuthStore();
 
     const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
     const [localValuation, setLocalValuation] = useState(currentValuation);
-    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const activePeriod = sessionData?.periods?.find((p) => p.isActive);
@@ -46,18 +48,35 @@ export default function StudentValuationDetail() {
         }
     }, [currentValuation]);
 
+    // Calculate Global Progress
+    const totalLearnings = localValuation?.valuationsBySubject.reduce((acc, subject) => acc + subject.learningValuations.length, 0) || 0;
+    const totalValued = localValuation?.valuationsBySubject.reduce((acc, subject) => {
+        return acc + subject.learningValuations.filter(lv => lv.qualitativeValuation !== null).length;
+    }, 0) || 0;
+    const globalProgress = totalLearnings > 0 ? (totalValued / totalLearnings) * 100 : 0;
+
+
     const handleSave = async () => {
         if (!localValuation) return;
+        setIsSaving(true);
         try {
             const payload: StudentValuationUpdateData = {
                 valuationsBySubject: localValuation.valuationsBySubject
+                    .filter(
+                        (subject) =>
+                            subject.evaluationMode === "description" ||
+                            subject.learningValuations.some((lv) => lv.qualitativeValuation !== null)
+                    )
                     .map((subject) => ({
                         subjectId: subject.subjectId,
                         learningValuations: subject.learningValuations.filter(
                             (lv) => lv.qualitativeValuation !== null
                         ),
-                    }))
-                    .filter((subject) => subject.learningValuations.length > 0),
+                        ...(subject.evaluationMode === "description"
+                            ? { performanceDescription: subject.performanceDescription }
+                            : {}),
+                    })),
+                observations: localValuation.observations ?? "",
             };
 
             await updateValuation(localValuation._id, payload);
@@ -65,39 +84,44 @@ export default function StudentValuationDetail() {
         } catch (error) {
             toast.error("Error al guardar la Evaluación");
             console.error(error);
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleDelete = () => {
-        setDeleteModalOpen(true);
-    };
 
-    const handleConfirmDelete = async () => {
-        if (!localValuation) return;
-
-        try {
-            await deleteValuation(localValuation._id);
-            setIsDeleting(true);
-            setDeleteModalOpen(false);
-            toast.success(<b>Evaluación eliminada con éxito</b>);
-            navigate('/evaluacion');
-        } catch (err: any) {
-            toast.error(<b>Error al eliminar la evaluación: {err.message}</b>);
-        }
-    };
 
     const hasChanges = useCallback(() => {
         if (!localValuation || !currentValuation) return false;
-        return JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(currentValuation.valuationsBySubject);
+        return (
+            JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(currentValuation.valuationsBySubject) ||
+            (localValuation.observations ?? "") !== (currentValuation.observations ?? "")
+        );
     }, [localValuation, currentValuation]);
 
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) =>
-            !isDeleting && hasChanges() && currentLocation.pathname !== nextLocation.pathname
+            hasChanges() && currentLocation.pathname !== nextLocation.pathname
     );
 
     if (isLoading) {
-        return <div className="p-6">Cargando valoración...</div>;
+        return <Loading message="Cargando valoración..." />;
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex flex-col items-center justify-center gap-2">
+                <Typography color="red" className="font-medium">
+                    No se pudo crear la evaluación
+                </Typography>
+                <Typography variant="small" className="text-gray-600">
+                    {error}
+                </Typography>
+                <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
+                    Volver
+                </Button>
+            </div>
+        )
     }
 
     if (!localValuation) {
@@ -107,19 +131,24 @@ export default function StudentValuationDetail() {
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex flex-col w-full gap-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-2">
                     <IconButton variant="text" size="md" onClick={() => navigate('/evaluacion')}>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                         </svg>
                     </IconButton>
-                    <h1 className="text-2xl font-semibold text-purple-900">
-                        Evaluación de Lista de Chequeo
-                    </h1>
+                    <div className="flex">
+                        <h1 className="text-2xl font-semibold text-purple-900 mr-1">
+                            Evaluación de Lista de Chequeo
+                        </h1>
+                        <div className="bg-pink-500 rounded-md text-white font-medium text-sm px-2 py-2 h-[18px] flex items-center justify-center w-fit">
+                            {localValuation.periodName}
+                        </div>
+                    </div>
                 </div>
-                <div className="flex w-full items-center justify-between mx-2 mb-6">
+                <div className="flex w-full items-center justify-between mb-8 border border-gray-200 p-4 rounded-lg">
                     <div className="flex items-center gap-4">
-                        <Avatar src={userImage} alt="user_image" size="md" />
+                        <Avatar src={userImage} alt="user_image" size="lg" />
                         <div>
                             <h1 className="text-lg font-semibold text-gray-700">
                                 {localValuation.studentName.lastName} {localValuation.studentName.secondLastName}
@@ -129,42 +158,19 @@ export default function StudentValuationDetail() {
                             </Typography>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="gradient"
-                            onClick={handleSave}
-                            color="purple"
-                        >
-                            Guardar Cambios
-                        </Button>
-                        <Button
-                            variant="text"
-                            className="text-gray-400 hover:text-pink-400 transition-colors duration-200"
-                            onClick={handleDelete}
-                        >
-                            <TrashIcon className="h-6 w-6" />
-                        </Button>
+                    <div className="flex flex-col gap-1 w-64">
+                        <div className="flex justify-between items-center mb-1">
+                            <Typography variant="small" className="font-bold text-gray-500 text-[10px] uppercase tracking-wider">
+                                Progreso Global
+                            </Typography>
+                            <Typography variant="small" className="font-bold text-purple-700 text-xs">
+                                {Math.round(globalProgress)}%
+                            </Typography>
+                        </div>
+                        <Progress value={globalProgress} size="sm" color="purple" className="bg-purple-50" barProps={{ className: "bg-purple-600" }} />
                     </div>
                 </div>
             </div>
-            <ConfirmationModal
-                open={isDeleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                title="¿Deseas eliminar la Evaluación?"
-                body={
-                    <p className="text-gray-600">
-                        Lista de Chequeo de{" "}
-                        <span className="font-bold">
-                            {localValuation?.studentName.firstName}{" "}
-                            {localValuation?.studentName.lastName}{" "}
-                            {localValuation?.studentName.secondLastName}
-                        </span>
-                    </p>
-                }
-                confirmColor="pink"
-            />
-
             {blocker.state === "blocked" ? (
                 <ConfirmationModal
                     open={true}
@@ -204,6 +210,14 @@ export default function StudentValuationDetail() {
                                         : subject.subjectId
                                 )
                             }
+                            // Inject icon based on index in sessionData.subjects
+                            icon={(() => {
+                                const subjectIndex = sessionData?.subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
+                                if (subjectIndex !== -1) {
+                                    return SUBJECT_ICONS[subjectIndex % SUBJECT_ICONS.length];
+                                }
+                                return undefined; // Fallback to default in child
+                            })()}
                             initialSelections={subject.learningValuations.reduce(
                                 (acc, lv) => {
                                     acc[lv.learningId] = lv.qualitativeValuation;
@@ -217,7 +231,7 @@ export default function StudentValuationDetail() {
                                     const next = {
                                         ...prev,
                                         valuationsBySubject: prev.valuationsBySubject.map((s) => {
-                                            if (s.subjectId !== subject.subjectId) return s;
+                                            if (s.subjectId !== subject.subjectId || s.evaluationMode !== "checklist") return s;
                                             return {
                                                 ...s,
                                                 learningValuations: s.learningValuations.map((lv) =>
@@ -235,10 +249,74 @@ export default function StudentValuationDetail() {
                                     return next;
                                 });
                             }}
+                            onDescriptionChange={(subjectId, value) => {
+                                setLocalValuation((prev) => {
+                                    if (!prev) return prev;
+                                    return {
+                                        ...prev,
+                                        valuationsBySubject: prev.valuationsBySubject.map((s) => {
+                                            if (s.subjectId !== subjectId || s.evaluationMode !== "description") return s;
+                                            return { ...s, performanceDescription: value };
+                                        }),
+                                    };
+                                });
+                            }}
                         />
                     </div>
                 ))}
             </div>
-        </div>
+
+            <div className="mt-4">
+                <PerformanceTextarea
+                    title="Observaciones"
+                    subtitle="Opcional · comentarios adicionales sobre la valoración del estudiante"
+                    placeholder="Escribe aquí tus observaciones..."
+                    value={localValuation.observations ?? ""}
+                    onChange={(value) =>
+                        setLocalValuation((prev) => (prev ? { ...prev, observations: value } : prev))
+                    }
+                />
+            </div>
+
+            {/* Conditional Footer for Saving Changes */}
+            {/* Sticky Footer for Saving Changes */}
+            <div className={`fixed bottom-6 inset-x-0 mx-auto max-w-3xl z-50 transition-all duration-300 transform ${hasChanges() ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+                <div className="bg-white p-4 rounded-xl shadow-lg flex items-center justify-between px-8 mx-auto container">
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-2 w-2 relative">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </div>
+                        <Typography variant="small" className="font-semibold text-gray-700">
+                            Hay cambios pendientes
+                        </Typography>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Button
+                            variant="text"
+                            size="sm"
+                            color="blue-gray"
+                            onClick={() => {
+                                setLocalValuation(currentValuation);
+                            }}
+                            className="hover:bg-gray-100"
+                        >
+                            Deshacer cambios
+                        </Button>
+                        <Button
+                            variant="gradient"
+                            color="purple"
+                            size="sm"
+                            loading={isSaving}
+                            onClick={handleSave}
+                            className="flex items-center gap-2 shadow-purple-500/20 hover:shadow-purple-500/40"
+                        >
+                            <BookmarkSquareIcon className="w-4 h-4" />
+                            Guardar
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div >
     );
 }

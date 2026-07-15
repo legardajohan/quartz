@@ -1,3 +1,6 @@
+import { SubjectType, SubjectEvaluationMode } from '../subject/subject.types';
+import { ReportKind } from '../institution/institution.types';
+
 export enum UserRole {
   JEFE_DE_AREA = 'Jefe de Área',
   DOCENTE = 'Docente',
@@ -43,10 +46,13 @@ export interface ISessionData {
   subjects: {
     _id: string;
     name: string;
+    type: SubjectType;
+    evaluationMode: SubjectEvaluationMode;
   }[];
   checklistTemplates: {
     _id: string;
     periodId: string;
     name: string;
   }[];
+  enabledReports: ReportKind[];
 }

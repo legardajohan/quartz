@@ -3,6 +3,7 @@ import { IStudentValuationDocument, IValuationBySubject, ILearningValuation } fr
 import { IUserDocument } from '../auth/auth.model';
 import { IPeriodDocument } from '../period/period.model';
 import { ISubjectDocument } from '../subject/subject.model';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 import { ILearningDocument } from '../learning/learning.model';
 
 // -----------------------------------------------------------------------------
@@ -28,15 +29,26 @@ export interface ILearningValuationDTO {
   pointsObtained: number;
 }
 
-export interface IValuationBySubjectDTO {
+type ValuationBySubjectBase = {
   subjectId: string;
   subjectName: string;
-  learningValuations: ILearningValuationDTO[];
   totalSubjectScore: number;
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: string;
-}
+};
+
+export type IValuationBySubjectDTO =
+  | (ValuationBySubjectBase & {
+      evaluationMode: SubjectEvaluationMode.CHECKLIST;
+      learningValuations: ILearningValuationDTO[];
+      performanceDescription: null;
+    })
+  | (ValuationBySubjectBase & {
+      evaluationMode: SubjectEvaluationMode.DESCRIPTION;
+      learningValuations: [];
+      performanceDescription: string | null;
+    });
 
 type StudentName = {
   firstName: string;
@@ -56,6 +68,7 @@ export interface IStudentValuationDTO {
   periodName: string;
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubjectDTO[];
+  observations: string | null;
 }
 
 
@@ -63,15 +76,9 @@ export interface IStudentValuationDTO {
 // II. POPULATED DOCUMENT TYPES (for service-layer transformations)
 // -----------------------------------------------------------------------------
 
-// Populated version of ILearningValuation
-interface IPopulatedLearningValuation extends Omit<ILearningValuation, 'learningId'> {
-  learningId: ILearningDocument;
-}
-
 // Populated version of IValuationBySubject
-interface IPopulatedValuationBySubject extends Omit<IValuationBySubject, 'subjectId' | 'learningValuations'> {
+interface IPopulatedValuationBySubject extends Omit<IValuationBySubject, 'subjectId'> {
   subjectId: ISubjectDocument;
-  learningValuations: IPopulatedLearningValuation[];
 }
 
 // Fully populated StudentValuation document
@@ -87,13 +94,13 @@ export type PopulatedValuation = Omit<IStudentValuationDocument, 'studentId' | '
 // -----------------------------------------------------------------------------
 
 export type StudentValuationCreationData = {
-    institutionId: Types.ObjectId;
-    studentId: Types.ObjectId;
-    teacherId: Types.ObjectId;
-    checklistTemplateId: Types.ObjectId;
-    periodId: Types.ObjectId;
-    globalStatus: GlobalValuationStatus | null;
-    valuationsBySubject: IValuationBySubject[];
+  institutionId: Types.ObjectId;
+  studentId: Types.ObjectId;
+  teacherId: Types.ObjectId;
+  checklistTemplateId: Types.ObjectId;
+  periodId: Types.ObjectId;
+  globalStatus: GlobalValuationStatus | null;
+  valuationsBySubject: IValuationBySubject[];
 };
 
 type LearningValuationUpdate = {
@@ -104,8 +111,10 @@ type LearningValuationUpdate = {
 type ValuationBySubjectUpdate = {
   subjectId: Types.ObjectId | string;
   learningValuations: LearningValuationUpdate[];
+  performanceDescription?: string | null;
 };
 
 export type StudentValuationUpdateData = {
   valuationsBySubject: ValuationBySubjectUpdate[];
+  observations?: string | null;
 };

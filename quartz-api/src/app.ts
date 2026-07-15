@@ -8,13 +8,18 @@ import subjectRoutes from './features/subject/subject.routes';
 import checklistTemplatesRoutes from './features/checklist-template/checklist-template.routes';
 import studentValuationRoutes from './features/student-valuation/student-valuation.routes';
 import usersRoutes from './features/users/users.routes';
+import schoolRoutes from './features/school/school.routes';
+import conceptRoutes from './features/concept/concept.routes';
+import reportRoutes from './features/report/report.routes';
+import institutionRoutes from './features/institution/institution.routes';
+import { errorHandler } from './middlewares/error.middleware';
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 const app = express();
 app.use(cors({
-  origin: 'http://localhost:5173', // Frontend URL
+  origin: process.env.WEB_ORIGIN, // Frontend URL
   credentials: true,
 }));
 app.use(express.json());
@@ -32,6 +37,16 @@ app.use('/api/checklist-templates', checklistTemplatesRoutes);
 app.use('/api/student-valuations', studentValuationRoutes);
 // Routes for users (students listing by institution)
 app.use('/api/users', usersRoutes);
+// Routes for schools
+app.use('/api/schools', schoolRoutes);
+// Routes for concepts
+app.use('/api/concepts', conceptRoutes);
+// Routes for reports (dynamic PDFs, never persisted)
+app.use('/api/reports', reportRoutes);
+// Routes for institution settings (periods per year, enabled reports)
+app.use('/api/institutions', institutionRoutes);
+
+app.use(errorHandler);
 
 // Conection to MongoDB
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;

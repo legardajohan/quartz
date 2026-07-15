@@ -1,14 +1,16 @@
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
 import { ProtectedRoute } from './components/router/ProtectedRoute';
+import { RoleRoute } from './components/router/RoleRoute';
 import { Dashboard } from './components/layouts/Dashboard';
 import LearningsPage from './features/learning/pages/LearningsPage';
 import ConceptsPage from './features/concept/pages/ConceptsPage';
-import ChecklistsPage from './features/checklist/pages/ChecklistsPage';
+import ChecklistsPage from './features/checklist-template/pages/ChecklistsPage';
 import StudentValuationsPage from './features/student-valuation/pages/StudentValuationsPage';
 import ReportsPage from './features/report/pages/ReportsPage';
-import UsersPage from './features/user/pages/UsersPage';
+import UsersPage from './features/users/pages/UsersPage';
 import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
+import ConfigurationPage from './features/configuration/pages/ConfigurationPage';
 import { Toaster } from 'react-hot-toast';
 
 // Placeholder para un futuro Dashboard
@@ -71,6 +73,10 @@ export const router = createBrowserRouter(
           <Route path="/informes" element={<ReportsPage />} />
           <Route path="/gestion/usuarios" element={<UsersPage />} />
           <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />
+
+          <Route element={<RoleRoute allowedRoles={['Jefe de Área']} />}>
+            <Route path="/gestion/configuracion" element={<ConfigurationPage />} />
+          </Route>
         </Route>
       </Route>
 

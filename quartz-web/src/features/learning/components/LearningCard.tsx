@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { Learning } from "../types";
 import { IconButton, Tooltip } from "@material-tailwind/react";
 
@@ -79,7 +79,7 @@ const LearningCard = ({ learning, onEdit, onDelete }: LearningCardProps) => {
                 className="text-gray-400 hover:text-green-400 transition-colors duration-200"
                 onClick={() => onEdit(learning._id)}
               >
-                <PencilIcon className="h-6 w-6" />
+                <PencilIcon className="h-5 w-5" />
               </IconButton>
             </div>
           </Tooltip>
@@ -98,7 +98,7 @@ const LearningCard = ({ learning, onEdit, onDelete }: LearningCardProps) => {
                 className="text-gray-400 hover:text-pink-400 transition-colors duration-200"
                 onClick={() => onDelete(learning._id)}
               >
-                <TrashIcon className="h-6 w-6" />
+                <TrashIcon className="h-5 w-5" />
               </IconButton>
             </div>
           </Tooltip>

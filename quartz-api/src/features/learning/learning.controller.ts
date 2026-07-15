@@ -7,6 +7,7 @@ import {
     updateLearning,
     deleteLearning
 } from './learning.service';
+import AppError from '../../utils/AppError';
 
 function mapLearningToResponse(learning: ILearningDocument): ILearningResponse {
     const learningObject = learning.toObject();
@@ -14,6 +15,12 @@ function mapLearningToResponse(learning: ILearningDocument): ILearningResponse {
     return {
         _id: learningObject._id.toString(),
         description: learningObject.description,
+        grade: learningObject.grade,
+        author: {
+            _id: learningObject.userId._id.toString(),
+            name: `${learningObject.userId.firstName} ${learningObject.userId.lastName}`,
+            role: learningObject.userId.role,
+        },
         subject: {
             _id: learningObject.subjectId._id.toString(),
             name: learningObject.subjectId.name,
@@ -26,99 +33,34 @@ function mapLearningToResponse(learning: ILearningDocument): ILearningResponse {
 }
 
 export async function getAllLearningsController(req: Request, res: Response) {
-    try {
-        const user = req.user;
-        if (!user || !user._id || !user.institutionId) {
-            console.error('Critical: User object on request is missing required properties (_id or institutionId).');
-            return res.status(500).json({ message: 'Error interno del servidor: información de usuario corrupta o incompleta.' });
-        }
-
-        const institutionId = user.institutionId.toString();
-        const learnings = await getAllLearnings(institutionId, req.query);
-
-        const responseLearnings = learnings.map(mapLearningToResponse);
-
-        res.status(200).json(responseLearnings);
-    } catch (error: any) {
-        console.error("Error in controller to get all Learnings: ", error);
-        res.status(500).json({ message: 'Error getting Learnings.' });
-    }
+    const institutionId = req.user!.institutionId.toString();
+    const learnings = await getAllLearnings(institutionId, req.query);
+    res.status(200).json(learnings.map(mapLearningToResponse));
 }
 
 export async function createLearningController(req: Request, res: Response) {
-    try {
-        const learningData = req.body;
-        const user = req.user;
-
-        if (!user || !user._id || !user.institutionId) {
-            console.error('Critical: User object on request is missing required properties (_id or institutionId).');
-            return res.status(500).json({ message: 'Error interno del servidor: información de usuario corrupta o incompleta.' });
-        }
-
-        const institutionId = user.institutionId.toString();
-        const userId = user._id.toString();
-
-        const populatedLearning = await createLearning(
-            institutionId,
-            userId,
-            learningData
-        );
-
-        res.status(201).json(mapLearningToResponse(populatedLearning));
-
-    } catch (error: any) {
-        if (error.message && (error.message.includes('subjectId') || error.message.includes('periodId'))) {
-            return res.status(400).json({ message: error.message });
-        }
-        console.error("Error in Learning controller: ", error);
-        res.status(500).json({ message: 'Error creating Learning.' });
-    }
+    const institutionId = req.user!.institutionId.toString();
+    const userId = req.user!._id.toString();
+    const populatedLearning = await createLearning(institutionId, userId, req.body);
+    res.status(201).json(mapLearningToResponse(populatedLearning));
 }
 
 export async function updateLearningController(req: Request, res: Response) {
-    try {
-        const { learningId } = req.params;
-        const user = req.user;
-
-        if (!user || !user._id || !user.institutionId) {
-            console.error('Critical: User object on request is missing required properties (_id or institutionId).');
-            return res.status(500).json({ message: 'Error interno del servidor: información de usuario corrupta o incompleta.' });
-        }
-
-        const institutionId = user.institutionId.toString();
-        const updateData = req.body;
-
-        const populatedLearning = await updateLearning(learningId, institutionId, updateData);
-
-        if (!populatedLearning) {
-            return res.status(404).json({ message: 'Learning not found.' });
-        }
-
-        res.status(200).json(mapLearningToResponse(populatedLearning));
-
-    } catch (error: any) {
-        if (error.message && (error.message.includes('subjectId') || error.message.includes('periodId'))) {
-            return res.status(400).json({ message: error.message });
-        }
-        console.error("Error in Learning update controller: ", error);
-        res.status(500).json({ message: 'Error updating Learning.' });
+    const { learningId } = req.params;
+    const institutionId = req.user!.institutionId.toString();
+    const populatedLearning = await updateLearning(learningId, institutionId, req.body);
+    if (!populatedLearning) {
+        throw new AppError('Learning not found.', 404);
     }
+    res.status(200).json(mapLearningToResponse(populatedLearning));
 }
 
 export async function deleteLearningController(req: Request, res: Response) {
-    try {
-        const { learningId } = req.params;
-        const { institutionId } = req.user!;
-
-        const deletedLearning = await deleteLearning(learningId, institutionId.toString());
-
-        if (!deletedLearning) {
-            return res.status(404).json({ message: 'Learning not found.' });
-        }
-
-        res.status(200).json({ message: 'Learning successfully deleted.' });
-    } catch (error: any) {
-        console.error("Error in Learning deletion controller: ", error);
-        res.status(500).json({ message: 'Error deleting Learning.' });
+    const { learningId } = req.params;
+    const institutionId = req.user!.institutionId.toString();
+    const deletedLearning = await deleteLearning(learningId, institutionId);
+    if (!deletedLearning) {
+        throw new AppError('Learning not found.', 404);
     }
+    res.status(200).json({ message: 'Learning successfully deleted.' });
 }

@@ -1,4 +1,4 @@
-import type { ISessionData, User } from '@/types/domain';
+import type { ISessionData } from '@/types/domain';
 
 export interface LoginRequest {
   email: string;
@@ -13,7 +13,7 @@ export interface LoginResponse {
 }
 
 export interface ProfileResponse {
-  success: boolean;
-  user: User; 
+  success?: boolean;
+  user: ISessionData['user'];
   message?: string;
 }

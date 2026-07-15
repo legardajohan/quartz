@@ -2,45 +2,47 @@ import { Router } from 'express';
 import { getAllLearningsController, createLearningController, updateLearningController, deleteLearningController } from './learning.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { authorize } from '../../middlewares/role.middleware';
+import { requireTenant } from '../../middlewares/require-tenant.middleware';
+import { asyncHandler } from '../../middlewares/async-handler.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { getAllLearningsSchema, createLearningSchema, updateLearningSchema, deleteLearningSchema } from './learning.validation';
 
 const router = Router();
 
-// Protected route to get all Learnings
 router.get(
   '/',
   authenticateJWT,
+  requireTenant,
   authorize(['Jefe de Área', 'Docente']),
   validate(getAllLearningsSchema),
-  getAllLearningsController
+  asyncHandler(getAllLearningsController)
 );
 
-// Protected route to create Learning
 router.post(
   '/',
   authenticateJWT,
+  requireTenant,
   authorize(['Jefe de Área']),
   validate(createLearningSchema),
-  createLearningController
+  asyncHandler(createLearningController)
 );
 
-// Protected route to update Learning
 router.patch(
   '/:learningId',
   authenticateJWT,
+  requireTenant,
   authorize(['Jefe de Área']),
   validate(updateLearningSchema),
-  updateLearningController
+  asyncHandler(updateLearningController)
 );
 
-// Protected route to delete Learning
 router.delete(
   '/:learningId',
   authenticateJWT,
+  requireTenant,
   authorize(['Jefe de Área']),
   validate(deleteLearningSchema),
-  deleteLearningController
+  asyncHandler(deleteLearningController)
 );
 
 export default router;

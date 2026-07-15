@@ -4,9 +4,17 @@ export type IdentificationType = 'CC' | 'TI' | 'RC';
 
 export type GradeLevel = 'Transición' | '1ro' | '2do' | '3ro' | '4to' | '5to' | '6to' | '7mo' | '8vo' | '9no' | '10mo' | '11mo';
 
+export type SubjectType = 'Dimensión' | 'Asignatura';
+
+export type SubjectEvaluationMode = 'checklist' | 'description';
+
+export type ReportKind = 'checklist' | 'communicative-letter';
+
 export interface Subject {
   _id: string;
   name: string;
+  type: SubjectType;
+  evaluationMode: SubjectEvaluationMode;
 }
 
 export interface Period {
@@ -51,4 +59,5 @@ export interface ISessionData {
   periods: Period[];
   subjects: Subject[];
   checklistTemplates: ChecklistTemplates[];
+  enabledReports: ReportKind[];
 }

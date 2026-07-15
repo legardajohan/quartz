@@ -1,11 +1,17 @@
 export interface ILearningResponse {
   _id: string;
   description: string;
-  subject: {
+  author: {
+    _id: string;
+    name: string;
+    role: string;
+  };
+  grade: string;
+  period: {
     _id: string;
     name: string;
   };
-  period: {
+  subject: {
     _id: string;
     name: string;
   };

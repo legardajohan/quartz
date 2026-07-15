@@ -1,61 +1,64 @@
 import { Router } from 'express';
-import { 
-  initializeValuationController, 
+import {
+  initializeValuationController,
   updateValuationController,
   deleteValuationController,
   getValuationByIdController,
   getValuationsByStudentController,
 } from './student-valuation.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
+import { requireTenant } from '../../middlewares/require-tenant.middleware';
 import { authorize } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
+import { asyncHandler } from '../../middlewares/async-handler.middleware';
 import { studentValuationValidation } from './student-valuation.validation';
+import { UserRole } from '../auth/auth.types';
 
 const router = Router();
 
-// Initialize a student valuation for a period
 router.post(
   '/student/:studentId/period/:periodId',
   authenticateJWT,
-  authorize(['Jefe de Área']),
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(studentValuationValidation.initializeValuation),
-  initializeValuationController
+  asyncHandler(initializeValuationController)
 );
 
-// Get all valuations for a specific student
 router.get(
   '/student/:studentId',
   authenticateJWT,
-  authorize(['Jefe de Área']),
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(studentValuationValidation.getValuationsByStudent),
-  getValuationsByStudentController
+  asyncHandler(getValuationsByStudentController)
 );
 
-// Get a single valuation by its ID
 router.get(
   '/:valuationId',
   authenticateJWT,
-  authorize(['Jefe de Área']),
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(studentValuationValidation.getValuationById),
-  getValuationByIdController
+  asyncHandler(getValuationByIdController)
 );
 
-// Update a valuation
 router.patch(
   '/:valuationId',
   authenticateJWT,
-  authorize(['Jefe de Área']),
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(studentValuationValidation.updateValuation),
-  updateValuationController
+  asyncHandler(updateValuationController)
 );
 
-// Delete a valuation
 router.delete(
   '/:valuationId',
   authenticateJWT,
-  authorize(['Jefe de Área']),
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA]),
   validate(studentValuationValidation.deleteValuation),
-  deleteValuationController
+  asyncHandler(deleteValuationController)
 );
 
 export default router;
