@@ -15,7 +15,6 @@ export interface IInstitutionDocument extends Document {
 
 const InstitutionSettingsSchema = new Schema<IInstitutionSettings>(
   {
-    periodsPerYear: { type: Number, default: 4, min: 1 },
     enabledReports: {
       type: [String],
       enum: Object.values(ReportKind),

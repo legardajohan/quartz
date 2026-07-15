@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Typography, Input, Checkbox } from "@material-tailwind/react";
+import { Typography, Checkbox } from "@material-tailwind/react";
 import { DocumentCheckIcon, EnvelopeOpenIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
@@ -24,7 +24,6 @@ const REPORT_OPTIONS: { value: ReportKind; label: string; description: string; i
 export function ReportSettingsPanel() {
   const { institution, isLoading, isSubmitting, error, fetchInstitution, updateSettings } = useInstitutionStore();
 
-  const [periodsPerYear, setPeriodsPerYear] = useState('4');
   const [enabledReports, setEnabledReports] = useState<ReportKind[]>([]);
 
   useEffect(() => {
@@ -33,7 +32,6 @@ export function ReportSettingsPanel() {
 
   useEffect(() => {
     if (institution) {
-      setPeriodsPerYear(String(institution.settings.periodsPerYear));
       setEnabledReports(institution.settings.enabledReports);
     }
   }, [institution]);
@@ -45,8 +43,7 @@ export function ReportSettingsPanel() {
   };
 
   const isDirty = institution
-    ? String(institution.settings.periodsPerYear) !== periodsPerYear ||
-      JSON.stringify([...institution.settings.enabledReports].sort()) !== JSON.stringify([...enabledReports].sort())
+    ? JSON.stringify([...institution.settings.enabledReports].sort()) !== JSON.stringify([...enabledReports].sort())
     : false;
 
   const isSubmitDisabled = isSubmitting || !isDirty || enabledReports.length === 0;
@@ -58,10 +55,7 @@ export function ReportSettingsPanel() {
       return;
     }
 
-    const promise = updateSettings({
-      periodsPerYear: Number(periodsPerYear),
-      enabledReports,
-    });
+    const promise = updateSettings({ enabledReports });
     toast.promise(promise, {
       loading: "Guardando configuración...",
       success: <b>¡Configuración actualizada con éxito!</b>,
@@ -81,28 +75,14 @@ export function ReportSettingsPanel() {
     <form onSubmit={handleSubmit} className="w-full max-w-xl space-y-8">
       <div>
         <Typography variant="h6" color="blue-gray" className="font-bold">
-          Periodos e informes
+          Informes
         </Typography>
         <Typography variant="small" className="text-gray-500">
-          Cuántos periodos maneja tu institución por año y qué informes ofrece a los docentes.
+          Qué informes ofrece tu institución a los docentes.
         </Typography>
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
-
-      <div className="max-w-[10rem]">
-        <Input
-          name="periodsPerYear"
-          type="number"
-          min={1}
-          max={12}
-          color="purple"
-          label="Periodos por año"
-          value={periodsPerYear}
-          onChange={(e) => setPeriodsPerYear(e.target.value)}
-          crossOrigin="anonymous"
-        />
-      </div>
 
       <div>
         <Typography variant="small" color="blue-gray" className="font-bold mb-3">

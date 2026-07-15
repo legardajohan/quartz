@@ -9,10 +9,10 @@ Casi toda colección lleva `institutionId` (ObjectId, **requerido**) y se filtra
 
 | Colección | Feature | Propósito | `institutionId` | Referencias clave |
 |---|---|---|---|---|
-| `Institution` | `institution` | Institución educativa (tenant raíz). Incluye `settings` (`periodsPerYear`, default 4; `enabledReports`, default ambos). | — (es la raíz) | — |
+| `Institution` | `institution` | Institución educativa (tenant raíz). Incluye `settings` (`enabledReports`, default ambos). | — (es la raíz) | — |
 | `School` | `school` | Sede / campus. | Requerido | → Institution |
 | `User` | `auth` (gestión en `users`) | Jefe de Área / Docente / Estudiante. | Requerido | → Institution, School |
-| `Period` | `period` | Período académico. Cantidad por año configurable (`Institution.settings.periodsPerYear`, default 4). Solo uno `isActive` (índice parcial único). `year` persistido, `closingAlertDate` opcional. | Requerido | → Institution |
+| `Period` | `period` | Período académico. Cantidad por año libre, sin tope (cada institución define cuántos maneja). Solo uno `isActive` (índice parcial único). `year` persistido, `closingAlertDate` opcional. | Requerido | → Institution |
 | `Subject` | `subject` | Dimensión (fase actual) o materia (futuro), según `type`. Catálogo gestionable por institución (ACAD-01). | Requerido | — |
 | `Learning` | `learning` | Aprendizaje esperado, por dimensión y período. | Requerido | → Subject, Period, User |
 | `ChecklistTemplate` | `checklist-template` | Lista de Chequeo **personal del docente**. | Requerido | → Period, User (docente), Subject[], Learning[] |

@@ -13,7 +13,7 @@ function mapInstitutionToDTO(institution: {
   phoneNumber?: string;
   email: string;
   isActive: boolean;
-  settings: IInstitutionDTO['settings'];
+  settings?: Partial<IInstitutionDTO['settings']>;
 }): IInstitutionDTO {
   return {
     _id: (institution._id as { toString(): string }).toString(),
@@ -24,7 +24,9 @@ function mapInstitutionToDTO(institution: {
     phoneNumber: institution.phoneNumber,
     email: institution.email,
     isActive: institution.isActive,
-    settings: institution.settings,
+    settings: {
+      enabledReports: institution.settings?.enabledReports ?? DEFAULT_ENABLED_REPORTS,
+    },
   };
 }
 
@@ -52,9 +54,6 @@ export const updateInstitutionSettings = async (
   }
 
   const setPayload: Record<string, unknown> = {};
-  if (data.periodsPerYear !== undefined) {
-    setPayload['settings.periodsPerYear'] = data.periodsPerYear;
-  }
   if (data.enabledReports !== undefined) {
     setPayload['settings.enabledReports'] = data.enabledReports;
   }

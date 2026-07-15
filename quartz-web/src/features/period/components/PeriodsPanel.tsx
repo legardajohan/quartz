@@ -134,18 +134,18 @@ export function PeriodsPanel() {
       ),
     },
     {
-      header: "Año",
+      header: "Inicio",
       accessor: (item) => (
-        <Typography variant="small" className="font-normal">
-          {item.year}
+        <Typography variant="small" className="font-normal whitespace-nowrap">
+          {formatDate(item.startDate)}
         </Typography>
       ),
     },
     {
-      header: "Fechas",
+      header: "Cierre",
       accessor: (item) => (
         <Typography variant="small" className="font-normal whitespace-nowrap">
-          {formatDate(item.startDate)} — {formatDate(item.endDate)}
+          {formatDate(item.endDate)}
         </Typography>
       ),
     },

@@ -2,7 +2,6 @@ import type { ReportKind } from '@/types/domain';
 import type { UpdateInstitutionSettings } from './api';
 
 export interface InstitutionSettingsDto {
-  periodsPerYear: number;
   enabledReports: ReportKind[];
 }
 

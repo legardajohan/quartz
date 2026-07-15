@@ -4,7 +4,6 @@ export enum ReportKind {
 }
 
 export interface IInstitutionSettings {
-  periodsPerYear: number;
   enabledReports: ReportKind[];
 }
 

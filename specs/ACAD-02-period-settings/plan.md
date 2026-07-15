@@ -49,7 +49,6 @@ export enum ReportKind {
 }
 
 export interface IInstitutionSettings {
-  periodsPerYear: number;
   enabledReports: ReportKind[];
 }
 
@@ -97,7 +96,6 @@ export type UpdatePeriodData = Partial<CreatePeriodData>;
 
 | Campo | Tipo | Notas |
 |---|---|---|
-| `settings.periodsPerYear` | `Number` | `default: 4`, `min: 1` |
 | `settings.enabledReports` | `[String]` | `enum: Object.values(ReportKind)`, `default: [CHECKLIST, COMMUNICATIVE_LETTER]` |
 
 `settings` con `default: () => ({})` para que los documentos existentes resuelvan los defaults al leerse.
@@ -126,7 +124,7 @@ Ver Nota 1.
 | Esquema | Forma |
 |---|---|
 | `getInstitutionSchema` | sin params/body |
-| `updateInstitutionSettingsSchema` | `body: { settings: { periodsPerYear: number().int().min(1).max(12).optional(), enabledReports: array(nativeEnum(ReportKind)).nonempty().optional() } }` |
+| `updateInstitutionSettingsSchema` | `body: { settings: { enabledReports: array(nativeEnum(ReportKind)).nonempty().optional() } }` |
 
 `period.validation.ts` — reutiliza `objectIdSchema = /^[0-9a-fA-F]{24}$/` de `student-valuation.validation.ts`:
 
@@ -161,9 +159,8 @@ Usar el enum `UserRole`, no el literal `'Jefe de Área'`.
 ### Service — `period.service.ts`
 - `getPeriodsByInstitution` — existente; añadir `year` y `closingAlertDate` al DTO.
 - `createPeriod(institutionId, data)`:
-  1. Leer `settings.periodsPerYear` de la institución; contar `Period` del tenant con ese `year`; si `count >= periodsPerYear` → `AppError('Se alcanzó el máximo de periodos configurado para el año.', 409)`.
-  2. Si `isActive: true` → desactivar el resto: `Period.updateMany({ institutionId, isActive: true }, { isActive: false })` **antes** de crear (ver Nota 1).
-  3. `createScoped(Period, institutionId, data)`.
+  1. Si `isActive: true` → desactivar el resto: `Period.updateMany({ institutionId, isActive: true }, { isActive: false })` **antes** de crear (ver Nota 1).
+  2. `createScoped(Period, institutionId, data)`.
 - `updatePeriod(periodId, institutionId, data)` → `findOneAndUpdateScoped(..., { new: true, runValidators: true })`. Si `isActive: true`, desactivar los demás (`_id: { $ne: periodId }`). Revalidar el orden de fechas contra el documento fusionado (Nota 2). `null` → `AppError(..., 404)`.
 - `deletePeriod(periodId, institutionId)` → `deleteOneScoped`; `deletedCount === 0` → `AppError(..., 404)`.
 
@@ -195,9 +192,9 @@ Usar el enum `UserRole`, no el literal `'Jefe de Área'`.
 
 4. **`enabledReports` sobre la Carta Comunicativa es casi decorativo hoy.** Según `specs/reports.spec.md`, el icono de la Carta está **siempre deshabilitado** (placeholder) y el backend solo expone `GET /api/reports/checklist/:valuationId`. Desmarcarla oculta un botón que ya no hacía nada. Se implementa igual porque la configuración debe existir antes que la Carta, pero conviene no venderlo como funcionalidad visible.
 
-5. **`periodsPerYear` no fuerza la creación.** Es un techo, no una plantilla: no se autogeneran periodos. El Jefe de Área los crea uno a uno y el sistema impide pasarse. Autogenerar fechas cuatrimestrales sería otro feature.
+5. **[Revertido, ver spec.md Addendum]** `periodsPerYear` existió brevemente como techo configurable (no plantilla: no autogeneraba periodos). Se eliminó tras detectar que no evitaba de forma confiable crear más periodos que el tope, y para no limitar la libertad de instituciones con calendarios distintos. El Jefe de Área crea los periodos uno a uno, sin límite de cantidad.
 
-6. **`docs/data-model.md` describe `Period` como "cuatrimestral"** con la nota "Solo uno `isActive`". Al hacer configurable `periodsPerYear`, "cuatrimestral" pasa a ser el default (4), no una propiedad del modelo. Ajustar esa línea.
+6. **`docs/data-model.md` describe `Period`** sin cantidad fija por año ni tope configurable — el Jefe de Área define libremente cuántos periodos maneja su institución.
 
 ## Verificación
 - `cd quartz-api && npx tsc --noEmit`
@@ -205,7 +202,7 @@ Usar el enum `UserRole`, no el literal `'Jefe de Área'`.
 - `npm run dev` en ambos paquetes: cero errores en consola.
 - `GET /api/institutions/me` como Jefe de Área devuelve `settings` con los defaults sin haberlos escrito nunca.
 - Crear un periodo con `isActive: true` teniendo otro activo → queda exactamente uno activo.
-- Crear el periodo nº 5 con `periodsPerYear: 4` en el mismo año → `409`.
+- Crear varios periodos para el mismo `year` sin restricción de cantidad.
 - `endDate` anterior a `startDate` → `400`. `closingAlertDate` anterior a `endDate` → `400`.
 - Desmarcar Lista de chequeo en Configuración → `/informes` deja de ofrecerla. Desmarcar ambas → el submit no se habilita.
 - Un Docente recibe `403` en `/api/institutions/me` y en las mutaciones de `/api/periods`.

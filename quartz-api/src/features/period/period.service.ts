@@ -1,5 +1,4 @@
 import { Period, PlainPeriodObject } from './period.model';
-import { Institution } from '../institution/institution.model';
 import {
     findScoped,
     findOneScoped,
@@ -10,8 +9,6 @@ import {
 import { CreatePeriodData, UpdatePeriodData } from './period.types';
 import AppError from '../../utils/AppError';
 
-const DEFAULT_PERIODS_PER_YEAR = 4;
-
 export const getPeriodsByInstitution = async (institutionId: string): Promise<PlainPeriodObject[]> => {
     return findScoped(Period, institutionId).sort({ name: 1 }).lean<PlainPeriodObject[]>();
 };
@@ -20,14 +17,6 @@ export const createPeriod = async (
     institutionId: string,
     data: CreatePeriodData
 ): Promise<PlainPeriodObject> => {
-    const institution = await Institution.findById(institutionId).lean();
-    const periodsPerYear = institution?.settings?.periodsPerYear ?? DEFAULT_PERIODS_PER_YEAR;
-
-    const existingCount = await Period.countDocuments({ institutionId, year: data.year });
-    if (existingCount >= periodsPerYear) {
-        throw new AppError('Se alcanzó el máximo de periodos configurado para el año.', 409);
-    }
-
     if (data.isActive) {
         await Period.updateMany({ institutionId, isActive: true }, { isActive: false });
     }
