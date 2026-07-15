@@ -83,6 +83,30 @@ export const useAuthStore = create<AuthState>()(
             error: errorMessage
           });
         }
+      },
+
+      setSubjects: (subjects) => {
+        set((state) => ({
+          sessionData: state.sessionData
+            ? { ...state.sessionData, subjects }
+            : null
+        }));
+      },
+
+      setPeriods: (periods) => {
+        set((state) => ({
+          sessionData: state.sessionData
+            ? { ...state.sessionData, periods }
+            : null
+        }));
+      },
+
+      setEnabledReports: (enabledReports) => {
+        set((state) => ({
+          sessionData: state.sessionData
+            ? { ...state.sessionData, enabledReports }
+            : null
+        }));
       }
     }),
     {

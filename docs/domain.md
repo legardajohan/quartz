@@ -13,8 +13,14 @@
 | **Docente** | Ver estudiantes (su sede por defecto; filtra otras sedes sin editar); valorar y modificar la Lista de Chequeo; previsualizar/descargar informes de sus grupos. |
 | **Estudiante** | Sin acciones en esta fase. |
 
-## 7 Dimensiones
-Modeladas como `Subject` (`type: Dimensión`), **fijas**: Cognitiva · Espiritual · Estética · Comunicativa · Socioafectiva · Corporal · Ética.
+## Dimensiones
+Modeladas como `Subject` (`type: Dimensión`), **por institución**: cada `institutionId` gestiona su propio catálogo desde `Gestión → Configuración` (Jefe de Área). Semilla por defecto al aprovisionar una institución: Cognitiva · Espiritual · Estética · Comunicativa · Socioafectiva · Corporal · Ética — no son una lista cerrada, pueden crearse, editarse o eliminarse.
+
+Cada `Subject` tiene un `evaluationMode`:
+- `checklist` (default): se valora por lista de aprendizajes esperados (`Learning`), como se describe más abajo.
+- `description`: el docente registra una descripción libre del desempeño por estudiante, sin lista de aprendizajes ni puntaje. No aporta a `totalSubjectScore`/`subjectPercentage` ni recibe `assignedConceptId`.
+
+Cambiar el `evaluationMode` de una dimensión no retro-modifica plantillas (`ChecklistTemplate`) ni valoraciones (`StudentValuation`) ya creadas — ambas embeben un *snapshot* del modo vigente al momento de componerse (ver `docs/data-base.md §2`).
 
 ## Jerarquía de la Lista de Chequeo
 `Período → Dimensión (Subject) → Aprendizaje Esperado (Learning)`
@@ -24,6 +30,7 @@ El docente compone su Lista de Chequeo **personal** (`ChecklistTemplate`) eligie
 - **Qué es:** Instantánea (snapshot) de las dimensiones y aprendizajes esperados para un período y grado específicos. Contiene nombre, período, grado, autor (docente) y dimensiones con sus aprendizajes embebidos como copia independiente.
 - **Propósito:** Base para que el docente construya su Lista de Chequeo personal; no incluye valoraciones de estudiantes ni referencias a `Learning` originales.
 - **Regla clave:** Modificar aprendizajes en la tabla `Learning` **no afecta** plantillas ya creadas — cada una tiene su propio snapshot.
+- **Eliminar la plantilla no invalida lo ya generado a partir de ella:** `StudentValuation` es autocontenida (snapshot), por lo que sigue siendo visible, editable y reportable aunque su `ChecklistTemplate` de origen se elimine. El informe de Lista de Chequeo usa el nombre real de la plantilla si aún existe, o el texto de respaldo **"Plantilla eliminada"** si ya no (`report.service.ts`).
 - **Límite:** Máximo **2 plantillas por período** por docente.
 
 ## Valoración cualitativa (por ítem / `Learning`)

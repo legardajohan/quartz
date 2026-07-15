@@ -1,3 +1,5 @@
+import type { SubjectEvaluationMode } from "@/types/domain";
+
 export interface LearningSnapshot {
   _id?: string;
   description: string;
@@ -7,6 +9,7 @@ export interface SubjectSnapshot {
   subject: {
     _id: string;
     name: string;
+    evaluationMode: SubjectEvaluationMode;
   };
   learnings: LearningSnapshot[];
 }

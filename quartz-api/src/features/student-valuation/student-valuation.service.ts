@@ -13,12 +13,14 @@ import {
   StudentValuationCreationData,
   StudentValuationUpdateData,
   IStudentValuationDTO,
+  IValuationBySubjectDTO,
   GlobalValuationStatus,
   QualitativeValuation,
 } from './student-valuation.types';
 import AppError from '../../utils/AppError';
 import { User } from '../auth/auth.model';
 import { Subject } from '../subject/subject.model';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 
 // -----------------------------------------------------------------------------
 // I. CENTRALIZED POPULATION AND DTO MAPPING (CORRECTED)
@@ -37,7 +39,9 @@ interface PopulatedLearningValuation {
 
 interface PopulatedValuationBySubject {
   subjectId: { _id: Types.ObjectId; name: string } | null;
+  evaluationMode: SubjectEvaluationMode;
   learningValuations: PopulatedLearningValuation[];
+  performanceDescription: string | null;
   totalSubjectScore: number;
   maxSubjectScore: number;
   subjectPercentage: number;
@@ -96,7 +100,26 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
     secondLastName: populatedDoc.studentId.secondLastName,
   };
 
-  const valuationsBySubject = populatedDoc.valuationsBySubject.map(vs => {
+  const valuationsBySubject: IValuationBySubjectDTO[] = populatedDoc.valuationsBySubject.map(vs => {
+    const base = {
+      subjectId: vs.subjectId ? vs.subjectId._id.toString() : '',
+      // Null safety: Provide a default value if the referenced subject is deleted.
+      subjectName: vs.subjectId ? vs.subjectId.name : 'Asignatura no disponible',
+      totalSubjectScore: vs.totalSubjectScore,
+      maxSubjectScore: vs.maxSubjectScore,
+      subjectPercentage: vs.subjectPercentage,
+      assignedConceptId: vs.assignedConceptId?.toString(),
+    };
+
+    if (vs.evaluationMode === SubjectEvaluationMode.DESCRIPTION) {
+      return {
+        ...base,
+        evaluationMode: SubjectEvaluationMode.DESCRIPTION,
+        learningValuations: [],
+        performanceDescription: vs.performanceDescription,
+      };
+    }
+
     const learningValuations = vs.learningValuations.map(lv => ({
       // learningId in DTO now refers to the Valuation Item ID (subdocument ID) to allow targeting updates
       learningId: lv._id.toString(),
@@ -106,14 +129,10 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
     }));
 
     return {
-      subjectId: vs.subjectId ? vs.subjectId._id.toString() : '',
-      // Null safety: Provide a default value if the referenced subject is deleted.
-      subjectName: vs.subjectId ? vs.subjectId.name : 'Asignatura no disponible',
-      totalSubjectScore: vs.totalSubjectScore,
-      maxSubjectScore: vs.maxSubjectScore,
-      subjectPercentage: vs.subjectPercentage,
-      assignedConceptId: vs.assignedConceptId?.toString(),
+      ...base,
+      evaluationMode: SubjectEvaluationMode.CHECKLIST,
       learningValuations,
+      performanceDescription: null,
     };
   });
 
@@ -201,17 +220,23 @@ export async function initializeStudentValuation(
   }
 
   // Construct the initial valuation from the template.
-  const valuationsBySubject = template.subjects.map(subject => ({
-    subjectId: subject.subject._id,
-    maxSubjectScore: subject.learnings.length * 3,
-    totalSubjectScore: 0,
-    subjectPercentage: 0,
-    learningValuations: subject.learnings.map(learningObj => ({
-      learningDescription: learningObj.description,
-      qualitativeValuation: null,
-      pointsObtained: 0,
-    })),
-  }));
+  const valuationsBySubject = template.subjects.map(subject => {
+    const isDescription = subject.subject.evaluationMode === SubjectEvaluationMode.DESCRIPTION;
+
+    return {
+      subjectId: subject.subject._id,
+      evaluationMode: subject.subject.evaluationMode,
+      maxSubjectScore: isDescription ? 0 : subject.learnings.length * 3,
+      totalSubjectScore: 0,
+      subjectPercentage: 0,
+      performanceDescription: null,
+      learningValuations: isDescription ? [] : subject.learnings.map(learningObj => ({
+        learningDescription: learningObj.description,
+        qualitativeValuation: null,
+        pointsObtained: 0,
+      })),
+    };
+  });
 
   const payload: StudentValuationCreationData = {
     institutionId: new Types.ObjectId(institutionId),
@@ -271,6 +296,13 @@ export async function updateStudentValuation(
     ])
   );
 
+  // Map of subjectId -> raw performanceDescription, only for subjects whose payload included it.
+  const descriptionUpdateMap = new Map(
+    updateData.valuationsBySubject
+      .filter(subject => subject.performanceDescription !== undefined)
+      .map(subject => [subject.subjectId.toString(), subject.performanceDescription ?? null])
+  );
+
   // 1. Apply updates to the document from the payloads
   valuation.valuationsBySubject.forEach(subject => {
     const subjectUpdateMap = updateMap.get(subject.subjectId.toString());
@@ -318,6 +350,21 @@ export async function updateStudentValuation(
     subject.subjectPercentage = subject.maxSubjectScore > 0
       ? (totalPoints / subject.maxSubjectScore) * 100
       : 0;
+
+    // A dimension in description mode never earns points; it counts as one valuable unit,
+    // valued when its performanceDescription is non-null.
+    if (subject.evaluationMode === SubjectEvaluationMode.DESCRIPTION) {
+      if (descriptionUpdateMap.has(subject.subjectId.toString())) {
+        const rawDescription = descriptionUpdateMap.get(subject.subjectId.toString()) ?? '';
+        const trimmedDescription = rawDescription?.trim() ?? '';
+        subject.performanceDescription = trimmedDescription.length > 0 ? trimmedDescription : null;
+      }
+
+      totalLearnings++;
+      if (subject.performanceDescription !== null) {
+        valuatedLearnings++;
+      }
+    }
   });
 
   // 3. Persist optional free-text observations, normalizing blank input to null.

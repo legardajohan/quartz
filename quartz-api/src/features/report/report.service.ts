@@ -45,9 +45,12 @@ export async function getChecklistReport(
     findOneScoped(Period, institutionId, { _id: new Types.ObjectId(valuation.periodId) }).lean(),
   ]);
 
-  if (!studentSchoolDoc || !teacherDoc || !institutionDoc || !templateDoc || !periodDoc) {
+  if (!studentSchoolDoc || !teacherDoc || !institutionDoc || !periodDoc) {
     throw new AppError('Error de integridad de datos: no se pudo componer el informe.', 500);
   }
+
+  // La plantilla es solo una referencia; eliminarla no invalida la valoración (docs/domain.md:20-21).
+  const templateName = templateDoc?.name ?? 'Plantilla eliminada';
 
   const teacherSchoolDoc = teacherDoc.schoolId.toString() === studentSchoolDoc._id.toString()
     ? studentSchoolDoc
@@ -71,7 +74,7 @@ export async function getChecklistReport(
     period: {
       _id: periodDoc._id.toString(),
       name: periodDoc.name,
-      year: periodDoc.startDate.getFullYear(),
+      year: periodDoc.year,
       isActive: periodDoc.isActive,
     },
     teacher: {
@@ -99,7 +102,7 @@ export async function getChecklistReport(
     },
     valuation: {
       _id: valuation._id,
-      name: templateDoc.name,
+      name: templateName,
       globalStatus: valuation.globalStatus,
       valuationsBySubject: valuation.valuationsBySubject,
       observations: valuation.observations,

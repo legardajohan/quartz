@@ -32,6 +32,7 @@ function mapTemplateToResponse(template: IChecklistTemplateDocument): IChecklist
       subject: {
         _id: s.subject._id.toString(),
         name: s.subject.name,
+        evaluationMode: s.subject.evaluationMode,
       },
       learnings: s.learnings.map((l: any) => ({
         _id: l._id.toString(),

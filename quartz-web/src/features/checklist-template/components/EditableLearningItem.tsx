@@ -57,7 +57,7 @@ export default function EditableLearningItem({
           onFocus={isEditing ? undefined : onActivate}
           readOnly={!isEditing}
           rows={1}
-          placeholder="Escribe un ítem…"
+          placeholder="Escribe un aprendizaje…"
           className="w-full cursor-text resize-none overflow-hidden border-0 bg-transparent px-0 py-0.5 text-sm leading-snug text-gray-700 placeholder:italic placeholder:text-gray-300 focus:outline-none"
         />
         {/* Baseline gris sutil, visible al hover en reposo */}

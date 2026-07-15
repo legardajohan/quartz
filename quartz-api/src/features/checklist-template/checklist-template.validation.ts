@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
@@ -9,10 +10,14 @@ const learningItemSchema = z.object({
 const subjectSnapshotSchema = z.object({
   subject: z.object({
     _id: z.string().refine((v) => objectIdRegex.test(v), { message: 'ID de dimensión inválido.' }),
-    name: z.string().min(1, { message: 'El nombre de la dimensión es obligatorio.' })
+    name: z.string().min(1, { message: 'El nombre de la dimensión es obligatorio.' }),
+    evaluationMode: z.nativeEnum(SubjectEvaluationMode)
   }),
-  learnings: z.array(learningItemSchema).min(1, { message: 'Cada dimensión debe tener al menos un aprendizaje.' })
-});
+  learnings: z.array(learningItemSchema)
+}).refine(
+  (data) => data.subject.evaluationMode !== SubjectEvaluationMode.CHECKLIST || data.learnings.length > 0,
+  { message: 'Cada dimensión en modo checklist debe tener al menos un aprendizaje.', path: ['learnings'] }
+);
 
 export const getTemplatesByTeacherSchema = z.object({
   query: z.object({

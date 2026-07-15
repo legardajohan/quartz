@@ -10,6 +10,7 @@ import { ChecklistTemplateModel, IChecklistTemplateDocument } from './checklist-
 import { LearningModel } from '../learning/learning.model';
 import { Period } from '../period/period.model';
 import { Subject } from '../subject/subject.model';
+import { SubjectType, SubjectEvaluationMode } from '../subject/subject.types';
 import { User } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import type {
@@ -20,10 +21,15 @@ import type {
 } from './checklist-template.types';
 import AppError from '../../utils/AppError';
 
-interface PopulatedLearning {
-  _id: Types.ObjectId;
-  subjectId: { _id: Types.ObjectId; name: string };
+interface LeanLearning {
+  subjectId: Types.ObjectId;
   description: string;
+}
+
+interface LeanDimensionSubject {
+  _id: Types.ObjectId;
+  name: string;
+  evaluationMode: SubjectEvaluationMode;
 }
 
 function populateTemplateDetails<T>(query: Query<T, IChecklistTemplateDocument>) {
@@ -49,6 +55,7 @@ function buildSubjectsArray(subjects: SubjectSnapshotData[]) {
     subject: {
       _id: new Types.ObjectId(s.subject._id),
       name: s.subject.name,
+      evaluationMode: s.subject.evaluationMode,
     },
     learnings: s.learnings.map((l) => ({ description: l.description })),
   }));
@@ -98,28 +105,29 @@ export async function createChecklistTemplate(
     throw new AppError('Máximo 2 plantillas por período alcanzado.', 409);
   }
 
+  const dimensionSubjects = await findScoped(Subject, institutionId, { type: SubjectType.DIMENSION })
+    .select('name evaluationMode')
+    .lean<LeanDimensionSubject[]>();
+
   const learnings = await findScoped(LearningModel, institutionId, {
     periodId: new Types.ObjectId(data.periodId),
     grade: data.grade,
   })
     .select('subjectId description')
-    .populate({ path: 'subjectId', model: Subject, select: 'name' })
-    .lean<PopulatedLearning[]>();
+    .lean<LeanLearning[]>();
 
-  const subjectsMap = new Map<string, { name: string; descriptions: string[] }>();
+  const descriptionsBySubject = new Map<string, string[]>();
   for (const l of learnings) {
-    if (l.subjectId && 'name' in l.subjectId) {
-      const sid = l.subjectId._id.toString();
-      if (!subjectsMap.has(sid)) {
-        subjectsMap.set(sid, { name: l.subjectId.name, descriptions: [] });
-      }
-      subjectsMap.get(sid)!.descriptions.push(l.description);
+    const sid = l.subjectId.toString();
+    if (!descriptionsBySubject.has(sid)) {
+      descriptionsBySubject.set(sid, []);
     }
+    descriptionsBySubject.get(sid)!.push(l.description);
   }
 
-  const subjectsArray = Array.from(subjectsMap.entries()).map(([sid, s]) => ({
-    subject: { _id: new Types.ObjectId(sid), name: s.name },
-    learnings: s.descriptions.map((desc) => ({ description: desc })),
+  const subjectsArray = dimensionSubjects.map((s) => ({
+    subject: { _id: s._id, name: s.name, evaluationMode: s.evaluationMode },
+    learnings: (descriptionsBySubject.get(s._id.toString()) ?? []).map((desc) => ({ description: desc })),
   }));
 
   const newTemplate = await createScoped(ChecklistTemplateModel, institutionId, {

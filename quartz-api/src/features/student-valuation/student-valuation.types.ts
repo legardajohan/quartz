@@ -3,6 +3,7 @@ import { IStudentValuationDocument, IValuationBySubject, ILearningValuation } fr
 import { IUserDocument } from '../auth/auth.model';
 import { IPeriodDocument } from '../period/period.model';
 import { ISubjectDocument } from '../subject/subject.model';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 import { ILearningDocument } from '../learning/learning.model';
 
 // -----------------------------------------------------------------------------
@@ -28,15 +29,26 @@ export interface ILearningValuationDTO {
   pointsObtained: number;
 }
 
-export interface IValuationBySubjectDTO {
+type ValuationBySubjectBase = {
   subjectId: string;
   subjectName: string;
-  learningValuations: ILearningValuationDTO[];
   totalSubjectScore: number;
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: string;
-}
+};
+
+export type IValuationBySubjectDTO =
+  | (ValuationBySubjectBase & {
+      evaluationMode: SubjectEvaluationMode.CHECKLIST;
+      learningValuations: ILearningValuationDTO[];
+      performanceDescription: null;
+    })
+  | (ValuationBySubjectBase & {
+      evaluationMode: SubjectEvaluationMode.DESCRIPTION;
+      learningValuations: [];
+      performanceDescription: string | null;
+    });
 
 type StudentName = {
   firstName: string;
@@ -99,6 +111,7 @@ type LearningValuationUpdate = {
 type ValuationBySubjectUpdate = {
   subjectId: Types.ObjectId | string;
   learningValuations: LearningValuationUpdate[];
+  performanceDescription?: string | null;
 };
 
 export type StudentValuationUpdateData = {

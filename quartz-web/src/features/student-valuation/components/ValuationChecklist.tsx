@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import type { IValuationBySubjectDTO, ILearningValuationDTO } from "../types";
 import { ValuationState } from "../types/domain";
+import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
 
 // Export icons for parent usage
 export const SUBJECT_ICONS = [
@@ -46,6 +47,7 @@ type ValuationChecklistProps = {
   open?: boolean;
   onToggle?: () => void;
   onChange?: (learningId: string, qualitativeValuation: string | null) => void;
+  onDescriptionChange?: (subjectId: string, value: string) => void;
   icon?: React.ElementType; // New prop for icon injection
 };
 
@@ -87,6 +89,7 @@ export default function ValuationChecklist({
   open = false,
   onToggle,
   onChange,
+  onDescriptionChange,
   icon: Icon = BookOpenIcon, // Default fallback
 }: ValuationChecklistProps) {
   const [selections, setSelections] = React.useState<Record<string, string | null>>(initialSelections || {});
@@ -99,17 +102,22 @@ export default function ValuationChecklist({
     onChange?.(id, val);
   };
 
+  const isDescriptionMode = subject?.evaluationMode === "description";
   const learningVals: ILearningValuationDTO[] = subject?.learningValuations || [];
 
   // Calculate subject status locally
-  const totalLearnings = learningVals.length;
-  const valuedLearnings = learningVals.filter(l => {
-    const val = selections[l.learningId] ?? l.qualitativeValuation;
-    return val !== null && val !== undefined;
-  }).length;
+  const totalLearnings = isDescriptionMode ? 1 : learningVals.length;
+  const valuedLearnings = isDescriptionMode
+    ? ((subject?.performanceDescription ?? "").trim().length > 0 ? 1 : 0)
+    : learningVals.filter(l => {
+      const val = selections[l.learningId] ?? l.qualitativeValuation;
+      return val !== null && val !== undefined;
+    }).length;
 
   let subjectStatus: ValuationState = "NOT_STARTED";
-  if (valuedLearnings === 0) {
+  if (isDescriptionMode) {
+    subjectStatus = valuedLearnings === 1 ? "COMPLETED" : "NOT_STARTED";
+  } else if (valuedLearnings === 0) {
     subjectStatus = "NOT_STARTED";
   } else if (valuedLearnings === totalLearnings) {
     subjectStatus = "COMPLETED";
@@ -192,7 +200,13 @@ export default function ValuationChecklist({
         </AccordionHeader>
 
         <AccordionBody className="pt-2 pb-6 px-4">
-          {learningVals.length > 0 ? (
+          {isDescriptionMode ? (
+            <PerformanceTextarea
+              title="Descripción personalizada del desempeño por parte del docente"
+              value={subject?.performanceDescription ?? ""}
+              onChange={(value) => onDescriptionChange?.(subject.subjectId, value)}
+            />
+          ) : learningVals.length > 0 ? (
             <Card className="h-full w-full overflow-hidden shadow-none rounded-lg">
               <table className="w-full table-auto text-left">
                 <thead>

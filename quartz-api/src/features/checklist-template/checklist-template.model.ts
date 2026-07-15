@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { IChecklistTemplate } from './checklist-template.types';
+import { SubjectEvaluationMode } from '../subject/subject.types';
 
 export interface IChecklistTemplateDocument extends IChecklistTemplate, Document {
   _id: Types.ObjectId;
@@ -12,7 +13,8 @@ const learningSchema = new Schema({
 const subjectInTemplateSchema = new Schema({
   subject: {
     _id: { type: Schema.Types.ObjectId, required: true },
-    name: { type: String, required: true }
+    name: { type: String, required: true },
+    evaluationMode: { type: String, enum: Object.values(SubjectEvaluationMode), required: true }
   },
   learnings: [learningSchema]
 }, { _id: false });

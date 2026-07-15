@@ -1,3 +1,5 @@
+import type { SubjectEvaluationMode } from "@/types/domain";
+
 export type GlobalValuationStatus = 'Evaluado' | 'Evaluando' | 'Por diligenciar';
 
 export type QualitativeValuation = 'Logrado' | 'En proceso' | 'Con dificultad';
@@ -9,15 +11,26 @@ export interface ILearningValuationDTO {
   pointsObtained: number;
 }
 
-export interface IValuationBySubjectDTO {
+type ValuationBySubjectBase = {
   subjectId: string;
   subjectName: string;
-  learningValuations: ILearningValuationDTO[];
   totalSubjectScore: number;
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: string;
-}
+};
+
+export type IValuationBySubjectDTO =
+  | (ValuationBySubjectBase & {
+      evaluationMode: Extract<SubjectEvaluationMode, 'checklist'>;
+      learningValuations: ILearningValuationDTO[];
+      performanceDescription: null;
+    })
+  | (ValuationBySubjectBase & {
+      evaluationMode: Extract<SubjectEvaluationMode, 'description'>;
+      learningValuations: [];
+      performanceDescription: string | null;
+    });
 
 export interface IReportInstitution {
   _id: string;

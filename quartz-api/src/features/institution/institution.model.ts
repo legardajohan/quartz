@@ -1,4 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
+import { ReportKind, IInstitutionSettings } from './institution.types';
 
 // Interface for the EducationalInstitution document
 export interface IInstitutionDocument extends Document {
@@ -9,7 +10,19 @@ export interface IInstitutionDocument extends Document {
   phoneNumber: string;
   email: string;
   isActive: boolean;
+  settings: IInstitutionSettings;
 }
+
+const InstitutionSettingsSchema = new Schema<IInstitutionSettings>(
+  {
+    enabledReports: {
+      type: [String],
+      enum: Object.values(ReportKind),
+      default: [ReportKind.CHECKLIST, ReportKind.COMMUNICATIVE_LETTER],
+    },
+  },
+  { _id: false }
+);
 
 const InstitutionSchema = new Schema<IInstitutionDocument>(
   {
@@ -20,6 +33,7 @@ const InstitutionSchema = new Schema<IInstitutionDocument>(
     phoneNumber: { type: String },
     email: { type: String, required: true, unique: true },
     isActive: { type: Boolean, default: true },
+    settings: { type: InstitutionSettingsSchema, default: () => ({}) },
   },
   { timestamps: true } // Adds createdAt and updatedAt automatically
 );
