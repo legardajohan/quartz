@@ -13,8 +13,14 @@
 | **Docente** | Ver estudiantes (su sede por defecto; filtra otras sedes sin editar); valorar y modificar la Lista de Chequeo; previsualizar/descargar informes de sus grupos. |
 | **Estudiante** | Sin acciones en esta fase. |
 
-## 7 Dimensiones
-Modeladas como `Subject` (`type: Dimensión`), **fijas**: Cognitiva · Espiritual · Estética · Comunicativa · Socioafectiva · Corporal · Ética.
+## Dimensiones
+Modeladas como `Subject` (`type: Dimensión`), **por institución**: cada `institutionId` gestiona su propio catálogo desde `Gestión → Configuración` (Jefe de Área). Semilla por defecto al aprovisionar una institución: Cognitiva · Espiritual · Estética · Comunicativa · Socioafectiva · Corporal · Ética — no son una lista cerrada, pueden crearse, editarse o eliminarse.
+
+Cada `Subject` tiene un `evaluationMode`:
+- `checklist` (default): se valora por lista de aprendizajes esperados (`Learning`), como se describe más abajo.
+- `description`: el docente registra una descripción libre del desempeño por estudiante, sin lista de aprendizajes ni puntaje. No aporta a `totalSubjectScore`/`subjectPercentage` ni recibe `assignedConceptId`.
+
+Cambiar el `evaluationMode` de una dimensión no retro-modifica plantillas (`ChecklistTemplate`) ni valoraciones (`StudentValuation`) ya creadas — ambas embeben un *snapshot* del modo vigente al momento de componerse (ver `docs/data-base.md §2`).
 
 ## Jerarquía de la Lista de Chequeo
 `Período → Dimensión (Subject) → Aprendizaje Esperado (Learning)`

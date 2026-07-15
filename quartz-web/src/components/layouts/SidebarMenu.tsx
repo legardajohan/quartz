@@ -26,13 +26,32 @@ import {
 
 import aqWhite from '../../assets/images/aq-white.svg';
 import starryBackground from '../../assets/images/starry-background.svg';
+import { useAuthStore } from '../../features/auth/useAuthStore';
+import type { UserRole } from '@/types/domain';
 
 interface SidebarMenuProps {
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
 }
 
-const menuItems = [
+interface SidebarSubItem {
+  id: number;
+  label: string;
+  path: string;
+  roles?: UserRole[];
+}
+
+interface SidebarMenuItem {
+  id: number;
+  icon: React.ReactNode;
+  label: string;
+  path?: string;
+  basePath?: string;
+  subItems?: SidebarSubItem[];
+  roles?: UserRole[];
+}
+
+const menuItems: SidebarMenuItem[] = [
   {
     id: 1,
     icon: <HomeIcon className="h-5 w-5" />,
@@ -70,6 +89,7 @@ const menuItems = [
     subItems: [
       { id: 51, label: "Usuarios", path: "/gestion/usuarios" },
       { id: 52, label: "Consolidados", path: "/gestion/consolidados" },
+      { id: 53, label: "Configuración", path: "/gestion/configuracion", roles: ["Jefe de Área"] },
     ],
   },
 ];
@@ -78,8 +98,17 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
   const appName = import.meta.env.VITE_APP_NAME;
   const location = useLocation();
   const navigate = useNavigate();
+  const role = useAuthStore((state) => state.sessionData?.user.role);
 
-  const initiallyOpenAccordion = menuItems.find(item => item.basePath && location.pathname.startsWith(item.basePath))?.id || 0;
+  const visibleMenuItems = menuItems
+    .filter((item) => !item.roles || (!!role && item.roles.includes(role)))
+    .map((item) =>
+      item.subItems
+        ? { ...item, subItems: item.subItems.filter((sub) => !sub.roles || (!!role && sub.roles.includes(role))) }
+        : item
+    );
+
+  const initiallyOpenAccordion = visibleMenuItems.find(item => item.basePath && location.pathname.startsWith(item.basePath))?.id || 0;
   const [open, setOpen] = React.useState(initiallyOpenAccordion);
 
   const handleOpen = (value: number) => {
@@ -113,7 +142,7 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
           </IconButton>
         </div>
         <List className="mt-4">
-          {menuItems.map((item) => {
+          {visibleMenuItems.map((item) => {
             if (!item.subItems) {
               const isActive = location.pathname.startsWith(item.path!);
               return (

@@ -40,3 +40,13 @@ Trazabilidad: spec ↔ rama `feat/<ID>-<slug>` ↔ PR ↔ release.
 
 ## Specs legacy (formato anterior)
 `checklist-template` · `concepts` · `reports` · `valuation-observations` viven como archivo único `<feature>.spec.md`. Ya están implementados y **se conservan tal cual**; el formato de tríada aplica a los features nuevos.
+
+Aunque no llevan `id` en su frontmatter, **ocupan su número de área** para efectos del consecutivo:
+
+| Área | Ocupados por specs legacy |
+|---|---|
+| `CHK` | `01` → `checklist-template` |
+| `VAL` | `01` → `student-valuation` · `02` → `valuation-observations` |
+| `RPT` | `01` → `reports` |
+
+Por eso el primer spec de valoración en formato tríada es `VAL-03`. Las áreas sin legacy (`ACAD`, `AUTH`, `USR`, `LRN`, `INF`) arrancan en `01`.

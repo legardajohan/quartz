@@ -33,7 +33,7 @@ async function getSessionData(user: SafeUser): Promise<ISessionData> {
     const sessionData: ISessionData = {
         user: toSessionUser(user),
         periods: periods.map(p => ({ _id: p._id.toString(), name: p.name, isActive: p.isActive })),
-        subjects: subjects.map(s => ({ _id: s._id.toString(), name: s.name })),
+        subjects: subjects.map(s => ({ _id: s._id.toString(), name: s.name, type: s.type, evaluationMode: s.evaluationMode })),
         checklistTemplates: checklistTemplates,
     };
 
