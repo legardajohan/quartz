@@ -15,7 +15,7 @@ export interface IInstitution {
 export interface IPeriod {
     _id: string;
     name: string;
-    year: number; // Derivado de startDate, el modelo Period no lo almacena
+    year: number;
     isActive: boolean;
 }
 

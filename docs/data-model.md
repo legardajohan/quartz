@@ -3,17 +3,17 @@
 > **Mapa de colecciones y relaciones.** La **verdad de los campos** (tipos, `select:false`, índices) vive en cada `quartz-api/src/features/<feature>/*.model.ts`; este archivo no la duplica. Reglas de negocio: [domain.md](domain.md).
 
 ## Multi-tenancy
-Casi toda colección lleva `institutionId` (ObjectId, **requerido**) y se filtra por el token. Excepciones: `Subject` global y `Notification` global (`institutionId` nulo).
+Casi toda colección lleva `institutionId` (ObjectId, **requerido**) y se filtra por el token. Excepción: `Notification` global (`institutionId` nulo, sin implementar aún).
 
 ## Colecciones
 
 | Colección | Feature | Propósito | `institutionId` | Referencias clave |
 |---|---|---|---|---|
-| `Institution` | `institution` | Institución educativa (tenant raíz). | — (es la raíz) | — |
+| `Institution` | `institution` | Institución educativa (tenant raíz). Incluye `settings` (`periodsPerYear`, default 4; `enabledReports`, default ambos). | — (es la raíz) | — |
 | `School` | `school` | Sede / campus. | Requerido | → Institution |
 | `User` | `auth` (gestión en `users`) | Jefe de Área / Docente / Estudiante. | Requerido | → Institution, School |
-| `Period` | `period` | Período académico (cuatrimestral). Solo uno `isActive`. | Requerido | → Institution |
-| `Subject` | `subject` | Dimensión (fase actual) o materia (futuro), según `type`. | **Opcional** (nulo = global) | — |
+| `Period` | `period` | Período académico. Cantidad por año configurable (`Institution.settings.periodsPerYear`, default 4). Solo uno `isActive` (índice parcial único). `year` persistido, `closingAlertDate` opcional. | Requerido | → Institution |
+| `Subject` | `subject` | Dimensión (fase actual) o materia (futuro), según `type`. Catálogo gestionable por institución (ACAD-01). | Requerido | — |
 | `Learning` | `learning` | Aprendizaje esperado, por dimensión y período. | Requerido | → Subject, Period, User |
 | `ChecklistTemplate` | `checklist-template` | Lista de Chequeo **personal del docente**. | Requerido | → Period, User (docente), Subject[], Learning[] |
 | `StudentValuation` | `student-valuation` | Valoraciones de un estudiante según el template del docente. | Requerido | → User (estudiante/docente), ChecklistTemplate, Period, Subject, Learning, Concept |

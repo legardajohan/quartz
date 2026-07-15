@@ -1,4 +1,5 @@
 import { SubjectType, SubjectEvaluationMode } from '../subject/subject.types';
+import { ReportKind } from '../institution/institution.types';
 
 export enum UserRole {
   JEFE_DE_AREA = 'Jefe de Área',
@@ -53,4 +54,5 @@ export interface ISessionData {
     periodId: string;
     name: string;
   }[];
+  enabledReports: ReportKind[];
 }

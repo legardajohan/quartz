@@ -91,6 +91,22 @@ export const useAuthStore = create<AuthState>()(
             ? { ...state.sessionData, subjects }
             : null
         }));
+      },
+
+      setPeriods: (periods) => {
+        set((state) => ({
+          sessionData: state.sessionData
+            ? { ...state.sessionData, periods }
+            : null
+        }));
+      },
+
+      setEnabledReports: (enabledReports) => {
+        set((state) => ({
+          sessionData: state.sessionData
+            ? { ...state.sessionData, enabledReports }
+            : null
+        }));
       }
     }),
     {

@@ -1,7 +1,7 @@
 ---
 id: ACAD-02-period-settings
 feature: period-settings
-status: draft
+status: implemented
 created: 2026-07-15
 ---
 
@@ -32,33 +32,33 @@ Permitir al Jefe de Área configurar, desde `Gestión → Configuración`, los p
 
 ## Criterios de aceptación (EARS)
 ### Institución
-- [ ] Cuando un Jefe de Área invoca `GET /api/institutions/me`, el sistema responde `200` con los datos de **su** institución y su `settings`.
-- [ ] Si una institución nunca configuró `settings`, el sistema responde con `periodsPerYear: 4` y `enabledReports` con ambos informes.
-- [ ] Cuando un Jefe de Área envía `PATCH /api/institutions/me` con `settings` válidos, el sistema los persiste y responde `200`.
-- [ ] Si `enabledReports` llega vacío, el sistema responde `422` y no persiste.
-- [ ] Si un usuario con rol `Docente` o `Estudiante` invoca `GET` o `PATCH` sobre `/api/institutions/me`, el sistema responde `403`.
+- [x] Cuando un Jefe de Área invoca `GET /api/institutions/me`, el sistema responde `200` con los datos de **su** institución y su `settings`.
+- [x] Si una institución nunca configuró `settings`, el sistema responde con `periodsPerYear: 4` y `enabledReports` con ambos informes.
+- [x] Cuando un Jefe de Área envía `PATCH /api/institutions/me` con `settings` válidos, el sistema los persiste y responde `200`.
+- [x] Si `enabledReports` llega vacío, el sistema responde `422` y no persiste.
+- [x] Si un usuario con rol `Docente` o `Estudiante` invoca `GET` o `PATCH` sobre `/api/institutions/me`, el sistema responde `403`.
 
 ### Periodos
-- [ ] Cuando un Jefe de Área envía `POST /api/periods` con datos válidos, el sistema crea el `Period` y responde `201`.
-- [ ] Si `endDate` no es posterior a `startDate`, el sistema responde `400` y no crea el `Period`.
-- [ ] Si `closingAlertDate` viene y es anterior a `endDate`, el sistema responde `400` y no crea el `Period`.
-- [ ] Si crear el `Period` excediera `settings.periodsPerYear` para ese `year`, el sistema responde `409` y no lo crea.
-- [ ] Cuando un Jefe de Área crea o actualiza un `Period` con `isActive: true`, el sistema desactiva los demás periodos de la institución, quedando exactamente uno activo.
-- [ ] Cuando un Jefe de Área envía `PATCH /api/periods/:periodId`, el sistema actualiza solo los campos enviados y responde `200`.
-- [ ] Cuando un Jefe de Área envía `DELETE /api/periods/:periodId`, el sistema elimina el `Period` y responde `204`.
-- [ ] Si el `:periodId` no existe o pertenece a otra institución, el sistema responde `404` en `PATCH` y `DELETE`.
-- [ ] Si un usuario con rol `Docente` o `Estudiante` invoca `POST`, `PATCH` o `DELETE` sobre `/api/periods`, el sistema responde `403`.
-- [ ] Cuando cualquier usuario autenticado invoca `GET /api/periods`, el sistema responde `200` con los periodos de su institución.
+- [x] Cuando un Jefe de Área envía `POST /api/periods` con datos válidos, el sistema crea el `Period` y responde `201`.
+- [x] Si `endDate` no es posterior a `startDate`, el sistema responde `400` y no crea el `Period`.
+- [x] Si `closingAlertDate` viene y es anterior a `endDate`, el sistema responde `400` y no crea el `Period`.
+- [x] Si crear el `Period` excediera `settings.periodsPerYear` para ese `year`, el sistema responde `409` y no lo crea.
+- [x] Cuando un Jefe de Área crea o actualiza un `Period` con `isActive: true`, el sistema desactiva los demás periodos de la institución, quedando exactamente uno activo.
+- [x] Cuando un Jefe de Área envía `PATCH /api/periods/:periodId`, el sistema actualiza solo los campos enviados y responde `200`.
+- [x] Cuando un Jefe de Área envía `DELETE /api/periods/:periodId`, el sistema elimina el `Period` y responde `204`.
+- [x] Si el `:periodId` no existe o pertenece a otra institución, el sistema responde `404` en `PATCH` y `DELETE`.
+- [x] Si un usuario con rol `Docente` o `Estudiante` invoca `POST`, `PATCH` o `DELETE` sobre `/api/periods`, el sistema responde `403`.
+- [x] Cuando cualquier usuario autenticado invoca `GET /api/periods`, el sistema responde `200` con los periodos de su institución.
 
 ### Frontend
-- [ ] Cuando un Jefe de Área abre la pestaña Periodos, el sistema lista los periodos de su institución con nombre, año, fechas, alerta de cierre y cuál está activo.
-- [ ] Cuando el Jefe de Área establece la fecha de fin de un periodo, el formulario propone `closingAlertDate = endDate + 7 días` como valor por defecto editable.
-- [ ] Cuando el Jefe de Área desmarca un informe en la pestaña Informes y guarda, `/informes` deja de ofrecerlo.
-- [ ] Si el Jefe de Área intenta guardar con los dos informes desmarcados, el sistema impide el envío y muestra el error.
+- [x] Cuando un Jefe de Área abre la pestaña Periodos, el sistema lista los periodos de su institución con nombre, año, fechas, alerta de cierre y cuál está activo.
+- [x] Cuando el Jefe de Área establece la fecha de fin de un periodo, el formulario propone `closingAlertDate = endDate + 7 días` como valor por defecto editable.
+- [x] Cuando el Jefe de Área desmarca un informe en la pestaña Informes y guarda, `/informes` deja de ofrecerlo.
+- [x] Si el Jefe de Área intenta guardar con los dos informes desmarcados, el sistema impide el envío y muestra el error.
 
 ### Transversal
-- [ ] **Aislamiento:** toda lectura/escritura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`.
-- [ ] `npx tsc --noEmit` en verde en cada paquete tocado (+ `npm run build && npm run lint` si toca `quartz-web`).
+- [x] **Aislamiento:** toda lectura/escritura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`.
+- [x] `npx tsc --noEmit` en verde en cada paquete tocado (+ `npm run build && npm run lint` si toca `quartz-web`).
 
 ## Dependencias
 - **`ACAD-01-subject-management`** — aporta el shell `ConfigurationPage`, `RoleRoute` y la entrada de menú. Sin él no hay dónde montar las pestañas.

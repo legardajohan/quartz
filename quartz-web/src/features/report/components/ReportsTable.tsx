@@ -4,6 +4,7 @@ import { Avatar, Typography, IconButton, Tooltip } from "@material-tailwind/reac
 import { DataTable, type Column } from "../../../components/common/DataTable";
 import { ITEMS_PER_PAGE } from "../useReportStore";
 import type { UserDto } from "../types";
+import type { ReportKind } from "@/types/domain";
 import userImage from "../../../assets/images/default-user.jpg";
 
 interface ReportsTableProps {
@@ -14,6 +15,7 @@ interface ReportsTableProps {
   onPrevPage: () => void;
   isLoading?: boolean;
   onViewChecklist: (valuationId: string) => void;
+  enabledReports: ReportKind[];
 }
 
 export default function ReportsTable({
@@ -24,7 +26,10 @@ export default function ReportsTable({
   onPrevPage,
   isLoading,
   onViewChecklist,
+  enabledReports,
 }: ReportsTableProps) {
+  const isChecklistEnabled = enabledReports.includes("checklist");
+  const isCommunicativeLetterEnabled = enabledReports.includes("communicative-letter");
   const columns: Column<UserDto>[] = [
     {
       header: "ID",
@@ -102,41 +107,53 @@ export default function ReportsTable({
         const valuation = item.valuations[0];
         const isChecklistReady = valuation?.status === "Evaluado";
 
+        if (!isChecklistEnabled && !isCommunicativeLetterEnabled) {
+          return (
+            <Typography variant="small" className="text-gray-400 font-normal text-xs">
+              Sin informes habilitados
+            </Typography>
+          );
+        }
+
         return (
           <div className="flex items-center gap-2">
-            <Tooltip
-              content={isChecklistReady ? "Ver Lista de Chequeo" : "Disponible cuando la evaluación esté completa"}
-              size="sm"
-            >
-              {/* span envuelve el botón deshabilitado para que el Tooltip siga funcionando */}
-              <span>
-                <IconButton
-                  variant="text"
-                  size="sm"
-                  color="white"
-                  disabled={!isChecklistReady}
-                  onClick={() => valuation && onViewChecklist(valuation._id)}
-                  className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-                >
-                  <ClipboardDocumentListIcon
-                    className={`h-5 w-5 ${isChecklistReady ? "text-green-600" : "text-gray-400"}`}
-                  />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip content="Próximamente" size="sm">
-              <span>
-                <IconButton
-                  variant="text"
-                  size="sm"
-                  color="white"
-                  disabled
-                  className="shadow-none bg-white border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                </IconButton>
-              </span>
-            </Tooltip>
+            {isChecklistEnabled && (
+              <Tooltip
+                content={isChecklistReady ? "Ver Lista de Chequeo" : "Disponible cuando la evaluación esté completa"}
+                size="sm"
+              >
+                {/* span envuelve el botón deshabilitado para que el Tooltip siga funcionando */}
+                <span>
+                  <IconButton
+                    variant="text"
+                    size="sm"
+                    color="white"
+                    disabled={!isChecklistReady}
+                    onClick={() => valuation && onViewChecklist(valuation._id)}
+                    className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                  >
+                    <ClipboardDocumentListIcon
+                      className={`h-5 w-5 ${isChecklistReady ? "text-green-600" : "text-gray-400"}`}
+                    />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+            {isCommunicativeLetterEnabled && (
+              <Tooltip content="Próximamente" size="sm">
+                <span>
+                  <IconButton
+                    variant="text"
+                    size="sm"
+                    color="white"
+                    disabled
+                    className="shadow-none bg-white border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
           </div>
         );
       },

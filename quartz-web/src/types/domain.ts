@@ -8,6 +8,8 @@ export type SubjectType = 'Dimensión' | 'Asignatura';
 
 export type SubjectEvaluationMode = 'checklist' | 'description';
 
+export type ReportKind = 'checklist' | 'communicative-letter';
+
 export interface Subject {
   _id: string;
   name: string;
@@ -57,4 +59,5 @@ export interface ISessionData {
   periods: Period[];
   subjects: Subject[];
   checklistTemplates: ChecklistTemplates[];
+  enabledReports: ReportKind[];
 }

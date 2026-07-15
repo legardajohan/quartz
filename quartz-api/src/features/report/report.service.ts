@@ -71,7 +71,7 @@ export async function getChecklistReport(
     period: {
       _id: periodDoc._id.toString(),
       name: periodDoc.name,
-      year: periodDoc.startDate.getFullYear(),
+      year: periodDoc.year,
       isActive: periodDoc.isActive,
     },
     teacher: {

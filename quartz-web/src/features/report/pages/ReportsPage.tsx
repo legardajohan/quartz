@@ -45,6 +45,7 @@ export default function ReportsPage() {
         onPrevPage={prevPage}
         isLoading={isLoading}
         onViewChecklist={handleViewChecklist}
+        enabledReports={sessionData?.enabledReports ?? ['checklist', 'communicative-letter']}
       />
       <ChecklistReportModal
         open={!!selectedValuationId}

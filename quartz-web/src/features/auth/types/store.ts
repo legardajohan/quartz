@@ -1,4 +1,4 @@
-import { ISessionData, Subject } from "@/types/domain";
+import { ISessionData, Subject, Period, ReportKind } from "@/types/domain";
 
 export interface AuthState {
   token: string | null;
@@ -11,4 +11,6 @@ export interface AuthState {
   clearError: () => void;
   refreshUser: () => Promise<void>;
   setSubjects: (subjects: Subject[]) => void;
+  setPeriods: (periods: Period[]) => void;
+  setEnabledReports: (enabledReports: ReportKind[]) => void;
 }
