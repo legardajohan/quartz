@@ -30,6 +30,7 @@ El docente compone su Lista de Chequeo **personal** (`ChecklistTemplate`) eligie
 - **Qué es:** Instantánea (snapshot) de las dimensiones y aprendizajes esperados para un período y grado específicos. Contiene nombre, período, grado, autor (docente) y dimensiones con sus aprendizajes embebidos como copia independiente.
 - **Propósito:** Base para que el docente construya su Lista de Chequeo personal; no incluye valoraciones de estudiantes ni referencias a `Learning` originales.
 - **Regla clave:** Modificar aprendizajes en la tabla `Learning` **no afecta** plantillas ya creadas — cada una tiene su propio snapshot.
+- **Eliminar la plantilla no invalida lo ya generado a partir de ella:** `StudentValuation` es autocontenida (snapshot), por lo que sigue siendo visible, editable y reportable aunque su `ChecklistTemplate` de origen se elimine. El informe de Lista de Chequeo usa el nombre real de la plantilla si aún existe, o el texto de respaldo **"Plantilla eliminada"** si ya no (`report.service.ts`).
 - **Límite:** Máximo **2 plantillas por período** por docente.
 
 ## Valoración cualitativa (por ítem / `Learning`)

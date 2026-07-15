@@ -83,6 +83,11 @@ subjects: [
 foto del momento en que el docente lo compuso. Lo mismo aplica a `evaluationMode`: cambiarlo en `Subject` (Configuración)
 no altera templates ya generados (`VAL-03-description-mode`).
 
+**`checklistTemplateId` es una referencia no crítica.** `StudentValuation.checklistTemplateId` solo enlaza al
+template de origen; no se usa para reconstruir la valoración (eso lo resuelve el snapshot propio de §2.2). Si el
+template se elimina, `getChecklistReport` (`report.service.ts`) no falla: usa el nombre real del template cuando
+existe, o el texto de respaldo `"Plantilla eliminada"` cuando la referencia ya no resuelve.
+
 ### 2.2. `StudentValuation` embebe `learningDescription`, no `learningId`
 
 Cada ítem valorado guarda el **texto** del aprendizaje (`learningDescription`), no una referencia.
