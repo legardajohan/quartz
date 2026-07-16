@@ -78,6 +78,7 @@ export function ImageCropUploader({
 
   const dimensions = size === "lg" ? "h-24 w-24" : "h-12 w-12";
   const roundedClass = shape === "circle" ? "rounded-full" : "rounded-xl";
+  const imagePadding = shape === "square" ? "p-2" : "";
 
   return (
     <>
@@ -85,7 +86,7 @@ export function ImageCropUploader({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className={`relative ${dimensions} ${roundedClass} overflow-hidden border border-gray-200 bg-gray-50 transition-transform duration-150 active:scale-[0.97]`}
+          className={`relative ${dimensions} ${roundedClass} ${imagePadding} overflow-hidden border border-gray-200 bg-gray-50 transition-transform duration-150 active:scale-[0.97]`}
           aria-label={label}
         >
           {currentUrl ? (

@@ -53,7 +53,7 @@ export default function ConfigurationPage() {
       </div>
 
       <Tabs value={activeTab}>
-        <TabsHeader className="bg-purple-50/60 p-1.5 max-w-2xl">
+        <TabsHeader className="bg-purple-50/60 p-1.5 max-w-4xl">
           {STEPS.map(({ value, step, label, hint, icon: Icon }) => {
             const isActive = activeTab === value;
             return (
