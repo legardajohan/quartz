@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { getUsersByFilters } from './users.service';
+import { getUsersByFilters, uploadStudentPhoto } from './users.service';
+import AppError from '../../utils/AppError';
 
 export const getUsers = async (req: Request, res: Response) => {
   const sessionUser = req.user!;
@@ -16,4 +17,21 @@ export const getUsers = async (req: Request, res: Response) => {
   });
 
   res.status(200).json(users);
+};
+
+export const uploadStudentPhotoController = async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new AppError('Debe adjuntar una imagen.', 422);
+  }
+
+  const sessionUser = req.user!;
+  const institutionId = sessionUser.institutionId.toString();
+  const { studentId } = req.params;
+
+  const student = await uploadStudentPhoto(institutionId, studentId, req.file, {
+    role: sessionUser.role,
+    schoolId: sessionUser.schoolId?.toString(),
+  });
+
+  res.status(200).json(student);
 };

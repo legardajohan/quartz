@@ -5,6 +5,7 @@ import { Square3Stack3DIcon, CalendarDaysIcon, DocumentTextIcon } from "@heroico
 import { SubjectsPanel } from "../../subject/components/SubjectsPanel";
 import { PeriodsPanel } from "../../period/components/PeriodsPanel";
 import { ReportSettingsPanel } from "../../institution/components/ReportSettingsPanel";
+import { InstitutionShieldPanel } from "../../institution/components/InstitutionShieldPanel";
 
 const STEPS = [
   {
@@ -82,8 +83,9 @@ export default function ConfigurationPage() {
           <TabPanel value="periodos" className="px-0 pt-8">
             <PeriodsPanel />
           </TabPanel>
-          <TabPanel value="informes" className="px-0 pt-8">
+          <TabPanel value="informes" className="px-0 pt-8 space-y-10">
             <ReportSettingsPanel />
+            <InstitutionShieldPanel />
           </TabPanel>
         </TabsBody>
       </Tabs>

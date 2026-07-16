@@ -16,3 +16,11 @@ export const getUsersSchema = z.object({
     }).optional(),
   }),
 });
+
+export const uploadStudentPhotoSchema = z.object({
+  params: z.object({
+    studentId: z.string().refine((val) => objectIdRegex.test(val), {
+      message: 'El ID del estudiante no es un ObjectId válido.',
+    }),
+  }),
+});

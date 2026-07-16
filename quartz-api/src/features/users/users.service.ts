@@ -1,10 +1,13 @@
 import { FilterQuery, Types } from 'mongoose';
-import { IUserDocument, User } from '../auth/auth.model';
+import { IUserDocument, User, SafeUser } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
 import { UserWithValuations, School, ValuationSummary } from './users.types';
 import { SchoolModel } from '../school/school.model';
-import { findScoped } from '../../repositories/base.repository';
+import { findScoped, findOneScoped, findOneAndUpdateScoped } from '../../repositories/base.repository';
+import AppError from '../../utils/AppError';
+import { assertWebp } from '../../utils/assertWebp';
+import { uploadImage, deleteImage, keyFromPublicUrl } from '../../services/r2.service';
 
 export interface GetUsersFilters {
   institutionId: string;
@@ -61,6 +64,7 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
         identificationNumber: 1,
         schoolId: 1,
         gradesTaught: 1,
+        avatarUrl: 1,
       })
       .lean()
       .exec();
@@ -128,4 +132,56 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
     console.error('Error in getUsersByFilters:', error);
     throw error;
   }
+};
+
+export interface PhotoUploadRequester {
+  role: UserRole;
+  schoolId?: string;
+}
+
+export const uploadStudentPhoto = async (
+  institutionId: string,
+  studentId: string,
+  file: Express.Multer.File,
+  requester: PhotoUploadRequester
+): Promise<SafeUser> => {
+  assertWebp(file.buffer);
+
+  const student = await findOneScoped(User, institutionId, {
+    _id: new Types.ObjectId(studentId),
+    role: UserRole.ESTUDIANTE,
+  }).lean();
+
+  if (!student) {
+    throw new AppError('Estudiante no encontrado.', 404);
+  }
+
+  if (requester.role === UserRole.DOCENTE && student.schoolId.toString() !== requester.schoolId) {
+    throw new AppError('Estudiante no encontrado.', 404);
+  }
+
+  const key = `institutions/${institutionId}/students/${studentId}/photo-${Date.now()}.webp`;
+  const avatarUrl = await uploadImage(key, file.buffer, 'image/webp');
+
+  const updated = await findOneAndUpdateScoped(
+    User,
+    institutionId,
+    { _id: new Types.ObjectId(studentId) },
+    { $set: { avatarUrl } },
+    { new: true, runValidators: true }
+  ).lean();
+
+  if (!updated) {
+    throw new AppError('Estudiante no encontrado.', 404);
+  }
+
+  if (student.avatarUrl) {
+    const previousKey = keyFromPublicUrl(student.avatarUrl);
+    if (previousKey) {
+      await deleteImage(previousKey);
+    }
+  }
+
+  // passwordHash tiene `select: false`; el documento .lean() ya lo excluye.
+  return updated as unknown as SafeUser;
 };

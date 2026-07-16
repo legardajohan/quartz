@@ -25,4 +25,5 @@ export type UserWithValuations = {
     school: School;
     gradesTaught: string[];
     valuations: ValuationSummary[];
+    avatarUrl?: string;
 };

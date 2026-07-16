@@ -48,7 +48,7 @@ export default function ReportsTable({
         const fullLastName = [item.lastName, item.secondLastName].filter(Boolean).join(" ");
         return (
           <div className="flex items-center gap-3">
-            <Avatar src={userImage} alt={fullLastName} size="sm" />
+            <Avatar src={item.avatarUrl || userImage} alt={fullLastName} size="sm" />
             <Typography variant="small" color="blue-gray" className="font-normal">
               {fullLastName}
             </Typography>
