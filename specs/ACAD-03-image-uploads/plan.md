@@ -186,3 +186,26 @@ export function isPng(file: File): boolean;
 - Subir >40 KB → 422 (límite multer).
 - Como `Docente`, `PATCH /api/institutions/me/shield` → 403.
 - Como `Docente`, foto de un estudiante de otra sede → 404.
+
+## Addendum 2026-07-16 — 4º tab "Identidad" + fix de stacking-context
+
+Ajuste post-implementación, mismo feature (aún `implemented`, no `released`), misma rama.
+
+**Motivo:** el escudo quedó embebido en el tab "Informes" (opción B del plan original), lo que mezclaba temas (qué informes ofrece vs. identidad visual) y hacía ese tab más alto que antes. Al activarlo, el contenido quedaba visualmente por encima del menú superior (`ProfileNavbar`, `sticky top-0 z-10`) en vez de detrás.
+
+### Causa raíz de la superposición
+`quartz-web/src/components/layouts/Dashboard.tsx` — `<main>` (contenedor del contenido de cada página) no establecía su propio *stacking context* (sin `position`/`transform`/`isolation`). Por spec CSS, cualquier descendiente posicionado con `z-index` (el indicador animado del tab activo de `TabsHeader`, o el `Dialog` de `ImageCropUploader`, ambos con z-index propio) se compara directamente contra hermanos de `main` en el contexto raíz — incluido `ProfileNavbar` (`z-10`). Sin un contexto de apilamiento intermedio, esos elementos podían ganar el desempate y renderizar por encima del navbar sticky.
+
+### Archivos (adicionales a los ya listados)
+| Acción | Ruta |
+|---|---|
+| tocar | `src/components/layouts/Dashboard.tsx` |
+| tocar | `src/features/configuration/pages/ConfigurationPage.tsx` (ya listado; cambio adicional) |
+
+### Cambios
+1. **`Dashboard.tsx`** — clase `isolate` (CSS `isolation: isolate`) en `<main>`. Crea un *stacking context* propio para todo el contenido de página: ningún z-index interno (presente o futuro) puede volver a escapar por encima del navbar sticky, sin necesidad de tocar z-index individuales. Fix agnóstico a la causa exacta, de bajo riesgo, no cambia nada visualmente salvo corregir el escape.
+2. **`ConfigurationPage.tsx`** — 4º `STEP` `"identidad"` (icono `ShieldCheckIcon`, hint "Cómo te ver"). `InstitutionShieldPanel` se mueve de estar apilado dentro del `TabPanel="informes"` a su propio `TabPanel="identidad"`. Copy de introducción actualizado: "en tres pasos" → "en cuatro pasos: dimensiones, periodos, informes e identidad".
+
+### Verificación adicional
+- `cd quartz-web && npm run build` — verde.
+- Pendiente de confirmación visual del usuario en navegador (sin herramienta de automatización de navegador disponible en este entorno de implementación).

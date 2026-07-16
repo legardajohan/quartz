@@ -53,3 +53,9 @@
 
 ## Definición de "hecho"
 Código completo y verificaciones automatizadas en verde. Las pruebas manuales end-to-end (subida real de imágenes, rechazos HTTP) quedan pendientes de ejecución en navegador/cliente HTTP — no accionables desde este entorno de implementación.
+
+## Addendum 2026-07-16 — 4º tab "Identidad" + fix de stacking-context
+- [x] `Dashboard.tsx` — `isolate` en `<main>` (stacking-context propio; ningún z-index interno puede escapar sobre el navbar sticky).
+- [x] `ConfigurationPage.tsx` — 4º `STEP` "identidad" (`ShieldCheckIcon`); `InstitutionShieldPanel` movido a su propio `TabPanel`, separado de `ReportSettingsPanel`. Copy "en tres pasos" → "en cuatro pasos".
+- [x] `npm run build` (web) en verde tras el cambio.
+- [ ] Confirmación visual del usuario en navegador: tab 4 "Identidad" muestra el uploader del escudo; ningún tab queda por encima del menú superior al activarse. — **Pendiente, sin herramienta de navegador en este entorno.**
