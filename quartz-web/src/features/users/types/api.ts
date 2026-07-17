@@ -22,6 +22,7 @@ export interface UserDto {
   identificationType: IdentificationType;
   identificationNumber: number;
   phoneNumber?: string;
+  email?: string;
   school: UserSchool;
   gradesTaught: string[];
   valuations: UserValuationSummary[];

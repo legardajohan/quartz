@@ -22,6 +22,7 @@ export type UserWithValuations = {
     secondLastName?: string;
     identificationType: IdentificationType;
     identificationNumber: number;
+    email?: string;
     school: School;
     gradesTaught: string[];
     valuations: ValuationSummary[];

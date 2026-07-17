@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, AcademicCapIcon, BriefcaseIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { extractErrorMessage } from "@/api/apiClient";
@@ -21,6 +21,11 @@ import type { UserDto, NewUser, UpdateUser, WritableUserRole } from "../types";
 import { UsersTable } from "../components/UsersTable";
 import { UsersToolbar } from "../components/UsersToolbar";
 import { UserForm, type UserFormData } from "../components/UserForm";
+
+const ROLE_TABS = [
+  { value: "Estudiante" as const, label: "Estudiantes", icon: AcademicCapIcon },
+  { value: "Docente" as const, label: "Docentes", icon: BriefcaseIcon },
+];
 
 export default function UsersPage() {
   const { sessionData } = useAuthStore();
@@ -232,22 +237,28 @@ export default function UsersPage() {
           <div className="flex flex-col gap-4">
             <h1 className="text-2xl font-semibold text-purple-900">Gestión de Usuarios</h1>
 
-            <Tabs value={activeRole} className="w-fit">
+            <Tabs value={activeRole} className="w-full max-w-md">
               <TabsHeader className="bg-purple-50/60 p-1.5">
-                <Tab
-                  value="Estudiante"
-                  onClick={() => setActiveRole("Estudiante")}
-                  className="px-6 py-2 text-sm font-medium"
-                >
-                  Estudiantes
-                </Tab>
-                <Tab
-                  value="Docente"
-                  onClick={() => setActiveRole("Docente")}
-                  className="px-6 py-2 text-sm font-medium"
-                >
-                  Docentes
-                </Tab>
+                {ROLE_TABS.map(({ value, label, icon: Icon }) => {
+                  const isActive = activeRole === value;
+                  return (
+                    <Tab
+                      key={value}
+                      value={value}
+                      onClick={() => setActiveRole(value)}
+                      className="px-10 py-2.5 transition-transform duration-150 active:scale-[0.98]"
+                    >
+                      <div
+                        className={`flex items-center gap-2 text-sm font-medium transition-colors duration-150 ${
+                          isActive ? "text-purple-900" : "text-gray-600"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </div>
+                    </Tab>
+                  );
+                })}
               </TabsHeader>
             </Tabs>
 
@@ -306,7 +317,6 @@ export default function UsersPage() {
         onClose={handleCloseModals}
         onSubmit={handleFormSubmit}
         title={!isEditMode ? `Nuevo ${activeRole}` : "Editar Usuario"}
-        subtitle={!isEditMode ? "Completa los datos para registrar un nuevo usuario." : "Actualiza los datos del usuario."}
         submitText={!isEditMode ? "Crear Usuario" : "Actualizar"}
         isSubmitting={isSubmitting}
         isSubmitDisabled={isSubmitDisabled}

@@ -137,3 +137,39 @@ Mantener `useUsersQuery` y `useUploadStudentPhotoMutation` (consumidos por `Stud
 - `POST /api/users` como Docente → `403`; identificación duplicada → `409`; email de Docente duplicado → `409`; `schoolId` ajeno → `422`.
 - `GET /api/users?role=Docente` como Docente → `[]`; como Jefe de Área → docentes del tenant.
 - Confirmar que `/gestion/usuarios` y `/informes` no muestran card blanco.
+
+## Addendum 2026-07-17 — Pulido de búsqueda+filtros, iconos por tab, `email` en el DTO de lectura
+
+Ajuste post-implementación sobre la misma rama (`feat/USR-01-user-management`), aún `implemented`, no `released`.
+
+### 1. Rediseño de `UsersToolbar.tsx` — búsqueda y filtros unificados
+**Motivo:** la primera versión separaba la búsqueda (input suelto) de los filtros (fila de botones `Menu` independientes debajo), en dos líneas. El usuario pidió una sola línea y aportó una referencia visual (barra de búsqueda + botón circular de filtros adosado).
+
+**Cambio:** un único control "pill" (`rounded-full border`) que contiene el ícono de lupa, el input, y — a la derecha, en la misma línea — un botón circular de filtros (`AdjustmentsHorizontalIcon`, no `FunnelIcon`) que abre **un solo** `Menu` con ambos grupos (Sede, Grado) apilados dentro de un único `MenuList`.
+
+**Decisión de visibilidad (lo pedido en el punto 3 del usuario):** los filtros quedan **ocultos por defecto**, dentro del menú desplegable del ícono — no hay chips ni checkboxes visibles en la barra. Razones:
+- Con solo 2 grupos de filtro (Sede, Grado) —frente a los 3 de `ConceptsFilters`— exponerlos como botones sueltos en línea con el buscador competía visualmente con la barra de búsqueda y rompía el requisito de "misma línea".
+- El botón cambia a relleno `purple-600` + badge numérico (`pink-600`) cuando hay ≥1 filtro activo — es la señal de "hay filtros aplicados" sin necesidad de abrir el menú ni de una fila de chips aparte.
+- `Menu` de Material Tailwind ya soporta anidar ambos grupos con separador (`border-t`) y un botón "Limpiar" contextual (solo aparece si hay filtros activos) — evita una capa extra de UI para quitar filtros uno a uno fuera del menú.
+
+**Animación del menú:** se fijó `animate={{ mount: {...}, unmount: {...} }}` con entrada `scale 0.95→1 / opacity 0→1` en 150ms `ease-out` y salida más rápida (100ms `ease-in`) — sigue el patrón de Emil Kowalski (nunca animar desde `scale(0)`, salida más rápida que la entrada, solo `transform`+`opacity`). El botón de filtros usa `active:scale-[0.94]` como feedback de presión.
+
+### 2. Iconos en los tabs de `/gestion/usuarios`
+**Motivo:** pedido explícito, con `ConfigurationPage.tsx` como referencia de patrón (icono + label, color activo `purple-900` vs `gray-600`, `active:scale-[0.98]` en el `Tab`).
+
+**Cambio:** `AcademicCapIcon` (Estudiantes) y `BriefcaseIcon` (Docentes) — sin el badge numérico circular de `ConfigurationPage` (ese es propio de un wizard secuencial de configuración; aquí los tabs son dos categorías pares, no pasos).
+
+### 3. `email` opcional en el DTO de lectura de usuarios
+**Motivo:** el formulario de edición de Docente mostraba el campo de correo siempre vacío porque `GET /api/users` nunca proyectaba `email` — dejarlo en blanco significaba "no cambiar", pero no reflejaba el valor real.
+
+**Cambio:**
+- `users.types.ts` (api) — `UserWithValuations.email?: string`.
+- `users.service.ts` — `email: 1` añadido al `.select(...)` de `getUsersByFilters`; `mapUserToDTO` ahora incluye `email: user.email`.
+- Frontend: `UserDto.email?: string`; `UserForm.tsx` → `formDataFromUser` precarga `email: user.email ?? ""` en vez de `""` fijo.
+
+**Efecto colateral (positivo):** el cálculo de `isDirty` en `UserForm.tsx` ahora compara contra el email real, no contra una cadena vacía fija — antes, escribir y luego revertir el email de un Docente marcaba el formulario como "sucio" incluso sin cambios netos.
+
+### Verificación adicional
+- `cd quartz-api && npx tsc --noEmit` — verde.
+- `cd quartz-web && npm run build && npm run lint` — verde (mismos 17 problemas preexistentes de `develop`, ninguno en archivos de este feature).
+- Pendiente de confirmación visual en navegador (sin herramienta de automatización de navegador disponible en este entorno).

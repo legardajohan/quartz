@@ -54,6 +54,12 @@ Transversal: `components/{ui,common,layouts,router,icons}`, `api/apiClient.ts`, 
 ## Estilos
 - **Tailwind** para todo; sin `style={{…}}`. Responsive *mobile-first* (`w-full md:w-1/2`). Estética premium.
 
+## Skills de diseño (obligatorio)
+Toda tarea que toque `quartz-web` (UI, componentes, páginas, estilos) invoca, antes de escribir código:
+- Skill `emil-design-eng` (Emil Kowalski — motion, interacción, taste).
+- Skill `impeccable` (craft, contraste, prohibiciones de diseño).
+- Plugin oficial de Claude `frontend-design` (dirección visual, tipografía, layout).
+
 ## Seguridad / rutas
 - Pantallas sensibles bajo `<ProtectedRoute>` (en `App.tsx`, dentro del layout `Dashboard`).
 - Toda llamada que pueda fallar va en `try/catch`; feedback con `react-hot-toast`.

@@ -7,7 +7,7 @@ import type { UserDto, UserSchool, WritableUserRole } from "../types";
 const IDENTIFICATION_TYPES: IdentificationType[] = ["CC", "TI", "RC"];
 
 const GRADE_LEVELS: GradeLevel[] = [
-  "Transición", "1ro", "2do", "3ro", "4to", "5to", "6to", "7mo", "8vo", "9no", "10mo", "11mo",
+  "Transición"
 ];
 
 export interface UserFormData {
@@ -49,7 +49,7 @@ function formDataFromUser(user: UserDto): UserFormData {
     phoneNumber: user.phoneNumber ?? "",
     schoolId: user.school?._id ?? "",
     gradesTaught: (user.gradesTaught ?? []) as GradeLevel[],
-    email: "",
+    email: user.email ?? "",
     password: "",
   };
 }
@@ -122,7 +122,7 @@ export function UserForm({
           onUpload={onAvatarChange}
           isUploading={isUploadingAvatar}
           shape="circle"
-          size="lg"
+          size="xl"
         />
       </div>
 
