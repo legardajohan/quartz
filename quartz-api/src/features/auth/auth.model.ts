@@ -29,23 +29,26 @@ export interface IUserDocument extends IUser, Document {
 export type SafeUser = Omit<IUser, 'passwordHash'> & { _id: Schema.Types.ObjectId };
 
 const UserSchema = new Schema<IUserDocument>({
-  institutionId: { type: Schema.Types.ObjectId, ref: 'EducationalInstitution', required: true },
+  institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
   role: { type: String, enum: Object.values(UserRole), required: true },
   firstName: { type: String, required: true },
-  middleName: { type: String }, 
+  middleName: { type: String },
   lastName: { type: String, required: true },
-  secondLastName: { type: String }, 
+  secondLastName: { type: String },
   identificationType: { type: String, enum: Object.values(IdentificationType), required: true },
-  identificationNumber: { type: Number, required: true, unique: true }, // Unique within the institution
+  identificationNumber: { type: Number, required: true },
   phoneNumber: { type: String }, // Optional for students
   email: { type: String }, // Optional for students
-  passwordHash: { type: String, select: false }, // Optional for students 
+  passwordHash: { type: String, select: false }, // Optional for students
   schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true }, // The user is associated with a specific school
   gradesTaught: [{ type: String, enum: Object.values(GradeLevel) }], // Optional. For students, an array with one grade. For teachers, an array of grades.
   avatarUrl: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
+
+// Unicidad de la identificación por institución, no global.
+UserSchema.index({ institutionId: 1, identificationNumber: 1 }, { unique: true });
 
 // Instance method to return a safe user object without password hash
 UserSchema.methods.toSafeUser = function (): SafeUser {

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPatch } from '@/api/apiClient';
-import type { UserDto, GetUsersQuery } from '../types';
+import { apiGet, apiPatch, apiPost, apiDelete } from '@/api/apiClient';
+import type { UserDto, GetUsersQuery, NewUser, UpdateUser } from '../types';
 
 export const usersQueryKey = (params?: GetUsersQuery) =>
   ['users', params] as const;
@@ -23,6 +23,40 @@ export function useUploadStudentPhotoMutation() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useCreateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: NewUser) => apiPost<UserDto, NewUser>('/users', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useUpdateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: UpdateUser }) =>
+      apiPatch<UserDto, UpdateUser>(`/users/${userId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useDeleteUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => apiDelete<void>(`/users/${userId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

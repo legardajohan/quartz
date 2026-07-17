@@ -1,10 +1,18 @@
 import { FilterQuery, Types } from 'mongoose';
-import { IUserDocument, User, SafeUser } from '../auth/auth.model';
+import bcrypt from 'bcryptjs';
+import { IUser, IUserDocument, User, SafeUser } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
-import { UserWithValuations, School, ValuationSummary } from './users.types';
-import { SchoolModel } from '../school/school.model';
-import { findScoped, findOneScoped, findOneAndUpdateScoped } from '../../repositories/base.repository';
+import { UserWithValuations, School, ValuationSummary, CreateUserDTO, UpdateUserDTO } from './users.types';
+import { SchoolModel, ISchoolDocument } from '../school/school.model';
+import {
+  findScoped,
+  findOneScoped,
+  findByIdScoped,
+  createScoped,
+  findOneAndUpdateScoped,
+  findOneAndDeleteScoped,
+} from '../../repositories/base.repository';
 import AppError from '../../utils/AppError';
 import { assertWebp } from '../../utils/assertWebp';
 import { uploadImage, deleteImage, keyFromPublicUrl } from '../../services/r2.service';
@@ -18,38 +26,61 @@ export interface GetUsersFilters {
   requestorSchoolId?: string;
 }
 
+function mapSchoolToDTO(school: Pick<ISchoolDocument, '_id' | 'schoolNumber' | 'name'>): School {
+  return {
+    _id: school._id.toString(),
+    schoolNumber: school.schoolNumber,
+    name: school.name,
+  };
+}
+
+function mapUserToDTO(
+  user: IUser & { _id: Types.ObjectId },
+  school: Pick<ISchoolDocument, '_id' | 'schoolNumber' | 'name'>
+): UserWithValuations {
+  return {
+    _id: user._id.toString(),
+    role: user.role,
+    firstName: user.firstName,
+    middleName: user.middleName,
+    lastName: user.lastName,
+    secondLastName: user.secondLastName,
+    identificationType: user.identificationType,
+    identificationNumber: user.identificationNumber,
+    school: mapSchoolToDTO(school),
+    gradesTaught: user.gradesTaught ?? [],
+    valuations: [],
+    avatarUrl: user.avatarUrl,
+  };
+}
+
 export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserWithValuations[]> => {
   try {
-    const filter: FilterQuery<IUserDocument> = {};
+    const targetRole = (filters.role as UserRole) ?? UserRole.ESTUDIANTE;
+
+    if (targetRole !== UserRole.ESTUDIANTE && targetRole !== UserRole.DOCENTE) {
+      return [];
+    }
+
+    // Solo Jefe de Área puede listar docentes; un Docente que las pida recibe [].
+    if (targetRole === UserRole.DOCENTE && filters.requestorRole !== UserRole.JEFE_DE_AREA) {
+      return [];
+    }
+
+    const filter: FilterQuery<IUserDocument> = { role: targetRole };
 
     if (filters.id) {
       filter._id = new Types.ObjectId(filters.id);
     }
 
-    // Enforce that only students are returned.
-    if (filters.role) {
-      if (filters.role !== UserRole.ESTUDIANTE) {
+    if (targetRole === UserRole.ESTUDIANTE && filters.requestorRole === UserRole.DOCENTE) {
+      // Docentes solo ven estudiantes de su propia sede.
+      if (!filters.requestorSchoolId) {
         return [];
       }
-      filter.role = UserRole.ESTUDIANTE;
-    } else {
-      filter.role = UserRole.ESTUDIANTE;
-    }
-
-    // Role-based filtering constraints
-    if (filters.requestorRole === UserRole.DOCENTE) {
-      if (filters.requestorSchoolId) {
-        // Teachers can ONLY see students from their own school.
-        filter.schoolId = new Types.ObjectId(filters.requestorSchoolId);
-      } else {
-        // If a Docente has no schoolId, they shouldn't see any students.
-        return [];
-      }
-    } else {
-      // JEFE_DE_AREA (or other future allowed roles)
-      if (filters.schoolId) {
-        filter.schoolId = new Types.ObjectId(filters.schoolId);
-      }
+      filter.schoolId = new Types.ObjectId(filters.requestorSchoolId);
+    } else if (filters.schoolId) {
+      filter.schoolId = new Types.ObjectId(filters.schoolId);
     }
 
     // 1. Fetch the base user data.
@@ -73,7 +104,7 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
       return [];
     }
 
-    // 2. Fetch all valuations for the found users in a single query.
+    // 2. Fetch all valuations for the found users in a single query (empty for docentes).
     const userIds = users.map(user => user._id);
     const valuations = await findScoped(StudentValuationModel, filters.institutionId, {
       studentId: { $in: userIds },
@@ -134,49 +165,181 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
   }
 };
 
+export const createUser = async (
+  institutionId: string,
+  data: CreateUserDTO
+): Promise<UserWithValuations> => {
+  const school = await findByIdScoped(SchoolModel, institutionId, data.schoolId).lean();
+  if (!school) {
+    throw new AppError('La sede no existe o no pertenece a la institución.', 422);
+  }
+
+  const existingIdentification = await findOneScoped(User, institutionId, {
+    identificationNumber: data.identificationNumber,
+  }).lean();
+  if (existingIdentification) {
+    throw new AppError('Ya existe un usuario con esa identificación en la institución.', 409);
+  }
+
+  const userData: Record<string, unknown> = {
+    role: data.role,
+    firstName: data.firstName,
+    middleName: data.middleName,
+    lastName: data.lastName,
+    secondLastName: data.secondLastName,
+    identificationType: data.identificationType,
+    identificationNumber: data.identificationNumber,
+    phoneNumber: data.phoneNumber,
+    schoolId: new Types.ObjectId(data.schoolId),
+    gradesTaught: data.gradesTaught,
+  };
+
+  if (data.role === UserRole.DOCENTE) {
+    const existingEmail = await User.findOne({ email: data.email }).lean();
+    if (existingEmail) {
+      throw new AppError('Ya existe un usuario registrado con ese correo.', 409);
+    }
+    userData.email = data.email;
+    userData.passwordHash = await bcrypt.hash(data.password as string, 10);
+  }
+
+  const created = await createScoped(User, institutionId, userData);
+
+  return mapUserToDTO(created.toObject() as unknown as IUser & { _id: Types.ObjectId }, school);
+};
+
+export const updateUser = async (
+  institutionId: string,
+  userId: string,
+  data: UpdateUserDTO
+): Promise<UserWithValuations> => {
+  const existing = await findByIdScoped(User, institutionId, userId).lean();
+  if (!existing) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  if (
+    data.identificationNumber !== undefined &&
+    data.identificationNumber !== existing.identificationNumber
+  ) {
+    const duplicate = await findOneScoped(User, institutionId, {
+      identificationNumber: data.identificationNumber,
+      _id: { $ne: new Types.ObjectId(userId) },
+    }).lean();
+    if (duplicate) {
+      throw new AppError('Ya existe un usuario con esa identificación en la institución.', 409);
+    }
+  }
+
+  let school: Pick<ISchoolDocument, '_id' | 'schoolNumber' | 'name'> | null = null;
+  if (data.schoolId !== undefined) {
+    school = await findByIdScoped(SchoolModel, institutionId, data.schoolId).lean();
+    if (!school) {
+      throw new AppError('La sede no existe o no pertenece a la institución.', 422);
+    }
+  }
+
+  if (data.email !== undefined) {
+    const existingEmail = await User.findOne({
+      email: data.email,
+      _id: { $ne: new Types.ObjectId(userId) },
+    }).lean();
+    if (existingEmail) {
+      throw new AppError('Ya existe un usuario registrado con ese correo.', 409);
+    }
+  }
+
+  const updatePayload: Record<string, unknown> = { ...data };
+  delete updatePayload.password;
+  if (data.schoolId !== undefined) {
+    updatePayload.schoolId = new Types.ObjectId(data.schoolId);
+  }
+  if (data.password) {
+    updatePayload.passwordHash = await bcrypt.hash(data.password, 10);
+  }
+
+  const updated = await findOneAndUpdateScoped(
+    User,
+    institutionId,
+    { _id: new Types.ObjectId(userId) },
+    { $set: updatePayload },
+    { new: true, runValidators: true }
+  ).lean();
+
+  if (!updated) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  const resolvedSchool = school ?? await findByIdScoped(SchoolModel, institutionId, updated.schoolId.toString()).lean();
+  if (!resolvedSchool) {
+    throw new AppError('La sede no existe o no pertenece a la institución.', 422);
+  }
+
+  return mapUserToDTO(updated as unknown as IUser & { _id: Types.ObjectId }, resolvedSchool);
+};
+
+export const deleteUser = async (institutionId: string, userId: string): Promise<void> => {
+  const deleted = await findOneAndDeleteScoped(User, institutionId, {
+    _id: new Types.ObjectId(userId),
+  }).lean();
+
+  if (!deleted) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  if (deleted.avatarUrl) {
+    const key = keyFromPublicUrl(deleted.avatarUrl);
+    if (key) {
+      await deleteImage(key);
+    }
+  }
+};
+
 export interface PhotoUploadRequester {
   role: UserRole;
   schoolId?: string;
 }
 
-export const uploadStudentPhoto = async (
+export const uploadUserPhoto = async (
   institutionId: string,
-  studentId: string,
+  userId: string,
   file: Express.Multer.File,
   requester: PhotoUploadRequester
 ): Promise<SafeUser> => {
   assertWebp(file.buffer);
 
-  const student = await findOneScoped(User, institutionId, {
-    _id: new Types.ObjectId(studentId),
-    role: UserRole.ESTUDIANTE,
+  const target = await findOneScoped(User, institutionId, {
+    _id: new Types.ObjectId(userId),
   }).lean();
 
-  if (!student) {
-    throw new AppError('Estudiante no encontrado.', 404);
+  if (!target) {
+    throw new AppError('Usuario no encontrado.', 404);
   }
 
-  if (requester.role === UserRole.DOCENTE && student.schoolId.toString() !== requester.schoolId) {
-    throw new AppError('Estudiante no encontrado.', 404);
+  if (requester.role === UserRole.DOCENTE) {
+    const isOwnStudent = target.role === UserRole.ESTUDIANTE && target.schoolId.toString() === requester.schoolId;
+    if (!isOwnStudent) {
+      throw new AppError('Usuario no encontrado.', 404);
+    }
   }
 
-  const key = `institutions/${institutionId}/students/${studentId}/photo-${Date.now()}.webp`;
+  const key = `institutions/${institutionId}/users/${userId}/photo-${Date.now()}.webp`;
   const avatarUrl = await uploadImage(key, file.buffer, 'image/webp');
 
   const updated = await findOneAndUpdateScoped(
     User,
     institutionId,
-    { _id: new Types.ObjectId(studentId) },
+    { _id: new Types.ObjectId(userId) },
     { $set: { avatarUrl } },
     { new: true, runValidators: true }
   ).lean();
 
   if (!updated) {
-    throw new AppError('Estudiante no encontrado.', 404);
+    throw new AppError('Usuario no encontrado.', 404);
   }
 
-  if (student.avatarUrl) {
-    const previousKey = keyFromPublicUrl(student.avatarUrl);
+  if (target.avatarUrl) {
+    const previousKey = keyFromPublicUrl(target.avatarUrl);
     if (previousKey) {
       await deleteImage(previousKey);
     }

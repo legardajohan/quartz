@@ -1,1 +1,9 @@
-export type { UserDto, GetUsersQuery, UserSchool, UserValuationSummary } from './api';
+export type {
+  UserDto,
+  GetUsersQuery,
+  UserSchool,
+  UserValuationSummary,
+  NewUser,
+  UpdateUser,
+  WritableUserRole,
+} from './api';

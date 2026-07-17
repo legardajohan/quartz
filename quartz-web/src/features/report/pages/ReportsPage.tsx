@@ -32,7 +32,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="w-full relative">
       <h1 className="text-2xl font-semibold text-purple-900">Informes</h1>
       <p className="mt-1 text-sm text-gray-600">
         Consulta y descarga la Lista de Chequeo evaluada de tus estudiantes.
