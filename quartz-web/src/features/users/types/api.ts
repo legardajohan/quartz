@@ -25,6 +25,7 @@ export interface UserDto {
   school: UserSchool;
   gradesTaught: string[];
   valuations: UserValuationSummary[];
+  avatarUrl?: string;
 }
 
 export interface GetUsersQuery {

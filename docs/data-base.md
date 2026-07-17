@@ -114,5 +114,18 @@ una unidad valorable, valorada si y solo si `performanceDescription !== null`.
 
 - `StudentValuation`: índice compuesto **único** `{ studentId, periodId }` → una valoración por estudiante y período.
 
+### 2.4. Imágenes (escudo institucional, foto de estudiante) — `ACAD-03-image-uploads`
+
+Las imágenes se almacenan en **Cloudflare R2**; Mongo solo guarda la **URL pública** resultante, nunca el binario.
+No hay almacenamiento local de imágenes en ningún paquete.
+
+- `Institution.shieldUrl?: string` — escudo del inquilino (no de `School`). Solo lo sube `Jefe de Área`.
+- `User.avatarUrl?: string` — foto del estudiante. La suben `Jefe de Área` y `Docente`. Reservado para `role: 'Estudiante'`
+  en esta fase; los demás roles no tienen foto.
+
+Ambos campos son opcionales, sin `default`: los documentos existentes quedan sin imagen hasta el primer *upload*.
+Cada reemplazo genera una **key nueva** (`.../<recurso>-<timestamp>.webp`) y borra el objeto anterior en R2
+*best-effort* (un fallo de borrado no bloquea la operación ni se refleja al cliente).
+
 > Para el resto de campos, tipos, `select:false` e índices de entidades codificadas, **leer el `*.model.ts`**
 > correspondiente. No se duplican aquí para evitar la desincronización que motivó esta reducción.

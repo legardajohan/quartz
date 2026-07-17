@@ -69,7 +69,7 @@ export async function getChecklistReport(
       address: institutionDoc.address,
       rectorName: institutionDoc.rectorName,
       email: institutionDoc.email,
-      // Sin mecanismo de subida aún: el informe reserva el espacio del escudo.
+      shield: institutionDoc.shieldUrl,
     },
     period: {
       _id: periodDoc._id.toString(),

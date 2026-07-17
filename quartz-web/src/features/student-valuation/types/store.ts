@@ -22,6 +22,7 @@ export interface UserDto {
   school: SchoolDto;
   gradesTaught: string[];
   valuations: ValuationSummary[];
+  avatarUrl?: string;
 }
 
 // --- Interfaz del Store ---

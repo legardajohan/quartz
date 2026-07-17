@@ -15,6 +15,7 @@ export interface InstitutionDto {
   email: string;
   isActive: boolean;
   settings: InstitutionSettingsDto;
+  shieldUrl?: string;
 }
 
 export interface InstitutionState {
@@ -24,4 +25,5 @@ export interface InstitutionState {
   error: string | null;
   fetchInstitution: () => Promise<void>;
   updateSettings: (data: UpdateInstitutionSettings) => Promise<void>;
+  uploadShield: (blob: Blob) => Promise<void>;
 }
