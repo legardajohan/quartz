@@ -7,11 +7,15 @@ import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
 import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
+import { ImageCropUploader } from "../../../components/common/ImageCropUploader";
 import toast from "react-hot-toast";
 import userImage from "../../../assets/images/default-user.jpg";
 import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
+import { useUsersQuery, useUploadStudentPhotoMutation } from "../../users/queries/useUsersQuery";
 
 import { Loading } from "../../../components/ui/Loading";
+
+const PHOTO_UPLOAD_ROLES = ["Jefe de Área", "Docente"];
 
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
@@ -29,6 +33,16 @@ export default function StudentValuationDetail() {
     const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
     const [localValuation, setLocalValuation] = useState(currentValuation);
     const [isSaving, setIsSaving] = useState(false);
+
+    const { data: studentUsers } = useUsersQuery(studentId ? { id: studentId } : undefined);
+    const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
+    const uploadPhotoMutation = useUploadStudentPhotoMutation();
+    const canUploadPhoto = Boolean(sessionData?.user.role && PHOTO_UPLOAD_ROLES.includes(sessionData.user.role));
+
+    const handlePhotoUpload = async (blob: Blob) => {
+        if (!studentId) return;
+        await uploadPhotoMutation.mutateAsync({ studentId, blob });
+    };
 
     useEffect(() => {
         const activePeriod = sessionData?.periods?.find((p) => p.isActive);
@@ -148,7 +162,18 @@ export default function StudentValuationDetail() {
                 </div>
                 <div className="flex w-full items-center justify-between mb-8 border border-gray-200 p-4 rounded-lg">
                     <div className="flex items-center gap-4">
-                        <Avatar src={userImage} alt="user_image" size="lg" />
+                        {canUploadPhoto ? (
+                            <ImageCropUploader
+                                currentUrl={studentAvatarUrl}
+                                label="Foto del estudiante"
+                                onUpload={handlePhotoUpload}
+                                isUploading={uploadPhotoMutation.isPending}
+                                shape="circle"
+                                size="lg"
+                            />
+                        ) : (
+                            <Avatar src={studentAvatarUrl || userImage} alt="user_image" size="lg" />
+                        )}
                         <div>
                             <h1 className="text-lg font-semibold text-gray-700">
                                 {localValuation.studentName.lastName} {localValuation.studentName.secondLastName}

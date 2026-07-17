@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { getUsers } from './users.controller';
+import { getUsers, uploadStudentPhotoController } from './users.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { requireTenant } from '../../middlewares/require-tenant.middleware';
 import { authorize } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { asyncHandler } from '../../middlewares/async-handler.middleware';
-import { getUsersSchema } from './users.validation';
+import { uploadImageSingle } from '../../middlewares/upload.middleware';
+import { getUsersSchema, uploadStudentPhotoSchema } from './users.validation';
 import { UserRole } from '../auth/auth.types';
 
 const router = Router();
@@ -24,6 +25,21 @@ router.get(
   authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(getUsersSchema),
   asyncHandler(getUsers)
+);
+
+/**
+ * PATCH /api/users/:studentId/photo
+ * Sube la foto de un estudiante. Jefe de Área: cualquier estudiante del tenant.
+ * Docente: solo estudiantes de su propia sede.
+ */
+router.patch(
+  '/:studentId/photo',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  validate(uploadStudentPhotoSchema),
+  uploadImageSingle,
+  asyncHandler(uploadStudentPhotoController)
 );
 
 export default router;

@@ -39,4 +39,20 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
       throw new Error(errorMessage);
     }
   },
+
+  uploadShield: async (blob: Blob) => {
+    set({ isSubmitting: true });
+    try {
+      const fd = new FormData();
+      fd.append('image', blob, 'shield.webp');
+      const updated = await apiPatch<InstitutionDto, FormData>('/institutions/me/shield', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      set({ institution: updated, isSubmitting: false });
+    } catch (err: unknown) {
+      const errorMessage = extractErrorMessage(err, 'Falló la subida del escudo.');
+      set({ error: errorMessage, isSubmitting: false });
+      throw new Error(errorMessage);
+    }
+  },
 }));

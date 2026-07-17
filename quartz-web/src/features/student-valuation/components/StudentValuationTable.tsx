@@ -150,7 +150,7 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                     </td>
                                     <td className={classes}>
                                         <div className="flex items-center gap-3">
-                                            <Avatar src={userImage} alt="user_imgage" size="sm" />
+                                            <Avatar src={user.avatarUrl || userImage} alt="user_imgage" size="sm" />
                                             <div className="flex flex-col">
                                                 <Typography variant="small" color="blue-gray" className="font-normal">
                                                     {fullLastName}

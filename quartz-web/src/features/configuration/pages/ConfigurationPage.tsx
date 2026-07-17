@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Tabs, TabsHeader, TabsBody, Tab, TabPanel, Typography } from "@material-tailwind/react";
-import { Square3Stack3DIcon, CalendarDaysIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { Square3Stack3DIcon, CalendarDaysIcon, DocumentTextIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 import { SubjectsPanel } from "../../subject/components/SubjectsPanel";
 import { PeriodsPanel } from "../../period/components/PeriodsPanel";
 import { ReportSettingsPanel } from "../../institution/components/ReportSettingsPanel";
+import { InstitutionShieldPanel } from "../../institution/components/InstitutionShieldPanel";
 
 const STEPS = [
   {
@@ -28,6 +29,13 @@ const STEPS = [
     hint: "Qué entregas",
     icon: DocumentTextIcon,
   },
+  {
+    value: "identidad",
+    step: 4,
+    label: "Identidad",
+    hint: "Cómo te ven",
+    icon: ShieldCheckIcon,
+  },
 ] as const;
 
 export default function ConfigurationPage() {
@@ -40,12 +48,12 @@ export default function ConfigurationPage() {
           Configuración
         </Typography>
         <Typography variant="small" className="text-gray-500">
-          Configura tu institución en Quartz en tres pasos: dimensiones, periodos e informes.
+          Configura tu institución en Quartz en cuatro pasos: dimensiones, periodos, informes e identidad.
         </Typography>
       </div>
 
       <Tabs value={activeTab}>
-        <TabsHeader className="bg-purple-50/60 p-1.5 max-w-2xl">
+        <TabsHeader className="bg-purple-50/60 p-1.5 max-w-4xl">
           {STEPS.map(({ value, step, label, hint, icon: Icon }) => {
             const isActive = activeTab === value;
             return (
@@ -84,6 +92,9 @@ export default function ConfigurationPage() {
           </TabPanel>
           <TabPanel value="informes" className="px-0 pt-8">
             <ReportSettingsPanel />
+          </TabPanel>
+          <TabPanel value="identidad" className="px-0 pt-8">
+            <InstitutionShieldPanel />
           </TabPanel>
         </TabsBody>
       </Tabs>

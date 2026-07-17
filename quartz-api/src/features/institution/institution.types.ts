@@ -17,6 +17,7 @@ export interface IInstitutionDTO {
   email: string;
   isActive: boolean;
   settings: IInstitutionSettings;
+  shieldUrl?: string;
 }
 
 export type UpdateInstitutionSettingsData = Partial<IInstitutionSettings>;

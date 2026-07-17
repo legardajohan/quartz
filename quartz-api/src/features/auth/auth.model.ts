@@ -15,6 +15,7 @@ export interface IUser {
   passwordHash?: string;
   schoolId: Schema.Types.ObjectId; // The user is associated with a specific school
   gradesTaught?: GradeLevel[]; // Optional. For students, it's an array with one grade. For teachers, it's an array of grades.
+  avatarUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -41,6 +42,7 @@ const UserSchema = new Schema<IUserDocument>({
   passwordHash: { type: String, select: false }, // Optional for students 
   schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true }, // The user is associated with a specific school
   gradesTaught: [{ type: String, enum: Object.values(GradeLevel) }], // Optional. For students, an array with one grade. For teachers, an array of grades.
+  avatarUrl: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -61,6 +63,7 @@ UserSchema.methods.toSafeUser = function (): SafeUser {
     email: this.email,
     schoolId: this.schoolId,
     gradesTaught: this.gradesTaught,
+    avatarUrl: this.avatarUrl,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
