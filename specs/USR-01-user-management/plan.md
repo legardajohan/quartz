@@ -173,3 +173,113 @@ Ajuste post-implementación sobre la misma rama (`feat/USR-01-user-management`),
 - `cd quartz-api && npx tsc --noEmit` — verde.
 - `cd quartz-web && npm run build && npm run lint` — verde (mismos 17 problemas preexistentes de `develop`, ninguno en archivos de este feature).
 - Pendiente de confirmación visual en navegador (sin herramienta de automatización de navegador disponible en este entorno).
+
+## Addendum 2026-07-28 — Iteración 2: ajustes UI (pendiente)
+
+Solo `quartz-web`, sobre la misma rama (`feat/USR-01-user-management`). Archivos:
+`UsersToolbar.tsx`, `UsersPage.tsx`, `FormModal.tsx`, `index.css`, `UserForm.tsx`.
+Antes de implementar UI, invocar las skills obligatorias (`emil-design-eng`, `impeccable`,
+`frontend-design`) según `quartz-web/CLAUDE.md`.
+
+### 1. Eliminar borde negro del botón de filtro
+- `UsersToolbar.tsx`, botón `MenuHandler` (~línea 63) **y** `MenuList` (~línea 75).
+- Causa raíz confirmada: el popup (`MenuList`) recibe foco al abrirse; el `className` por defecto de
+  material-tailwind solo trae `focus:outline-none`, **no** `focus-visible:outline-none`. Los
+  navegadores modernos muestran el outline por defecto vía `:focus-visible`, no `:focus`, así que el
+  borde se cuela igual pese al `focus:outline-none` de la librería.
+- Fix: `focus:outline-none focus-visible:outline-none` en el botón **y** en `MenuList`
+  (`outline-none focus:outline-none focus-visible:outline-none`).
+- **Reaparición 1 (2026-07-28, misma sesión):** el mismo defecto apareció en los `Select` de
+  `UserForm.tsx` (Sede, Cursos a cargo, Grado, Tipo de identificación) — su listbox interno tiene el
+  mismo hueco (`focus:outline-none` sin `focus-visible:outline-none`), pero a diferencia de `MenuList`
+  no hay una prop pública para tocar el `className` de ese listbox interno. Fix global (1ra iteración,
+  incompleto) en `index.css` § `@layer base`: `[role="listbox"], [role="menu"] { outline: none; }`.
+- **Reaparición 2 (2026-07-29, misma sesión) — causa raíz real:** el fix anterior no bastó porque el
+  elemento que realmente recibe **foco de DOM** al abrir un `Menu` no es el `MenuList` (`role="menu"`)
+  sino su **único hijo directo** — el contenido que le pasamos (`<div className="grid grid-cols-2">`
+  con Sede/Grado) — al que material-tailwind promueve automáticamente a `role="menuitem"`. Ese `div` es
+  contenido nuestro, sin ninguna clase `outline-none` propia, así que el navegador pinta su outline
+  nativo (`outline-style: auto`, color casi negro `rgb(16,16,16)`) alrededor de todo el panel.
+  Confirmado con Chrome DevTools vía `document.activeElement` → `role="menuitem"`,
+  `outlineColor: rgb(16, 16, 16)`, `outlineStyle: auto`. Fix definitivo en `index.css`:
+  `[role="listbox"], [role="menu"], [role="menuitem"], [role="option"] { outline: none; }` (se agregó
+  `menuitem` y `option` a la regla existente). Verificado visualmente en el filtro de
+  `UsersToolbar.tsx` y en los `Select` de "Sede"/"Cursos a cargo" del modal — sin borde en ningún caso.
+
+### 2. Tabs + búsqueda en la misma fila
+- `UsersPage.tsx`, cabecera (~líneas 236-289). Reestructurar:
+  - Fila 1: `<h1>Gestión de Usuarios</h1>` + botón "+ Crear" (`flex justify-between items-center`).
+  - Fila 2: `flex items-center gap-4` → `<Tabs>` (ancho por contenido, quitar `max-w-md`) a la
+    izquierda + `<UsersToolbar>` a la derecha con `flex-1`.
+- `UsersToolbar.tsx`: wrapper raíz pasa de `w-full max-w-xl` a `w-full` (ancho controlado por el padre
+  vía `flex-1`); aceptar `className` opcional si hace falta afinar.
+- Compactar `TabsHeader`/`Tab` (padding) para que la altura del segmented control iguale la de la
+  barra de búsqueda (pill ~h-11).
+
+### 3. Scroll delgado en `FormModal` (solo al desbordar, visible en hover/scroll)
+- `index.css` — utilidad reutilizable:
+  ```css
+  .thin-scrollbar { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  .thin-scrollbar::-webkit-scrollbar { width: 6px; }
+  .thin-scrollbar::-webkit-scrollbar-thumb { background-color: transparent; border-radius: 9999px; }
+  .thin-scrollbar:hover { scrollbar-color: rgb(209 213 219) transparent; } /* gray-300 */
+  .thin-scrollbar:hover::-webkit-scrollbar-thumb { background-color: rgb(209 213 219); }
+  ```
+- `FormModal.tsx`, `DialogBody` (~línea 40): añadir `max-h-[70vh] overflow-y-auto thin-scrollbar`.
+  `overflow-y-auto` garantiza que el scrollbar **no** aparece cuando el contenido cabe (requisito
+  explícito: no debe salir por defecto en modales cortos). Header y footer del `Dialog` quedan fijos;
+  solo scrollea el body.
+
+### 4. "Cursos a cargo" como desplegable con checkboxes
+- `UserForm.tsx`, bloque Docente. Es el propio `Select` de material-tailwind (mismo componente que
+  "Sede"), no un componente custom — ver "Nota de implementación" más abajo para el porqué.
+- `GRADE_LEVELS` permanece según la fase del proyecto (hoy `["Transición"]`); el componente ya soporta
+  múltiples (el ejemplo "Transición, Primero" es ilustrativo del disparador).
+
+### 5. Estudiante: Sede + Grado en 2 columnas
+- `UserForm.tsx` (~líneas 187-239). Hoy "Sede" (Select) se renderiza único para ambos roles y luego el
+  condicional docente/estudiante. Reestructurar:
+  - **Estudiante:** `<div className="grid grid-cols-2 gap-4">` con el `Select` de Sede + el `Select`
+    de Grado dentro.
+  - **Docente:** `Select` de Sede a ancho completo + el desplegable "Cursos a cargo" (§4) debajo.
+- Conservar las `key` dinámicas de los `Select` (evitan el valor obsoleto al reabrir el modal).
+
+### Verificación iteración 2
+- `cd quartz-web && npm run build && npm run lint` — verde.
+- Manual: filtro sin borde negro; tabs+búsqueda en una fila; modal largo scrollea con barra delgada
+  solo en hover y sin barra en modales cortos; "Cursos a cargo" desplegable con comas; Sede+Grado del
+  estudiante en 2 columnas.
+
+### Nota de implementación (final) — §4 "Cursos a cargo" = `Select` + `Option` + `Checkbox` reales
+
+Este campo pasó por tres intentos antes de llegar a la versión correcta. Se documentan los tres
+porque dejan una lección de proyecto relevante (ver `feedback_reuse_material_tailwind` en memoria).
+
+1. **Intento 1 — `Menu`/`MenuHandler`/`MenuList` (lo planeado originalmente):** falló dentro del
+   `FormModal` con `overflow-y-auto` (§3). El popover se abría correctamente en el DOM (`opacity: 1`,
+   `z-index: 999`, rect correcto) pero de forma reproducible **no pintaba en pantalla** y los clics en
+   su posición esperada caían sobre el campo de abajo (`elementFromPoint` confirmó el input recibiendo
+   el hit, no el checkbox). Forzar `background`/`border` vía DOM tampoco lo hizo visible. Es el
+   escenario que la skill `impeccable` (guía de Interacción) advierte explícitamente sobre dropdowns
+   `position: absolute` dentro de contenedores con `overflow`.
+2. **Intento 2 — panel inline hecho a mano** (`useState` + `<div>` empujando el contenido) y luego
+   **intento 3 — portal a `document.body` con posicionamiento manual** (`getBoundingClientRect` +
+   `position: fixed` + listeners de scroll/resize/click-afuera): ambos evitaban el bug de `Menu`, pero
+   el usuario los rechazó explícitamente — el proyecto ya tiene `Select`/`Input`/`Checkbox` importados
+   de `@material-tailwind/react` y la convención es reutilizarlos ajustando props, no reconstruir UI ni
+   lógica de posicionamiento a mano.
+3. **Implementación final:** el propio `Select` de material-tailwind (mismo componente que "Sede"),
+   con cada `Option` renderizando un `Checkbox` + `Typography` custom (`className="p-0"` en `Option`
+   para que el checkbox ocupe toda la fila). El prop `selected={() => formData.gradesTaught.join(", ")}`
+   controla qué texto se muestra en el trigger cerrado (sin esto, `Select` clona por defecto el
+   contenido del `Option` seleccionado — mostraría el checkbox dentro del trigger). `value` se mantiene
+   en `formData.gradesTaught.join(", ")` y `onChange` es no-op: el estado real vive en `formData`, no
+   en el `Select`. **A diferencia de `Menu`, el popover de `Select` sí renderiza y recibe clics
+   correctamente dentro del modal con scroll** — el problema era específico de `Menu`/Popper, no del
+   contenedor. `Sede` (`Select`) y "Cursos a cargo" (`Select`) comparten `grid grid-cols-2 gap-4`.
+
+**Limitación conocida:** `Select` cierra el popover tras seleccionar una opción (comportamiento interno
+de la librería, no gobernado por `dismiss`). Con `GRADE_LEVELS` actual (`["Transición"]`, fase única del
+proyecto) esto es imperceptible. Si en una fase futura se agregan más grados y se requiere marcar varios
+sin que el popover se cierre en cada clic, revisar entonces si `Select` expone algún mecanismo para
+mantenerlo abierto entre selecciones (no confirmado en esta sesión).

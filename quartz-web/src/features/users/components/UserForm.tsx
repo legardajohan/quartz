@@ -184,58 +184,85 @@ export function UserForm({
         />
       </div>
 
-      <Select
-        name="schoolId"
-        color="purple"
-        label="Sede"
-        value={formData.schoolId}
-        onChange={(val) => update("schoolId", val || "")}
-        key={initialData?._id ? `school-${initialData._id}` : schools.length}
-      >
-        {schools.map((school) => (
-          <Option key={school._id} value={school._id}>
-            {school.name}
-          </Option>
-        ))}
-      </Select>
-
       {isTeacher ? (
-        <div className="space-y-2">
-          <Typography variant="small" color="blue-gray" className="font-medium">
-            Grados a cargo
-          </Typography>
-          <div className="grid grid-cols-3 gap-2">
-            {GRADE_LEVELS.map((grade) => (
-              <label key={grade} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  crossOrigin={undefined}
-                  ripple={false}
-                  className="hover:before:opacity-0"
-                  containerProps={{ className: "p-0" }}
-                  checked={formData.gradesTaught.includes(grade)}
-                  onChange={() => toggleGrade(grade)}
-                />
-                <Typography variant="small" className="font-normal">
-                  {grade}
-                </Typography>
-              </label>
+        <div className="grid grid-cols-2 gap-4">
+          <Select
+            name="schoolId"
+            color="purple"
+            label="Sede"
+            value={formData.schoolId}
+            onChange={(val) => update("schoolId", val || "")}
+            key={initialData?._id ? `school-${initialData._id}` : schools.length}
+          >
+            {schools.map((school) => (
+              <Option key={school._id} value={school._id}>
+                {school.name}
+              </Option>
             ))}
-          </div>
+          </Select>
+
+          <Select
+            name="gradesTaught"
+            color="purple"
+            label="Cursos a cargo"
+            value={formData.gradesTaught.join(", ")}
+            selected={() => formData.gradesTaught.join(", ")}
+            onChange={() => {}}
+          >
+            {GRADE_LEVELS.map((grade) => (
+              <Option key={grade} value={grade} className="p-0">
+                <label
+                  htmlFor={`grade-taught-${grade}`}
+                  className="flex w-full cursor-pointer items-center gap-2 px-3 py-2"
+                >
+                  <Checkbox
+                    crossOrigin={undefined}
+                    id={`grade-taught-${grade}`}
+                    ripple={false}
+                    className="hover:before:opacity-0"
+                    containerProps={{ className: "p-0" }}
+                    checked={formData.gradesTaught.includes(grade)}
+                    onChange={() => toggleGrade(grade)}
+                  />
+                  <Typography color="blue-gray" className="font-normal">
+                    {grade}
+                  </Typography>
+                </label>
+              </Option>
+            ))}
+          </Select>
         </div>
       ) : (
-        <Select
-          color="purple"
-          label="Grado"
-          value={formData.gradesTaught[0] ?? ""}
-          onChange={(val) => update("gradesTaught", val ? [val as GradeLevel] : [])}
-          key={initialData?._id ? `grade-${initialData._id}` : "grade-new"}
-        >
-          {GRADE_LEVELS.map((grade) => (
-            <Option key={grade} value={grade}>
-              {grade}
-            </Option>
-          ))}
-        </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <Select
+            name="schoolId"
+            color="purple"
+            label="Sede"
+            value={formData.schoolId}
+            onChange={(val) => update("schoolId", val || "")}
+            key={initialData?._id ? `school-${initialData._id}` : schools.length}
+          >
+            {schools.map((school) => (
+              <Option key={school._id} value={school._id}>
+                {school.name}
+              </Option>
+            ))}
+          </Select>
+
+          <Select
+            color="purple"
+            label="Grado"
+            value={formData.gradesTaught[0] ?? ""}
+            onChange={(val) => update("gradesTaught", val ? [val as GradeLevel] : [])}
+            key={initialData?._id ? `grade-${initialData._id}` : "grade-new"}
+          >
+            {GRADE_LEVELS.map((grade) => (
+              <Option key={grade} value={grade}>
+                {grade}
+              </Option>
+            ))}
+          </Select>
+        </div>
       )}
 
       <Input

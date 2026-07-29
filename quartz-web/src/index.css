@@ -15,3 +15,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Los popups internos de Select/Menu de material-tailwind (@floating-ui) reciben foco
+     al abrirse. Menu, además, promueve automáticamente su único hijo directo (el contenido
+     que le pasamos) a role="menuitem" y le da foco real de DOM al abrirse — ese hijo no
+     tiene ninguna clase `outline-none` propia (es contenido nuestro, no de la librería), así
+     que el navegador pinta su outline nativo por defecto (auto, ~negro) alrededor de todo el
+     panel. No hay prop pública para tocar el className de estos roles internos, así que se
+     desactiva globalmente por rol ARIA. */
+  [role="listbox"],
+  [role="menu"],
+  [role="menuitem"],
+  [role="option"] {
+    outline: none;
+  }
+}
+
+@layer utilities {
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+  }
+  .thin-scrollbar:hover {
+    scrollbar-color: rgb(209 213 219) transparent;
+  }
+  .thin-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+  }
+}

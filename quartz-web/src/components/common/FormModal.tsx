@@ -37,7 +37,7 @@ export const FormModal = ({
                 </div>
             </DialogHeader>
             <form onSubmit={onSubmit}>
-                <DialogBody className="space-y-4 pr-2">
+                <DialogBody className="max-h-[70vh] space-y-4 overflow-y-auto pr-2 thin-scrollbar">
                     {children}
                 </DialogBody>
                 <DialogFooter>

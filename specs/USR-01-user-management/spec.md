@@ -51,6 +51,16 @@ Permitir al Jefe de Área crear, ver, editar y eliminar **Estudiantes** y **Doce
 
 > **Pendiente de verificación manual (sin navegador en este entorno):** click-through en `/gestion/usuarios` (crear/editar/eliminar Estudiante y Docente, carga de imagen, búsqueda y filtros) y drop del índice viejo `identificationNumber_1` en la base real. Ver `tasks.md` § Verificación final.
 
+## Ajustes UI — Iteración 2 (implementado)
+Solo `quartz-web`. Sin cambios backend → el criterio de aislamiento no aplica a esta iteración.
+
+- [x] Cuando el usuario abre el menú de filtros en `/gestion/usuarios` y pasa el cursor sobre el botón de filtro, el sistema no muestra ningún borde/outline negro — ni al inicio ni tras el primer clic.
+- [x] Cuando el usuario ve la cabecera de `/gestion/usuarios`, los tabs ESTUDIANTES|DOCENTES y la barra de búsqueda aparecen en la misma fila: tabs (segmented control) a la izquierda, input de búsqueda ocupando el resto.
+- [x] Cuando el contenido de un `FormModal` excede la altura disponible, el sistema habilita scroll vertical delgado dentro del cuerpo; el scrollbar solo se hace visible al hacer hover sobre el cuerpo o al hacer scroll con la rueda, y no aparece cuando el contenido cabe sin desbordar.
+- [x] Cuando se crea o edita un Docente, el campo antes "Grados a cargo" se llama "Cursos a cargo" y es un desplegable con checkboxes; su disparador lista los grados seleccionados separados por comas (ej. "Transición, Primero"), truncados con elipsis cuando no caben en el ancho. **Nota de implementación:** es el propio `Select`+`Option`+`Checkbox` de material-tailwind (mismo componente y misma animación de label flotante que "Sede"), no un componente custom — ver `plan.md` § Nota de implementación (final).
+- [x] Cuando se crea o edita un Estudiante, los campos Sede y Grado se muestran en una sola fila de 2 columnas; lo mismo aplica a Sede y Cursos a cargo cuando se crea o edita un Docente.
+- [x] `npm run build && npm run lint` en verde en `quartz-web`.
+
 ## Dependencias
 - ACAD-03 (`image-uploads`): infra R2 (`r2.service.ts`, `upload.middleware.ts`, `assertWebp.ts`), endpoint de foto, `ImageCropUploader.tsx`, `avatarUrl` en `User`, `public/avatar-default.svg`. Todo ya en `develop`.
 - `GET /api/schools` (feature `school`) para poblar el selector/filtro de sede.

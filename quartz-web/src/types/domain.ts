@@ -4,7 +4,8 @@ export type IdentificationType = 'CC' | 'TI' | 'RC';
 
 export type GradeLevel = 'Transición' | '1ro' | '2do' | '3ro' | '4to' | '5to' | '6to' | '7mo' | '8vo' | '9no' | '10mo' | '11mo';
 
-export type SubjectType = 'Dimensión' | 'Asignatura';
+export const SUBJECT_TYPES = ['Dimensión', 'Asignatura', 'Área', 'Materia'] as const;
+export type SubjectType = typeof SUBJECT_TYPES[number];
 
 export type SubjectEvaluationMode = 'checklist' | 'description';
 

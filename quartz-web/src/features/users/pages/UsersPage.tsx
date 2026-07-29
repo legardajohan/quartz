@@ -233,48 +233,8 @@ export default function UsersPage() {
   return (
     <>
       <div className="w-full relative">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-purple-900">Gestión de Usuarios</h1>
-
-            <Tabs value={activeRole} className="w-full max-w-md">
-              <TabsHeader className="bg-purple-50/60 p-1.5">
-                {ROLE_TABS.map(({ value, label, icon: Icon }) => {
-                  const isActive = activeRole === value;
-                  return (
-                    <Tab
-                      key={value}
-                      value={value}
-                      onClick={() => setActiveRole(value)}
-                      className="px-10 py-2.5 transition-transform duration-150 active:scale-[0.98]"
-                    >
-                      <div
-                        className={`flex items-center gap-2 text-sm font-medium transition-colors duration-150 ${
-                          isActive ? "text-purple-900" : "text-gray-600"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </div>
-                    </Tab>
-                  );
-                })}
-              </TabsHeader>
-            </Tabs>
-
-            <UsersToolbar
-              search={search}
-              onSearchChange={(value) => {
-                setSearch(value);
-                setCurrentPage(1);
-              }}
-              schools={schools}
-              selectedSchools={selectedSchools}
-              onToggleSchool={toggleSchoolFilter}
-              selectedGrades={selectedGrades}
-              onToggleGrade={toggleGradeFilter}
-            />
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold text-purple-900">Gestión de Usuarios</h1>
 
           {canManage && (
             <button
@@ -286,6 +246,46 @@ export default function UsersPage() {
               Crear
             </button>
           )}
+        </div>
+
+        <div className="flex items-center gap-4 mb-6">
+          <Tabs value={activeRole} className="w-auto shrink-0">
+            <TabsHeader className="bg-purple-50/60 p-1.5">
+              {ROLE_TABS.map(({ value, label, icon: Icon }) => {
+                const isActive = activeRole === value;
+                return (
+                  <Tab
+                    key={value}
+                    value={value}
+                    onClick={() => setActiveRole(value)}
+                    className="px-8 py-2 transition-transform duration-150 active:scale-[0.98]"
+                  >
+                    <div
+                      className={`flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors duration-150 ${
+                        isActive ? "text-purple-900" : "text-gray-600"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </div>
+                  </Tab>
+                );
+              })}
+            </TabsHeader>
+          </Tabs>
+
+          <UsersToolbar
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setCurrentPage(1);
+            }}
+            schools={schools}
+            selectedSchools={selectedSchools}
+            onToggleSchool={toggleSchoolFilter}
+            selectedGrades={selectedGrades}
+            onToggleGrade={toggleGradeFilter}
+          />
         </div>
 
         {isError && <p className="mt-4 text-red-500">{extractErrorMessage(error, "Error al cargar usuarios.")}</p>}

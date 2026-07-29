@@ -63,7 +63,7 @@ export function UsersToolbar({
               <button
                 type="button"
                 aria-label="Filtros"
-                className={`flex h-8 w-8 items-center justify-center rounded-full transition-[background-color,color,transform,box-shadow] duration-150 active:scale-[0.94] ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full outline-none transition-[background-color,color,transform,box-shadow] duration-150 focus:outline-none focus-visible:outline-none active:scale-[0.94] ${
                   hasFilters
                     ? "bg-purple-600 text-white shadow-sm shadow-purple-600/30 hover:bg-purple-700"
                     : "text-gray-500 hover:bg-gray-100"
@@ -72,7 +72,7 @@ export function UsersToolbar({
                 <AdjustmentsHorizontalIcon className="h-5 w-5" />
               </button>
             </MenuHandler>
-            <MenuList className="w-[26rem] p-3">
+            <MenuList className="w-[26rem] p-3 outline-none focus:outline-none focus-visible:outline-none">
               <div className="grid grid-cols-2">
                 <div className="pr-4">
                   <Typography variant="small" className="px-1 pb-1 font-semibold text-gray-500">

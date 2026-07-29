@@ -1,6 +1,8 @@
 export enum SubjectType {
   DIMENSION = 'Dimensión',
   ASIGNATURA = 'Asignatura',
+  AREA = 'Área',
+  MATERIA = 'Materia',
 }
 
 export enum SubjectEvaluationMode {
