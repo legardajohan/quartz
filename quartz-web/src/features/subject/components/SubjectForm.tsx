@@ -67,7 +67,6 @@ export const SubjectForm = ({ initialData, onFormChange }: SubjectFormProps) => 
                 label="Tipo"
                 value={type}
                 onChange={(val) => setType((val as SubjectType) || '')}
-                menuProps={{ placement: "bottom-start" }}
             >
                 {SUBJECT_TYPES.map((t) => (
                     <Option key={t} value={t}>
@@ -82,7 +81,6 @@ export const SubjectForm = ({ initialData, onFormChange }: SubjectFormProps) => 
                 label="Modo de evaluación"
                 value={evaluationMode}
                 onChange={(val) => setEvaluationMode((val as SubjectEvaluationMode) || 'checklist')}
-                menuProps={{ placement: "bottom-start" }}
             >
                 {EVALUATION_MODES.map((mode) => (
                     <Option key={mode.value} value={mode.value}>

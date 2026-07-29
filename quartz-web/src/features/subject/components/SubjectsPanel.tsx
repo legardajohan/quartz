@@ -179,10 +179,10 @@ export function SubjectsPanel() {
         <div className="flex justify-between items-start mb-6">
           <div>
             <Typography variant="h6" color="blue-gray" className="font-bold">
-              Dimensiones
+              Ejes de Valoración
             </Typography>
             <Typography variant="small" className="text-gray-500">
-              Gestiona las dimensiones de valoración de tu institución.
+              Gestiona los Ejes de Valoración de tu institución.
             </Typography>
           </div>
 
@@ -206,7 +206,7 @@ export function SubjectsPanel() {
           onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
           isLoading={isLoading}
-          emptyMessage="No se encontraron dimensiones."
+          emptyMessage="No se encontraron Ejes de Valoración."
         />
       </div>
 
@@ -223,6 +223,7 @@ export function SubjectsPanel() {
         open={isFormModalOpen}
         onClose={handleCloseModals}
         onSubmit={handleFormSubmit}
+        scrollable={false}
         title={selectedSubject ? `Editar ${selectedSubject.type}` : "Nuevo registro"}
         subtitle={!isEditMode ? "Completa los datos para registrarlo." : "Actualiza los datos."}
         submitText={!isEditMode ? "Crear" : "Actualizar"}

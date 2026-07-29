@@ -18,6 +18,7 @@ export const FormModal = ({
     children,
     submitText = "Crear",
     cancelText = "Cancelar",
+    scrollable = true,
     submitColor = "purple",
     isSubmitting = false,
     isSubmitDisabled,
@@ -37,7 +38,7 @@ export const FormModal = ({
                 </div>
             </DialogHeader>
             <form onSubmit={onSubmit}>
-                <DialogBody className="max-h-[70vh] space-y-4 overflow-y-auto pr-2 thin-scrollbar">
+                <DialogBody className={`${scrollable ? "max-h-[70vh] overflow-y-auto thin-scrollbar" : ""} space-y-4 pr-2`}>
                     {children}
                 </DialogBody>
                 <DialogFooter>
