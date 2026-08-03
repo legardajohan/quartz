@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { SUBJECT_TYPES } from '@/types/domain';
 import type { SubjectType, SubjectEvaluationMode } from '@/types/domain';
 import type { SubjectDto } from '../types';
 import {
@@ -6,8 +7,6 @@ import {
     Select,
     Option,
 } from '@material-tailwind/react';
-
-const SUBJECT_TYPES: SubjectType[] = ['Dimensión', 'Asignatura'];
 
 const EVALUATION_MODES: { value: SubjectEvaluationMode; label: string }[] = [
     { value: 'checklist', label: 'Lista de chequeo' },
@@ -56,7 +55,7 @@ export const SubjectForm = ({ initialData, onFormChange }: SubjectFormProps) => 
             <Input
                 name="name"
                 color="purple"
-                label="Nombre de la dimensión"
+                label="Nombre"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 crossOrigin="anonymous"

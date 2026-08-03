@@ -9,9 +9,9 @@ import { InstitutionShieldPanel } from "../../institution/components/Institution
 
 const STEPS = [
   {
-    value: "dimensiones",
+    value: "ejes-valoracion",
     step: 1,
-    label: "Dimensiones",
+    label: "Ejes de Valoración",
     hint: "Qué evalúas",
     icon: Square3Stack3DIcon,
   },
@@ -39,7 +39,7 @@ const STEPS = [
 ] as const;
 
 export default function ConfigurationPage() {
-  const [activeTab, setActiveTab] = useState<(typeof STEPS)[number]["value"]>("dimensiones");
+  const [activeTab, setActiveTab] = useState<(typeof STEPS)[number]["value"]>("ejes-valoracion");
 
   return (
     <div className="w-full">
@@ -48,7 +48,7 @@ export default function ConfigurationPage() {
           Configuración
         </Typography>
         <Typography variant="small" className="text-gray-500">
-          Configura tu institución en Quartz en cuatro pasos: dimensiones, periodos, informes e identidad.
+          Configura tu institución en Quartz en cuatro pasos: ejes de valoración, periodos, informes e identidad.
         </Typography>
       </div>
 
@@ -84,7 +84,7 @@ export default function ConfigurationPage() {
           })}
         </TabsHeader>
         <TabsBody>
-          <TabPanel value="dimensiones" className="px-0 pt-8">
+          <TabPanel value="ejes-valoracion" className="px-0 pt-8">
             <SubjectsPanel />
           </TabPanel>
           <TabPanel value="periodos" className="px-0 pt-8">

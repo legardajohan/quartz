@@ -55,8 +55,8 @@ export function SubjectsPanel() {
 
     const promise = deleteSubject(subjectToDelete._id);
     toast.promise(promise, {
-      loading: "Eliminando dimensión...",
-      success: <b>Dimensión eliminada con éxito</b>,
+      loading: "Eliminando...",
+      success: <b>{subjectToDelete.type} eliminada con éxito</b>,
       error: (err) => <b>{err.toString()}</b>,
     });
     handleCloseModals();
@@ -83,8 +83,8 @@ export function SubjectsPanel() {
       };
       promise = updateSubject(selectedSubject._id, subjectToUpdate);
       toast.promise(promise, {
-        loading: "Actualizando dimensión...",
-        success: <b>¡Dimensión actualizada con éxito!</b>,
+        loading: "Actualizando...",
+        success: <b>¡{subjectToUpdate.type} actualizada con éxito!</b>,
         error: (err) => <b>{err.toString()}</b>,
       });
     } else {
@@ -95,8 +95,8 @@ export function SubjectsPanel() {
       };
       promise = createSubject(subjectToCreate);
       toast.promise(promise, {
-        loading: "Creando dimensión...",
-        success: <b>¡Dimensión creada con éxito!</b>,
+        loading: "Creando...",
+        success: <b>¡{subjectToCreate.type} creada con éxito!</b>,
         error: (err) => <b>{err.toString()}</b>,
       });
     }
@@ -179,10 +179,10 @@ export function SubjectsPanel() {
         <div className="flex justify-between items-start mb-6">
           <div>
             <Typography variant="h6" color="blue-gray" className="font-bold">
-              Dimensiones
+              Ejes de Valoración
             </Typography>
             <Typography variant="small" className="text-gray-500">
-              Gestiona las dimensiones de valoración de tu institución.
+              Gestiona los Ejes de Valoración de tu institución.
             </Typography>
           </div>
 
@@ -206,7 +206,7 @@ export function SubjectsPanel() {
           onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
           isLoading={isLoading}
-          emptyMessage="No se encontraron dimensiones."
+          emptyMessage="No se encontraron Ejes de Valoración."
         />
       </div>
 
@@ -214,8 +214,8 @@ export function SubjectsPanel() {
         open={isDeleteModalOpen}
         onClose={handleCloseModals}
         onConfirm={handleConfirmDelete}
-        title="¿Deseas eliminar la dimensión?"
-        body={subjectToDelete?.name ?? ''}
+        title="¿Deseas eliminar este registro?"
+        body={subjectToDelete ? `${subjectToDelete.name} (${subjectToDelete.type})` : ''}
         confirmColor="pink"
       />
 
@@ -223,9 +223,10 @@ export function SubjectsPanel() {
         open={isFormModalOpen}
         onClose={handleCloseModals}
         onSubmit={handleFormSubmit}
-        title={!isEditMode ? "Nueva Dimensión" : "Editar Dimensión"}
-        subtitle={!isEditMode ? "Completa los datos para registrar una nueva dimensión." : "Actualiza los datos de la dimensión."}
-        submitText={!isEditMode ? "Crear Dimensión" : "Actualizar"}
+        scrollable={false}
+        title={selectedSubject ? `Editar ${selectedSubject.type}` : "Nuevo registro"}
+        subtitle={!isEditMode ? "Completa los datos para registrarlo." : "Actualiza los datos."}
+        submitText={!isEditMode ? "Crear" : "Actualizar"}
         isSubmitting={isSubmitting}
         isSubmitDisabled={isSubmitDisabled}
       >
