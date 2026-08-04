@@ -1,6 +1,8 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { IReportTemplate, QualitativeValuation } from "../types";
-import { QUARTZ_LOGO } from "@/constants/assets";
+import { QUARTZ_LOGO_DATA_URI } from "./quartzLogoDataUri";
+
+const QUARTZ_LOGO_ASPECT_RATIO = 2298 / 270;
 
 const VALUATION_COLORS: Record<QualitativeValuation, string> = {
   Logrado: "#16a34a",
@@ -97,7 +99,7 @@ export default function ChecklistReportDocument({ report, shieldSrc }: Checklist
         {valuation.valuationsBySubject.map((subject) => (
           <View style={styles.subjectBlock} key={subject.subjectId} wrap>
             <Text style={styles.subjectHeader} minPresenceAhead={36}>
-              {subject.subjectName}
+              Dimensión {subject.subjectName}
             </Text>
             {subject.evaluationMode === "description" ? (
               <View style={styles.observationsBox}>
@@ -149,10 +151,10 @@ export default function ChecklistReportDocument({ report, shieldSrc }: Checklist
 
         <View style={styles.brandFooter} fixed>
           <Text style={styles.brandPoweredBy}>Powered by</Text>
-          <View style={styles.brandRow}>
-            <Image src={QUARTZ_LOGO} style={styles.brandLogo} />
-            <Text style={styles.brandName}>QUARTZ</Text>
-          </View>
+          <Image
+            src={QUARTZ_LOGO_DATA_URI}
+            style={[styles.brandLogo, { aspectRatio: QUARTZ_LOGO_ASPECT_RATIO }]}
+          />
         </View>
 
         <Text
@@ -366,21 +368,8 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     marginBottom: 2,
   },
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
   brandLogo: {
-    height: 12,
-    width: 12,
-    objectFit: "contain",
-    marginRight: 4,
-  },
-  brandName: {
-    fontSize: 11,
-    fontFamily: "Helvetica-Bold",
-    color: "#6b21a8",
-    letterSpacing: 0.8,
+    height: 11,
   },
   pageNumber: {
     position: "absolute",
