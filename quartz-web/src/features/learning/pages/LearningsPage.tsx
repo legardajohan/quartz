@@ -5,13 +5,15 @@ import toast from "react-hot-toast";
 
 import { useLearningStore } from "../useLearningStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
+import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import { Learning, NewLearning, UpdateLearning } from "../types";
 import { LearningForm } from "../components/LearningForm";
 import { LearningsTable } from "../components/LearningsTable";
-import { LearningsFilters } from "../components/LearningsFilters";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
+import { normalizeText } from "../../../utils/normalizeText";
 
 export default function LearningsPage() {
   const { learnings, isLoading, isSubmitting, error, createLearning, updateLearning, deleteLearning } =
@@ -20,6 +22,7 @@ export default function LearningsPage() {
 
   const subjects = sessionData?.subjects ?? [];
   const periods = sessionData?.periods ?? [];
+  const axis = useSubjectAxisLabel();
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
@@ -29,6 +32,7 @@ export default function LearningsPage() {
   const [isFormDirty, setIsFormDirty] = useState(false);
 
   // Filters
+  const [search, setSearch] = useState("");
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
 
@@ -125,6 +129,11 @@ export default function LearningsPage() {
     handleCloseModals();
   };
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
   const togglePeriodFilter = (periodId: string) => {
     setSelectedPeriods(prev =>
       prev.includes(periodId)
@@ -144,12 +153,31 @@ export default function LearningsPage() {
   };
 
   const filteredLearnings = useMemo(() => {
+    const term = normalizeText(search);
     return learnings.filter(learning => {
+      const matchSearch = term === "" || normalizeText(learning.description).includes(term);
       const matchPeriod = selectedPeriods.length === 0 || selectedPeriods.includes(learning.period._id);
       const matchSubject = selectedSubjects.length === 0 || selectedSubjects.includes(learning.subject._id);
-      return matchPeriod && matchSubject;
+      return matchSearch && matchPeriod && matchSubject;
     });
-  }, [learnings, selectedPeriods, selectedSubjects]);
+  }, [learnings, search, selectedPeriods, selectedSubjects]);
+
+  const learningFilterGroups: FilterGroup[] = [
+    {
+      id: "period",
+      label: "Periodo",
+      options: periods.map((period) => ({ value: period._id, label: period.name })),
+      selected: selectedPeriods,
+      onToggle: togglePeriodFilter,
+    },
+    {
+      id: "subject",
+      label: axis.plural,
+      options: subjects.map((subject) => ({ value: subject._id, label: subject.name })),
+      selected: selectedSubjects,
+      onToggle: toggleSubjectFilter,
+    },
+  ];
 
   const totalPages = Math.ceil(filteredLearnings.length / ITEMS_PER_PAGE);
   const paginatedLearnings = filteredLearnings.slice(
@@ -175,13 +203,11 @@ export default function LearningsPage() {
               Gestión de Aprendizajes Esperados
             </h1>
 
-            <LearningsFilters
-              periods={periods}
-              subjects={subjects}
-              selectedPeriods={selectedPeriods}
-              selectedSubjects={selectedSubjects}
-              onTogglePeriod={togglePeriodFilter}
-              onToggleSubject={toggleSubjectFilter}
+            <SearchFilterBar
+              search={search}
+              onSearchChange={handleSearchChange}
+              placeholder="Buscar aprendizaje"
+              groups={learningFilterGroups}
             />
           </div>
 
@@ -208,7 +234,7 @@ export default function LearningsPage() {
               Descripción personalizada del desempeño por parte del docente
             </Typography>
             <Typography variant="small" className="max-w-md text-gray-500">
-              Esta dimensión no gestiona aprendizajes: se valora con una descripción libre del desempeño en la Lista de Chequeo.
+              {axis.singular} sin aprendizajes: se valora con una descripción libre del desempeño en la Lista de Chequeo.
             </Typography>
           </div>
         ) : (

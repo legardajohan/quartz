@@ -9,7 +9,7 @@ export interface IInstitution {
     address: string;
     rectorName: string;
     email: string;
-    shield?: string; // URL del escudo. Sin mecanismo de subida aun: el informe reserva el espacio.
+    shield?: string;
 }
 
 export interface IPeriod {
@@ -42,6 +42,7 @@ export interface IStudent {
         name: string;
     }
     grade: string;
+    avatarUrl?: string;
 }
 
 export interface IStudentValuation {

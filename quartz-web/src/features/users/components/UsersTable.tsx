@@ -1,9 +1,8 @@
 import { Avatar, Typography, IconButton, Tooltip } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { DataTable, type Column } from "@/components/common/DataTable";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 import type { UserDto } from "../types";
-
-const AVATAR_FALLBACK = "/avatar-default.svg";
 
 interface UsersTableProps {
   users: UserDto[];

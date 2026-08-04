@@ -23,7 +23,7 @@ import {
     ValuationState,
 } from '../types/domain';
 import { ValuationStatusBadge } from './ValuationStatusBadge';
-import userImage from "../../../assets/images/default-user.jpg";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -150,7 +150,7 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                     </td>
                                     <td className={classes}>
                                         <div className="flex items-center gap-3">
-                                            <Avatar src={user.avatarUrl || userImage} alt="user_imgage" size="sm" />
+                                            <Avatar src={user.avatarUrl || AVATAR_FALLBACK} alt="user_imgage" size="sm" />
                                             <div className="flex flex-col">
                                                 <Typography variant="small" color="blue-gray" className="font-normal">
                                                     {fullLastName}

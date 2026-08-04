@@ -5,6 +5,7 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import ChecklistReportDocument from "./ChecklistReportDocument";
 import { Loading } from "../../../components/ui/Loading";
 import { useReportStore } from "../useReportStore";
+import { usePdfImage } from "../usePdfImage";
 
 interface ChecklistReportModalProps {
   open: boolean;
@@ -20,6 +21,8 @@ export default function ChecklistReportModal({
   onClose,
 }: ChecklistReportModalProps) {
   const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
+  const shieldSrc = usePdfImage(currentReport?.institution.shield);
+  const photoSrc = usePdfImage(currentReport?.student.avatarUrl);
 
   useEffect(() => {
     if (open && valuationId) {
@@ -42,7 +45,9 @@ export default function ChecklistReportModal({
         <div className="flex items-center gap-2">
           {currentReport && (
             <PDFDownloadLink
-              document={<ChecklistReportDocument report={currentReport} />}
+              document={
+                <ChecklistReportDocument report={currentReport} shieldSrc={shieldSrc} photoSrc={photoSrc} />
+              }
               fileName={fileName}
             >
               {({ loading }) => (
@@ -73,7 +78,7 @@ export default function ChecklistReportModal({
         )}
         {currentReport && !isReportLoading && !reportError && (
           <PDFViewer width="100%" height="100%" showToolbar={false} style={{ border: "none" }}>
-            <ChecklistReportDocument report={currentReport} />
+            <ChecklistReportDocument report={currentReport} shieldSrc={shieldSrc} photoSrc={photoSrc} />
           </PDFViewer>
         )}
       </DialogBody>

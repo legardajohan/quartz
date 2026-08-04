@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import type { IValuationBySubjectDTO, ILearningValuationDTO } from "../types";
 import { ValuationState } from "../types/domain";
+import { useSubjectTypeLabel } from "../../subject/useSubjectAxisLabel";
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
 
 // Export icons for parent usage
@@ -92,6 +93,7 @@ export default function ValuationChecklist({
   onDescriptionChange,
   icon: Icon = BookOpenIcon, // Default fallback
 }: ValuationChecklistProps) {
+  const subjectTypeLabel = useSubjectTypeLabel(subject?.subjectId);
   const [selections, setSelections] = React.useState<Record<string, string | null>>(initialSelections || {});
 
   React.useEffect(() => setSelections(initialSelections || {}), [initialSelections]);
@@ -178,7 +180,7 @@ export default function ValuationChecklist({
               {/* Text Info */}
               <div className="flex flex-col items-start gap-1 w-full max-w-[200px]">
                 <Typography variant="h6" color="blue-gray" className="font-bold leading-tight">
-                  Dimensión {subject?.subjectName ?? ""}
+                  {subjectTypeLabel} {subject?.subjectName ?? ""}
                 </Typography>
                 <div className="w-full flex items-center gap-3">
                   <Progress

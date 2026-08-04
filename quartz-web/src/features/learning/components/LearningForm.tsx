@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Subject, Period } from '@/types/domain';
+import { useSubjectAxisLabel } from '../../subject/useSubjectAxisLabel';
 import { Learning } from '../types';
 import {
     Textarea,
@@ -15,6 +16,7 @@ interface LearningFormProps {
 }
 
 export const LearningForm = ({ subjects, periods, initialData, onFormChange }: LearningFormProps) => {
+    const axis = useSubjectAxisLabel();
     const [subjectId, setSubjectId] = useState('');
     const [periodId, setPeriodId] = useState('');
     const [description, setDescription] = useState('');
@@ -60,7 +62,7 @@ export const LearningForm = ({ subjects, periods, initialData, onFormChange }: L
             <Select
                 name="subjectId"
                 color="purple"
-                label="Dimensión"
+                label={axis.singular}
                 value={subjectId}
                 onChange={(val) => setSubjectId(val || '')}
                 key={initialData?._id ? `subject-${initialData._id}` : subjects.length}

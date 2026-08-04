@@ -99,6 +99,7 @@ export async function getChecklistReport(
         name: studentSchoolDoc.name,
       },
       grade: studentDoc.gradesTaught?.[0] ?? '',
+      avatarUrl: studentDoc.avatarUrl,
     },
     valuation: {
       _id: valuation._id,

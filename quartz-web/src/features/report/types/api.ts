@@ -72,6 +72,7 @@ export interface IReportStudent {
     name: string;
   };
   grade: string;
+  avatarUrl?: string;
 }
 
 export interface IReportValuation {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Subject, Period } from '@/types/domain';
+import { useSubjectAxisLabel } from '../../subject/useSubjectAxisLabel';
 import { ConceptDto, QualitativeValuation } from '../types';
 import {
     Textarea,
@@ -24,6 +25,7 @@ interface ConceptFormProps {
 }
 
 export const ConceptForm = ({ subjects, periods, initialData, onFormChange }: ConceptFormProps) => {
+    const axis = useSubjectAxisLabel();
     const [subjectId, setSubjectId] = useState('');
     const [periodId, setPeriodId] = useState('');
     const [valuationType, setValuationType] = useState<QualitativeValuation | ''>('');
@@ -73,7 +75,7 @@ export const ConceptForm = ({ subjects, periods, initialData, onFormChange }: Co
             <Select
                 name="subjectId"
                 color="purple"
-                label="Dimensión"
+                label={axis.singular}
                 value={subjectId}
                 onChange={(val) => setSubjectId(val || '')}
                 key={initialData?._id ? `subject-${initialData._id}` : subjects.length}

@@ -9,6 +9,7 @@ import { useAuthStore } from "../../auth/useAuthStore";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { FormModal } from "@/components/common/FormModal";
 import { ITEMS_PER_PAGE } from "@/components/common/DataTable";
+import SearchFilterBar, { type FilterGroup } from "@/components/common/SearchFilterBar";
 import {
   useUsersQuery,
   useCreateUserMutation,
@@ -19,13 +20,15 @@ import {
 import { useSchoolsQuery } from "../queries/useSchoolsQuery";
 import type { UserDto, NewUser, UpdateUser, WritableUserRole } from "../types";
 import { UsersTable } from "../components/UsersTable";
-import { UsersToolbar } from "../components/UsersToolbar";
 import { UserForm, type UserFormData } from "../components/UserForm";
 
 const ROLE_TABS = [
   { value: "Estudiante" as const, label: "Estudiantes", icon: AcademicCapIcon },
   { value: "Docente" as const, label: "Docentes", icon: BriefcaseIcon },
 ];
+
+// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
+const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 
 export default function UsersPage() {
   const { sessionData } = useAuthStore();
@@ -130,6 +133,23 @@ export default function UsersPage() {
       return matchesSearch && matchesSchool && matchesGrade;
     });
   }, [users, search, selectedSchools, selectedGrades]);
+
+  const filterGroups: FilterGroup[] = [
+    {
+      id: "school",
+      label: "Sede",
+      options: schools.map((school) => ({ value: school._id, label: school.name })),
+      selected: selectedSchools,
+      onToggle: toggleSchoolFilter,
+    },
+    {
+      id: "grade",
+      label: "Grado",
+      options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
+      selected: selectedGrades,
+      onToggle: (value) => toggleGradeFilter(value as GradeLevel),
+    },
+  ];
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
   const paginatedUsers = filteredUsers.slice(
@@ -274,17 +294,14 @@ export default function UsersPage() {
             </TabsHeader>
           </Tabs>
 
-          <UsersToolbar
+          <SearchFilterBar
             search={search}
             onSearchChange={(value) => {
               setSearch(value);
               setCurrentPage(1);
             }}
-            schools={schools}
-            selectedSchools={selectedSchools}
-            onToggleSchool={toggleSchoolFilter}
-            selectedGrades={selectedGrades}
-            onToggleGrade={toggleGradeFilter}
+            placeholder="Buscar por nombre o identificación"
+            groups={filterGroups}
           />
         </div>
 
