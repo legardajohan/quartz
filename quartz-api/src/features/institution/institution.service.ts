@@ -2,6 +2,7 @@ import { Institution } from './institution.model';
 import { IInstitutionDTO, UpdateInstitutionSettingsData, ReportKind } from './institution.types';
 import AppError from '../../utils/AppError';
 import { assertWebp } from '../../utils/assertWebp';
+import { webpToJpeg } from '../../utils/webpToJpeg';
 import { uploadImage, deleteImage, keyFromPublicUrl } from '../../services/r2.service';
 
 const DEFAULT_ENABLED_REPORTS: ReportKind[] = [ReportKind.CHECKLIST, ReportKind.COMMUNICATIVE_LETTER];
@@ -81,17 +82,22 @@ export const uploadInstitutionShield = async (
 ): Promise<IInstitutionDTO> => {
   assertWebp(file.buffer);
 
-  const previous = await Institution.findById(institutionId).select('shieldUrl').lean();
+  const previous = await Institution.findById(institutionId).select('shieldUrl shieldJpgUrl').lean();
   if (!previous) {
     throw new AppError('Institución no encontrada.', 404);
   }
 
-  const key = `institutions/${institutionId}/shield-${Date.now()}.webp`;
-  const shieldUrl = await uploadImage(key, file.buffer, 'image/webp');
+  const timestamp = Date.now();
+  const jpegBuffer = await webpToJpeg(file.buffer);
+
+  const [shieldUrl, shieldJpgUrl] = await Promise.all([
+    uploadImage(`institutions/${institutionId}/shield-${timestamp}.webp`, file.buffer, 'image/webp'),
+    uploadImage(`institutions/${institutionId}/shield-${timestamp}.jpg`, jpegBuffer, 'image/jpeg'),
+  ]);
 
   const institution = await Institution.findByIdAndUpdate(
     institutionId,
-    { $set: { shieldUrl } },
+    { $set: { shieldUrl, shieldJpgUrl } },
     { new: true, runValidators: true }
   ).lean();
 
@@ -99,12 +105,14 @@ export const uploadInstitutionShield = async (
     throw new AppError('Institución no encontrada.', 404);
   }
 
-  if (previous.shieldUrl) {
-    const previousKey = keyFromPublicUrl(previous.shieldUrl);
-    if (previousKey) {
-      await deleteImage(previousKey);
-    }
-  }
+  await Promise.all(
+    [previous.shieldUrl, previous.shieldJpgUrl].map(async (previousUrl) => {
+      const previousKey = previousUrl ? keyFromPublicUrl(previousUrl) : null;
+      if (previousKey) {
+        await deleteImage(previousKey);
+      }
+    })
+  );
 
   return mapInstitutionToDTO(institution);
 };

@@ -1,31 +1,38 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "@/api/apiClient";
-import { blobToJpegDataUrl } from "@/utils/blobToJpegDataUrl";
+import { blobToDataUrl } from "@/utils/blobToDataUrl";
 
 type ReportImageKind = "shield" | "photo";
+
+export interface PdfImageResult {
+  src: string | null;
+  isLoading: boolean;
+}
 
 export function usePdfImage(
   valuationId: string | undefined,
   kind: ReportImageKind,
   hasSource: boolean
-): string | null {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
+): PdfImageResult {
+  const [result, setResult] = useState<PdfImageResult>({ src: null, isLoading: hasSource });
 
   useEffect(() => {
     let cancelled = false;
-    setDataUrl(null);
 
     if (!valuationId || !hasSource) {
+      setResult({ src: null, isLoading: false });
       return;
     }
 
+    setResult({ src: null, isLoading: true });
+
     apiGet<Blob>(`/reports/checklist/${valuationId}/image/${kind}`, { responseType: "blob" })
-      .then((blob) => blobToJpegDataUrl(blob))
-      .then((result) => {
-        if (!cancelled) setDataUrl(result);
+      .then(blobToDataUrl)
+      .then((src) => {
+        if (!cancelled) setResult({ src, isLoading: false });
       })
       .catch(() => {
-        if (!cancelled) setDataUrl(null);
+        if (!cancelled) setResult({ src: null, isLoading: false });
       });
 
     return () => {
@@ -33,5 +40,5 @@ export function usePdfImage(
     };
   }, [valuationId, kind, hasSource]);
 
-  return dataUrl;
+  return result;
 }

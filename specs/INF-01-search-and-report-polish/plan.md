@@ -8,6 +8,10 @@
 | tocar | `src/features/report/report.service.ts` — mapear `studentDoc.avatarUrl` en el bloque `student` + `getChecklistReportImage(...)` (post-implementación, ver § Imágenes del PDF) |
 | tocar | `src/features/report/report.controller.ts` · `report.routes.ts` · `report.validation.ts` — `GET /checklist/:valuationId/image/:kind` (post-implementación) |
 | tocar | `src/services/r2.service.ts` — `getImage(key)` (post-implementación) |
+| crear | `src/utils/webpToJpeg.ts` — conversión con `sharp` (post-implementación, ronda 2) |
+| tocar | `src/features/institution/institution.model.ts` · `institution.service.ts` — `shieldJpgUrl` (post-implementación, ronda 2) |
+| tocar | `src/features/auth/auth.model.ts` · `src/features/users/users.service.ts` — `avatarJpgUrl` (post-implementación, ronda 2) |
+| tocar | `package.json` — dependencia `sharp` (post-implementación, ronda 2) |
 
 ### quartz-web
 | Acción | Ruta |
@@ -15,7 +19,7 @@
 | crear | `src/components/common/SearchFilterBar.tsx` |
 | crear | `src/constants/assets.ts` |
 | crear | `src/features/subject/useSubjectAxisLabel.ts` |
-| crear | `src/utils/blobToJpegDataUrl.ts` |
+| crear | `src/utils/blobToDataUrl.ts` (ronda 2, reemplaza `blobToJpegDataUrl.ts`, que reemplazó `remoteImageToJpegDataUrl.ts`) |
 | crear | `src/features/report/usePdfImage.ts` |
 | borrar | `src/features/users/components/UsersToolbar.tsx` |
 | borrar | `src/features/learning/components/LearningsFilters.tsx` |
@@ -136,18 +140,21 @@ Consumen: `UsersTable` (elimina su const local), `StudentValuationTable:153`, `S
 ### Imágenes del PDF (WebP → JPEG)
 `@react-pdf/renderer` solo decodifica JPG/PNG; R2 guarda WebP (`imageToWebp.ts`).
 
-**Revisión post-implementación:** la conversión directa en el navegador (`<img crossOrigin="anonymous">` → `canvas` → `toDataURL`) requiere que `R2_PUBLIC_URL` responda `Access-Control-Allow-Origin`; el bucket no lo tiene configurado, así que `canvas.toDataURL()` fallaba siempre y el PDF nunca pintaba escudo ni foto (degradaba a `null` silenciosamente, tal como estaba diseñado, pero sin imagen real). Se reemplazó por un proxy autenticado en el backend que evita depender de CORS de R2:
+**Revisión post-implementación (ronda 1):** la conversión directa en el navegador (`<img crossOrigin="anonymous">` → `canvas` → `toDataURL`) requiere que `R2_PUBLIC_URL` responda `Access-Control-Allow-Origin`; el bucket no lo tiene configurado, así que `canvas.toDataURL()` fallaba siempre y el PDF nunca pintaba escudo ni foto. Se reemplazó por un proxy autenticado en el backend (`GET /api/reports/checklist/:valuationId/image/:kind`) que evita depender de CORS de R2, con conversión WebP→JPEG hecha en el navegador con `canvas` en cada apertura del modal.
 
-- `quartz-api/src/services/r2.service.ts` — `getImage(key)`: `GetObjectCommand` directo (credenciales ya presentes en el backend, sin problema de CORS por ser server-to-R2).
-- `quartz-api/src/features/report/` — `getChecklistReportImage(...)` (reutiliza toda la autorización de `getChecklistReport`) + `GET /api/reports/checklist/:valuationId/image/:kind` (`kind: 'shield' | 'photo'`), mismo middleware chain que el endpoint de informe.
-- `src/utils/blobToJpegDataUrl.ts` (reemplaza `remoteImageToJpegDataUrl.ts`): `Blob` → `URL.createObjectURL` → `canvas` (fondo blanco) → `toDataURL('image/jpeg', 0.92)`. Un blob de un `ObjectURL` es same-origin, no requiere `crossOrigin` ni tainted-canvas.
-- `src/features/report/usePdfImage.ts`:
+**Revisión post-implementación (ronda 2):** esa conversión en cada apertura causaba parpadeo (el `PDFViewer` montaba sin imágenes y volvía a montar cuando terminaba de convertir) y trabajo repetido en cada vista del mismo informe. Se precomputa el JPEG **una sola vez, al momento de la carga** del escudo/foto (no en cada render del PDF):
+
+- **Backend — dos variantes por imagen subida.** `uploadInstitutionShield` (`institution.service.ts`) y `uploadUserPhoto` (`users.service.ts`) suben en paralelo el `.webp` original (`shieldUrl`/`avatarUrl`, sin cambios — sigue siendo lo que consumen las vistas normales de la app) y un `.jpg` derivado (`shieldJpgUrl`/`avatarJpgUrl`, campos nuevos en `Institution`/`User`, no expuestos en `SafeUser`/DTOs públicos — solo los usa el backend). Conversión: `quartz-api/src/utils/webpToJpeg.ts` con `sharp` (`resize 400×400 cover → flatten sobre blanco → jpeg quality 90`). Al reemplazar una imagen, se borran ambas variantes anteriores (`Promise.all` sobre `[webpUrl, jpgUrl]` → `keyFromPublicUrl` → `deleteImage`, best-effort).
+- **Backend — el proxy sirve el `.jpg` precomputado, no convierte nada.** `getChecklistReportImage` ya no reutiliza `getChecklistReport` completo (evita el join con sede/plantilla/periodo, innecesario aquí); hace su propia consulta liviana: `getStudentValuationById` (gate de completitud) + `findOneScoped(User,...).select('schoolId avatarJpgUrl')` (scoping de Docente) + `Institution.findById(...).select('shieldJpgUrl')` cuando `kind === 'shield'`. Si el documento no tiene `.jpg` (institución/estudiante con imagen subida *antes* de este cambio), responde `404` — se resuelve solo, sin migración, la próxima vez que resuban esa imagen.
+- **Frontend — sin `canvas`.** `src/utils/blobToDataUrl.ts` (reemplaza `blobToJpegDataUrl.ts`, que a su vez había reemplazado `remoteImageToJpegDataUrl.ts`): `Blob` → `FileReader.readAsDataURL` — el backend ya entrega bytes JPEG listos, no hace falta decodificar/redibujar/recodificar.
+- **Frontend — el hook expone `isLoading` para poder esperar antes de montar el PDF:**
 ```ts
-export function usePdfImage(valuationId: string | undefined, kind: 'shield' | 'photo', hasSource: boolean): string | null;
-// apiGet<Blob>(`/reports/checklist/${valuationId}/image/${kind}`, { responseType: 'blob' }) → blobToJpegDataUrl
-// hasSource evita la petición cuando el informe no trae shield/avatarUrl. Cualquier fallo (404, red, decode) ⇒ null.
+export interface PdfImageResult { src: string | null; isLoading: boolean }
+export function usePdfImage(valuationId: string | undefined, kind: 'shield' | 'photo', hasSource: boolean): PdfImageResult;
+// apiGet<Blob>(`/reports/checklist/${valuationId}/image/${kind}`, { responseType: 'blob' }) → blobToDataUrl
+// hasSource evita la petición cuando el informe no trae shield/avatarUrl. Cualquier fallo (404, red) ⇒ src: null, isLoading: false.
 ```
-`ChecklistReportModal`: resuelve `shieldSrc = usePdfImage(valuationId ?? undefined, "shield", !!currentReport?.institution.shield)` y `photoSrc` análogo con `"photo"`, y los pasa como props a `ChecklistReportDocument` (el mismo par se usa en `PDFViewer` y en `PDFDownloadLink`, para no renderizar dos documentos distintos).
+- **`ChecklistReportModal` — un único gate de "listo".** `isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading && !photo.isLoading`. Mientras no es `true`, se muestra `<Loading>` (ni `PDFViewer` ni `PDFDownloadLink` se montan); solo cuando es `true` se renderiza el documento completo de una vez, con `shieldSrc`/`photoSrc` ya resueltos — sin remontaje intermedio, sin parpadeo.
 
 ### `ChecklistReportDocument`
 ```ts

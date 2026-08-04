@@ -12,6 +12,7 @@ export interface IInstitutionDocument extends Document {
   isActive: boolean;
   settings: IInstitutionSettings;
   shieldUrl?: string;
+  shieldJpgUrl?: string;
 }
 
 const InstitutionSettingsSchema = new Schema<IInstitutionSettings>(
@@ -36,6 +37,7 @@ const InstitutionSchema = new Schema<IInstitutionDocument>(
     isActive: { type: Boolean, default: true },
     settings: { type: InstitutionSettingsSchema, default: () => ({}) },
     shieldUrl: { type: String },
+    shieldJpgUrl: { type: String },
   },
   { timestamps: true } // Adds createdAt and updatedAt automatically
 );

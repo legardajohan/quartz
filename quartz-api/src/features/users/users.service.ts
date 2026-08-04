@@ -15,6 +15,7 @@ import {
 } from '../../repositories/base.repository';
 import AppError from '../../utils/AppError';
 import { assertWebp } from '../../utils/assertWebp';
+import { webpToJpeg } from '../../utils/webpToJpeg';
 import { uploadImage, deleteImage, keyFromPublicUrl } from '../../services/r2.service';
 
 export interface GetUsersFilters {
@@ -325,14 +326,19 @@ export const uploadUserPhoto = async (
     }
   }
 
-  const key = `institutions/${institutionId}/users/${userId}/photo-${Date.now()}.webp`;
-  const avatarUrl = await uploadImage(key, file.buffer, 'image/webp');
+  const timestamp = Date.now();
+  const jpegBuffer = await webpToJpeg(file.buffer);
+
+  const [avatarUrl, avatarJpgUrl] = await Promise.all([
+    uploadImage(`institutions/${institutionId}/users/${userId}/photo-${timestamp}.webp`, file.buffer, 'image/webp'),
+    uploadImage(`institutions/${institutionId}/users/${userId}/photo-${timestamp}.jpg`, jpegBuffer, 'image/jpeg'),
+  ]);
 
   const updated = await findOneAndUpdateScoped(
     User,
     institutionId,
     { _id: new Types.ObjectId(userId) },
-    { $set: { avatarUrl } },
+    { $set: { avatarUrl, avatarJpgUrl } },
     { new: true, runValidators: true }
   ).lean();
 
@@ -340,12 +346,14 @@ export const uploadUserPhoto = async (
     throw new AppError('Usuario no encontrado.', 404);
   }
 
-  if (target.avatarUrl) {
-    const previousKey = keyFromPublicUrl(target.avatarUrl);
-    if (previousKey) {
-      await deleteImage(previousKey);
-    }
-  }
+  await Promise.all(
+    [target.avatarUrl, target.avatarJpgUrl].map(async (previousUrl) => {
+      const previousKey = previousUrl ? keyFromPublicUrl(previousUrl) : null;
+      if (previousKey) {
+        await deleteImage(previousKey);
+      }
+    })
+  );
 
   // passwordHash tiene `select: false`; el documento .lean() ya lo excluye.
   return updated as unknown as SafeUser;

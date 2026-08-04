@@ -21,8 +21,10 @@ export default function ChecklistReportModal({
   onClose,
 }: ChecklistReportModalProps) {
   const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
-  const shieldSrc = usePdfImage(valuationId ?? undefined, "shield", !!currentReport?.institution.shield);
-  const photoSrc = usePdfImage(valuationId ?? undefined, "photo", !!currentReport?.student.avatarUrl);
+  const shield = usePdfImage(valuationId ?? undefined, "shield", !!currentReport?.institution.shield);
+  const photo = usePdfImage(valuationId ?? undefined, "photo", !!currentReport?.student.avatarUrl);
+
+  const isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading && !photo.isLoading;
 
   useEffect(() => {
     if (open && valuationId) {
@@ -43,10 +45,10 @@ export default function ChecklistReportModal({
           Lista de Chequeo · {studentName}
         </Typography>
         <div className="flex items-center gap-2">
-          {currentReport && (
+          {isPdfReady && currentReport && (
             <PDFDownloadLink
               document={
-                <ChecklistReportDocument report={currentReport} shieldSrc={shieldSrc} photoSrc={photoSrc} />
+                <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} photoSrc={photo.src} />
               }
               fileName={fileName}
             >
@@ -64,7 +66,7 @@ export default function ChecklistReportModal({
         </div>
       </DialogHeader>
       <DialogBody className="h-[80vh] p-0">
-        {isReportLoading && (
+        {!isPdfReady && !reportError && (
           <div className="flex h-full items-center justify-center">
             <Loading message="Generando vista previa…" />
           </div>
@@ -76,9 +78,9 @@ export default function ChecklistReportModal({
             </Typography>
           </div>
         )}
-        {currentReport && !isReportLoading && !reportError && (
+        {isPdfReady && currentReport && (
           <PDFViewer width="100%" height="100%" showToolbar={false} style={{ border: "none" }}>
-            <ChecklistReportDocument report={currentReport} shieldSrc={shieldSrc} photoSrc={photoSrc} />
+            <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} photoSrc={photo.src} />
           </PDFViewer>
         )}
       </DialogBody>

@@ -63,6 +63,17 @@
 - [x] `usePdfImage.ts` reescrito sobre el nuevo endpoint (`apiGet` + blob) en vez de `<img crossOrigin>` a R2; `remoteImageToJpegDataUrl.ts` → `blobToJpegDataUrl.ts`.
 - [x] `ChecklistReportDocument.tsx` — pie de marca en dos líneas, tipografía `SpaceAge` registrada vía `Font.register`, color de marca `#581c87` en vez de gris.
 
+## Ajustes post-implementación (ronda 3: color de marca + rendimiento de imágenes del PDF)
+- [x] `ChecklistReportDocument.tsx` — `brandName.color` a `#6b21a8` (mismo púrpura del wordmark `QUARTZ` del navbar), `Font.register` con forma `fonts: [{ src, fontWeight: 'normal' }]`.
+- [x] `quartz-api` — `npm install sharp`.
+- [x] `utils/webpToJpeg.ts` — `sharp`: resize 400×400 cover, flatten sobre blanco, jpeg quality 90.
+- [x] `institution.model.ts` / `auth.model.ts` — campos `shieldJpgUrl` / `avatarJpgUrl`.
+- [x] `institution.service.ts` (`uploadInstitutionShield`) / `users.service.ts` (`uploadUserPhoto`) — suben `.webp` + `.jpg` en paralelo; borran ambas variantes anteriores al reemplazar.
+- [x] `report.service.ts` (`getChecklistReportImage`) — consulta liviana propia (ya no reutiliza `getChecklistReport` completo); lee `shieldJpgUrl`/`avatarJpgUrl` y sirve el `.jpg` precomputado sin convertir nada en cada request.
+- [x] Frontend — `utils/blobToDataUrl.ts` (reemplaza `blobToJpegDataUrl.ts`; ya no hace falta `canvas`).
+- [x] `usePdfImage.ts` — devuelve `{ src, isLoading }`.
+- [x] `ChecklistReportModal.tsx` — `isPdfReady` combina informe + ambas imágenes; `PDFViewer`/`PDFDownloadLink` solo montan cuando `isPdfReady`.
+
 ## Verificación final
 - [x] `cd quartz-api && npx tsc --noEmit` en verde.
 - [x] `cd quartz-web && npm run build && npm run lint` en verde.

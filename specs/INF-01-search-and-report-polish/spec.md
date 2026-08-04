@@ -25,7 +25,9 @@ Unificar el buscador con filtros en un componente transversal, hacer que la UI n
 - `SearchFilterBar` en `/evaluacion` (buscar por nombres/apellidos/identificación; filtrar por Grado, Estado, Sede) y `/informes` (buscar por nombres/apellidos/identificación; filtrar por Grado, Sede).
 - `/evaluacion` sin el contenedor `bg-white` que envolvía toda la página (alineado con `/informes`).
 - Escudo y foto del PDF servidos por un proxy autenticado del backend (`GET /api/reports/checklist/:valuationId/image/:kind`) en vez de lectura directa del navegador a R2 vía `canvas` (bloqueada por falta de CORS en el bucket).
-- Pie de marca del PDF en dos líneas: `Powered by` pequeño arriba; logo + `QUARTZ` abajo con la tipografía `SpaceAge` y color de marca (no gris).
+- Pie de marca del PDF en dos líneas: `Powered by` pequeño arriba; logo + `QUARTZ` abajo con la tipografía `SpaceAge` y color de marca (`#6b21a8`, no gris/blanco).
+- Escudo y foto del informe precomputados a `.jpg` en el momento de la carga (no en cada apertura del PDF): dos variantes por imagen en R2 (`.webp` para las vistas, `.jpg` para el informe), vía `sharp` en el backend.
+- El modal de Lista de Chequeo espera a que informe + escudo + foto estén listos antes de montar el visor/botón de descarga (elimina el parpadeo por remontaje).
 
 **Fuera:**
 - Búsqueda en servidor / paginación en servidor: el filtrado sigue siendo en cliente sobre la lista ya cargada.
@@ -68,7 +70,11 @@ Unificar el buscador con filtros en un componente transversal, hacer que la UI n
 - [x] Cuando el backend responde el informe, el payload incluye `student.avatarUrl` cuando el estudiante tiene foto.
 - [x] Cuando el frontend pide `GET /api/reports/checklist/:valuationId/image/:kind`, el sistema responde con los bytes de la imagen y el `Content-Type` real; si el informe no tiene esa imagen o el objeto no existe en R2, responde `404`.
 - [x] Si un `Docente` pide la imagen de un informe fuera de su alcance (mismo criterio que `getChecklistReport`), el sistema responde `403`.
-- [x] Cuando el PDF muestra la marca Quartz, la línea `Powered by` es pequeña y el nombre `QUARTZ` usa la tipografía `SpaceAge` en el color de marca del documento (no gris).
+- [x] Cuando el PDF muestra la marca Quartz, la línea `Powered by` es pequeña y el nombre `QUARTZ` usa la tipografía `SpaceAge` en color púrpura de marca (`#6b21a8`, el mismo del wordmark `QUARTZ` del navbar), no gris ni blanco.
+- [x] Cuando `Jefe de Área` sube el escudo o `Jefe de Área`/`Docente` suben la foto de un estudiante, el sistema almacena dos variantes en R2: `.webp` (consumida por las vistas normales de la app, sin cambios) y `.jpg` (precomputada una sola vez en el momento de la carga, usada únicamente por el proxy de imágenes del informe).
+- [x] Cuando se reemplaza un escudo o foto, el sistema elimina ambas variantes anteriores (webp y jpg) del almacenamiento, best-effort.
+- [x] Si una institución o estudiante tiene `shieldUrl`/`avatarUrl` pero no `shieldJpgUrl`/`avatarJpgUrl` (imagen subida antes de esta variante), el endpoint de imagen responde `404` y el PDF se genera sin esa imagen — sin bloquear, sin migración de datos.
+- [x] Cuando el usuario abre el modal de Lista de Chequeo, el sistema no muestra el documento PDF (ni el botón de descarga) hasta que el informe **y** el escudo **y** la foto del estudiante terminaron de resolverse (con o sin imagen); mientras tanto solo se ve el indicador de carga, sin remontar el visor una segunda vez.
 
 ### Avatares en la app
 - [x] Cuando `/evaluacion` lista estudiantes, el sistema muestra `avatarUrl` si existe y `/avatar-default.svg` si no; nunca la foto de plantilla `default-user.jpg`.
@@ -87,6 +93,6 @@ Unificar el buscador con filtros en un componente transversal, hacer que la UI n
 - Activos ya presentes: `quartz-web/public/quartz-logo.png`, `quartz-web/public/avatar-default.svg`, `quartz-web/src/assets/fonts/SpaceAge.woff2`.
 
 ## Trazabilidad
-- Backend:  quartz-api/src/features/report/ · quartz-api/src/services/r2.service.ts
+- Backend:  quartz-api/src/features/report/ · quartz-api/src/features/institution/ · quartz-api/src/features/users/ · quartz-api/src/features/auth/auth.model.ts · quartz-api/src/services/r2.service.ts · quartz-api/src/utils/webpToJpeg.ts
 - Frontend: quartz-web/src/components/common/SearchFilterBar.tsx · quartz-web/src/features/{users,learning,concept,student-valuation,report,subject}/ · quartz-web/src/types/domain.ts
 - Branch:   feat/INF-01-search-and-report-polish

@@ -3,7 +3,10 @@ import type { IReportTemplate, QualitativeValuation } from "../types";
 import { QUARTZ_LOGO } from "@/constants/assets";
 import spaceAgeFontUrl from "@/assets/fonts/SpaceAge.woff2";
 
-Font.register({ family: "SpaceAge", src: spaceAgeFontUrl });
+Font.register({
+  family: "SpaceAge",
+  fonts: [{ src: spaceAgeFontUrl, fontWeight: "normal" }],
+});
 
 const VALUATION_COLORS: Record<QualitativeValuation, string> = {
   Logrado: "#16a34a",
@@ -400,9 +403,10 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   brandName: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "SpaceAge",
-    color: "#581c87",
+    fontWeight: "normal",
+    color: "#6b21a8",
     letterSpacing: 0.5,
   },
   pageNumber: {

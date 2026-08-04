@@ -122,10 +122,35 @@ export async function getChecklistReportImage(
   requestorSchoolId: string | undefined,
   kind: ChecklistReportImageKind
 ): Promise<{ buffer: Buffer; contentType: string }> {
-  const report = await getChecklistReport(valuationId, institutionId, requestorRole, requestorSchoolId);
-  const url = kind === 'shield' ? report.institution.shield : report.student.avatarUrl;
+  const valuation = await getStudentValuationById(valuationId, institutionId);
 
-  const key = url ? keyFromPublicUrl(url) : null;
+  if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
+    throw new AppError('La Lista de Chequeo aún no está evaluada completamente.', 409);
+  }
+
+  const studentDoc = await findOneScoped(User, institutionId, {
+    _id: new Types.ObjectId(valuation.studentId),
+  })
+    .select('schoolId avatarJpgUrl')
+    .lean();
+
+  if (!studentDoc) {
+    throw new AppError('Estudiante no encontrado o no pertenece a la institución.', 404);
+  }
+
+  if (requestorRole === UserRole.DOCENTE && studentDoc.schoolId.toString() !== requestorSchoolId) {
+    throw new AppError('No tiene permisos para ver el informe de este estudiante.', 403);
+  }
+
+  let jpgUrl: string | undefined;
+  if (kind === 'shield') {
+    const institutionDoc = await Institution.findById(institutionId).select('shieldJpgUrl').lean();
+    jpgUrl = institutionDoc?.shieldJpgUrl;
+  } else {
+    jpgUrl = studentDoc.avatarJpgUrl;
+  }
+
+  const key = jpgUrl ? keyFromPublicUrl(jpgUrl) : null;
   if (!key) {
     throw new AppError('Imagen no disponible.', 404);
   }
