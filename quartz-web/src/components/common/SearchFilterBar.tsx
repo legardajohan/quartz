@@ -51,7 +51,7 @@ export default function SearchFilterBar({
   onSearchChange,
   placeholder = "Buscar",
   groups = [],
-  className = "w-full max-w-xl",
+  className = "w-full max-w-xl min-w-0 flex-1",
 }: SearchFilterBarProps) {
   const activeFilterCount = groups.reduce((n, g) => n + g.selected.length, 0);
   const hasFilters = activeFilterCount > 0;

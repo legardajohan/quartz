@@ -5,7 +5,9 @@
 | Acción | Ruta |
 |---|---|
 | tocar | `src/features/report/report.types.ts` — `IStudent.avatarUrl?`, limpiar comentario obsoleto de `IInstitution.shield` |
-| tocar | `src/features/report/report.service.ts` — mapear `studentDoc.avatarUrl` en el bloque `student` |
+| tocar | `src/features/report/report.service.ts` — mapear `studentDoc.avatarUrl` en el bloque `student` + `getChecklistReportImage(...)` (post-implementación, ver § Imágenes del PDF) |
+| tocar | `src/features/report/report.controller.ts` · `report.routes.ts` · `report.validation.ts` — `GET /checklist/:valuationId/image/:kind` (post-implementación) |
+| tocar | `src/services/r2.service.ts` — `getImage(key)` (post-implementación) |
 
 ### quartz-web
 | Acción | Ruta |
@@ -13,7 +15,7 @@
 | crear | `src/components/common/SearchFilterBar.tsx` |
 | crear | `src/constants/assets.ts` |
 | crear | `src/features/subject/useSubjectAxisLabel.ts` |
-| crear | `src/utils/remoteImageToJpegDataUrl.ts` |
+| crear | `src/utils/blobToJpegDataUrl.ts` |
 | crear | `src/features/report/usePdfImage.ts` |
 | borrar | `src/features/users/components/UsersToolbar.tsx` |
 | borrar | `src/features/learning/components/LearningsFilters.tsx` |
@@ -31,6 +33,13 @@
 | tocar | `src/features/report/components/ChecklistReportModal.tsx` |
 | tocar | `src/features/report/types/api.ts` — `IReportStudent.avatarUrl?` |
 | tocar | `src/features/checklist-template/pages/ChecklistsPage.tsx` — `<Loading />` |
+| tocar | `src/features/student-valuation/pages/StudentValuationsPage.tsx` — buscador + filtros (grado/estado/sede), paginación local, quita el wrapper `bg-white` (post-implementación) |
+| tocar | `src/features/report/pages/ReportsPage.tsx` — buscador + filtros (grado/sede), paginación local (post-implementación) |
+| tocar | `src/features/student-valuation/types/domain.ts` — `getValuationState`, `VALUATION_STATE_ORDER`, `VALUATION_STATE_LABELS` (post-implementación) |
+| tocar | `src/features/student-valuation/components/ValuationStatusBadge.tsx` · `StudentValuationTable.tsx` — consumen el helper/labels de `domain.ts` en vez de duplicarlos (post-implementación) |
+| tocar | `src/features/student-valuation/useStudentValuationStore.ts` · `types/store.ts` — quita `currentPage`/`nextPage`/`prevPage` (paginación pasa a estado local de página) (post-implementación) |
+| tocar | `src/features/report/useReportStore.ts` · `types/store.ts` — ídem (post-implementación) |
+| tocar | `src/components/common/SearchFilterBar.tsx` — `className` default agrega `flex-1 min-w-0` (post-implementación, ver § Ancho del buscador) |
 
 ## Contratos
 
@@ -102,11 +111,19 @@ Aplicación:
 | `UsersPage` | — (ya tiene `search`) | Sede (`schools`), Grado (`GRADE_LEVELS`) | nombre completo + `identificationNumber` (sin cambios) |
 | `LearningsPage` | `search: string` | Periodo (`periods`), `axis.plural` (`subjects`) | `learning.description` |
 | `ConceptsPage` | `search: string` | Periodo, `axis.plural`, Valoración (`VALUATION_TYPES`) | `concept.description` |
+| `StudentValuationsPage` (post-implementación) | `search`, `selectedGrades`, `selectedSchools`, `selectedStates`, `currentPage` local (reemplaza paginación del store) | Grado, Estado (`VALUATION_STATE_ORDER`), Sede (derivada de `users[].school`) | nombre completo + `identificationNumber` |
+| `ReportsPage` (post-implementación) | `search`, `selectedGrades`, `selectedSchools`, `currentPage` local (reemplaza paginación del store) | Grado, Sede (derivada de `users[].school`) | nombre completo + `identificationNumber` |
 
 - Normalizacion compartida en `src/utils/normalizeText.ts` (crear): `normalizeText(s: string): string` = `s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()`; se aplica al termino y al campo antes de comparar (busqueda insensible a mayusculas y acentos).
 - Cada `onSearchChange`/`onToggle` hace `setCurrentPage(1)`.
 - `LearningsPage` conserva `hasInitializedFilter` (periodo activo por defecto) y `isDescriptionModeSelected`.
 - `ConceptsPage` conserva `hasInitializedFilter` y `canManage`.
+- Sede en Evaluación/Informes: se deriva de `users[].school` (sin llamar a `/schools`) para no acoplar estas dos features a la query de `users/`.
+
+### Ancho del buscador (post-implementación)
+`SearchFilterBar` quedaba con ancho inconsistente entre páginas: al vivir dentro de una columna `flex flex-col` junto al `<h1>`, su `w-full` resolvía contra el ancho intrínseco del título (shrink-to-fit de flexbox), no contra el ancho de la página — por eso Aprendizajes (título largo) y Conceptos (título corto) mostraban anchos distintos.
+- `SearchFilterBar` default `className`: `"w-full max-w-xl min-w-0 flex-1"` — `flex-1` hace que, dentro de una fila flex (p. ej. junto a `Tabs` en `UsersPage`), crezca hasta `max-w-xl` en vez de encogerse a su contenido.
+- `LearningsPage`/`ConceptsPage`/`StudentValuationsPage`/`ReportsPage`: el buscador sale de la columna del `<h1>` a su propio contenedor de bloque (hijo directo del `<div className="w-full relative">` de la página), donde `w-full` resuelve contra el ancho real de la página — igual en las cuatro.
 
 ### Activos compartidos
 `src/constants/assets.ts`:
@@ -117,19 +134,20 @@ export const QUARTZ_LOGO = '/quartz-logo.png';
 Consumen: `UsersTable` (elimina su const local), `StudentValuationTable:153`, `StudentValuationDetail:175`, `ReportsTable:51`. Se eliminan los `import userImage from ".../default-user.jpg"` de esos tres archivos (el asset queda en disco; lo sigue usando nadie más).
 
 ### Imágenes del PDF (WebP → JPEG)
-`@react-pdf/renderer` solo decodifica JPG/PNG; R2 guarda WebP (`imageToWebp.ts`). Conversión en el navegador antes de renderizar.
+`@react-pdf/renderer` solo decodifica JPG/PNG; R2 guarda WebP (`imageToWebp.ts`).
 
-`src/utils/remoteImageToJpegDataUrl.ts`:
+**Revisión post-implementación:** la conversión directa en el navegador (`<img crossOrigin="anonymous">` → `canvas` → `toDataURL`) requiere que `R2_PUBLIC_URL` responda `Access-Control-Allow-Origin`; el bucket no lo tiene configurado, así que `canvas.toDataURL()` fallaba siempre y el PDF nunca pintaba escudo ni foto (degradaba a `null` silenciosamente, tal como estaba diseñado, pero sin imagen real). Se reemplazó por un proxy autenticado en el backend que evita depender de CORS de R2:
+
+- `quartz-api/src/services/r2.service.ts` — `getImage(key)`: `GetObjectCommand` directo (credenciales ya presentes en el backend, sin problema de CORS por ser server-to-R2).
+- `quartz-api/src/features/report/` — `getChecklistReportImage(...)` (reutiliza toda la autorización de `getChecklistReport`) + `GET /api/reports/checklist/:valuationId/image/:kind` (`kind: 'shield' | 'photo'`), mismo middleware chain que el endpoint de informe.
+- `src/utils/blobToJpegDataUrl.ts` (reemplaza `remoteImageToJpegDataUrl.ts`): `Blob` → `URL.createObjectURL` → `canvas` (fondo blanco) → `toDataURL('image/jpeg', 0.92)`. Un blob de un `ObjectURL` es same-origin, no requiere `crossOrigin` ni tainted-canvas.
+- `src/features/report/usePdfImage.ts`:
 ```ts
-export async function remoteImageToJpegDataUrl(url: string, maxSize?: number): Promise<string | null>;
-// <img crossOrigin="anonymous"> → canvas (fondo blanco) → toDataURL('image/jpeg', 0.92)
-// maxSize (default 400) limita el lado mayor. Cualquier fallo (CORS, 404, decode) ⇒ null.
+export function usePdfImage(valuationId: string | undefined, kind: 'shield' | 'photo', hasSource: boolean): string | null;
+// apiGet<Blob>(`/reports/checklist/${valuationId}/image/${kind}`, { responseType: 'blob' }) → blobToJpegDataUrl
+// hasSource evita la petición cuando el informe no trae shield/avatarUrl. Cualquier fallo (404, red, decode) ⇒ null.
 ```
-`src/features/report/usePdfImage.ts`:
-```ts
-export function usePdfImage(url?: string): string | null;  // useEffect + cancelación por flag; null mientras carga o si falla
-```
-`ChecklistReportModal`: resuelve `shieldSrc = usePdfImage(currentReport?.institution.shield)` y `photoSrc = usePdfImage(currentReport?.student.avatarUrl)`, y los pasa como props a `ChecklistReportDocument` (el mismo par se usa en `PDFViewer` y en `PDFDownloadLink`, para no renderizar dos documentos distintos).
+`ChecklistReportModal`: resuelve `shieldSrc = usePdfImage(valuationId ?? undefined, "shield", !!currentReport?.institution.shield)` y `photoSrc` análogo con `"photo"`, y los pasa como props a `ChecklistReportDocument` (el mismo par se usa en `PDFViewer` y en `PDFDownloadLink`, para no renderizar dos documentos distintos).
 
 ### `ChecklistReportDocument`
 ```ts
@@ -141,15 +159,17 @@ interface ChecklistReportDocumentProps {
 ```
 - Cabecera: `{shieldSrc && <Image src={shieldSrc} style={styles.shieldImage} />}` — sin `shieldSrc` no se renderiza `shieldBox`. Igual con `photoSrc` / `studentPhotoBox`. Se eliminan `shieldPlaceholderText` y los recuadros punteados.
 - `studentPhotoBox` pasa a 56×56 (las fotos son cuadradas 400×400); `objectFit: 'cover'`, `borderRadius: 4`.
-- Pie de marca fijo en todas las hojas:
+- Pie de marca fijo en todas las hojas (dos líneas, post-implementación):
 ```tsx
 <View style={styles.brandFooter} fixed>
-  <Text style={styles.brandText}>Powered by</Text>
-  <Image src={QUARTZ_LOGO} style={styles.brandLogo} />   {/* height 10, sin borde */}
-  <Text style={styles.brandName}>Quartz</Text>
+  <Text style={styles.brandPoweredBy}>Powered by</Text>
+  <View style={styles.brandRow}>
+    <Image src={QUARTZ_LOGO} style={styles.brandLogo} />
+    <Text style={styles.brandName}>QUARTZ</Text>
+  </View>
 </View>
 ```
-  `brandFooter`: `position: 'absolute', bottom: 18, left: 40, flexDirection: 'row', alignItems: 'center', gap: 4`; `brandText`/`brandName` a `fontSize: 6–7`, gris `#9ca3af` (`brandName` en `Helvetica-Bold`). El `pageNumber` existente queda a la derecha, misma línea base.
+  `brandFooter`: `position: 'absolute', bottom: 14, left: 40`. `brandPoweredBy`: `fontSize: 6`, gris `#9ca3af` — línea superior, pequeña. `brandName`: `fontSize: 10`, `fontFamily: 'SpaceAge'`, color `#581c87` (el mismo púrpura de marca del resto del documento, no gris — debe resaltar). Fuente registrada al inicio del archivo: `Font.register({ family: 'SpaceAge', src: spaceAgeFontUrl })`, con `import spaceAgeFontUrl from '@/assets/fonts/SpaceAge.woff2'` (Vite resuelve el asset a una URL; react-pdf/fontkit decodifica WOFF2 directamente, sin conversión). El `pageNumber` existente queda a la derecha, misma línea base.
 - `styles.page`: `paddingBottom: 56` (el resto sigue en 40) para que el contenido nunca invada el pie fijo.
 
 ### Paginación del PDF (criterio 4)
@@ -176,7 +196,7 @@ Espejo en `quartz-web/src/features/report/types/api.ts` → `IReportStudent.avat
 `ChecklistsPage.tsx:157-158`: `<p className="text-gray-400 text-sm">Cargando plantillas…</p>` → `<Loading message="Cargando plantillas…" />` (`@/components/ui/Loading`), manteniendo el resto del ternario (vacío / grid).
 
 ## Notas
-- **CORS de R2 (bloqueante para escudo y foto en el PDF).** Leer el pixel data en `canvas` exige `crossOrigin="anonymous"` **y** que `R2_PUBLIC_URL` responda `Access-Control-Allow-Origin` con el origen web. Si el bucket no lo tiene, la conversión devuelve `null` y el PDF sale sin imágenes (degradación silenciosa, no error). Verificar en el navegador durante la implementación; si falla, configurar la regla CORS del bucket en Cloudflare (`AllowedOrigins: [WEB_ORIGIN]`, `AllowedMethods: [GET]`).
+- **CORS de R2 — resuelto sin tocar Cloudflare.** El bucket no tiene `Access-Control-Allow-Origin`, por lo que la lectura directa vía `canvas` desde el navegador nunca funcionó (ver § Imágenes del PDF). En vez de pedir cambiar la configuración del bucket, el backend sirve los bytes (`GET /api/reports/checklist/:valuationId/image/:kind`, tenant-scoped) y el frontend los consume como `Blob` autenticado — mismo origen, sin CORS.
 - **Por qué no se abandona WebP.** El WebP optimiza el 100 % de las vistas de la app (tablas, formularios, detalle) y el almacenamiento; la conversión a JPEG solo ocurre al abrir un informe: una decodificación nativa de 400×400 más un `toDataURL` (unos pocos ms, una vez por informe). Guardar un PNG paralelo en R2 duplicaría almacenamiento y el borrado best-effort. Se elige JPEG en vez de PNG para el data URL porque pesa ~5× menos con calidad equivalente en fotos y el pipeline de `ACAD-03` ya aplana la transparencia sobre blanco.
 - **Chips “Filtrado por:”.** Desaparecen al unificar con `SearchFilterBar`; el conteo en el badge + limpiar-todo cubren la misma función con menos ruido visual y layout estable entre las tres páginas.
 - **Etiqueta derivada, no configurable.** No se añade un campo `axisLabel` a `Institution`: el `type` de cada `Subject` ya lo define (`ACAD-01`). Si el inquilino mezcla tipos, `Eje de Valoración` es el único término correcto.

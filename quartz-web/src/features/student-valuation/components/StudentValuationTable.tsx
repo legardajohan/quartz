@@ -18,10 +18,7 @@ import toast from "react-hot-toast";
 import { useState } from "react";
 
 import type { UserDto } from "../types/store";
-import {
-    API_STATUS_TO_VALUATION_STATE,
-    ValuationState,
-} from '../types/domain';
+import { getValuationState } from '../types/domain';
 import { ValuationStatusBadge } from './ValuationStatusBadge';
 import { AVATAR_FALLBACK } from "@/constants/assets";
 
@@ -80,11 +77,6 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
             toast.error(`Error al eliminar la evaluación: ${err.message}`);
         }
     };
-
-    const getValuationState = (status: string | null | undefined): ValuationState => {
-        if (!status) return 'NOT_STARTED';
-        return API_STATUS_TO_VALUATION_STATE[status] || 'NOT_STARTED';
-    }
 
     if (isLoading) {
         return (

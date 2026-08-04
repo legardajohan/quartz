@@ -197,19 +197,10 @@ export default function LearningsPage() {
   return (
     <>
       <div className="w-full relative">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-purple-900">
-              Gestión de Aprendizajes Esperados
-            </h1>
-
-            <SearchFilterBar
-              search={search}
-              onSearchChange={handleSearchChange}
-              placeholder="Buscar aprendizaje"
-              groups={learningFilterGroups}
-            />
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold text-purple-900">
+            Gestión de Aprendizajes Esperados
+          </h1>
 
           {!isDescriptionModeSelected && (
             <button
@@ -221,6 +212,15 @@ export default function LearningsPage() {
               Crear
             </button>
           )}
+        </div>
+
+        <div className="mb-6 flex">
+          <SearchFilterBar
+            search={search}
+            onSearchChange={handleSearchChange}
+            placeholder="Buscar aprendizaje"
+            groups={learningFilterGroups}
+          />
         </div>
 
         {error && <p className="mt-4 text-red-500">{error}</p>}

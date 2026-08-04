@@ -207,22 +207,10 @@ export default function ConceptsPage() {
   return (
     <>
       <div className="w-full relative">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-purple-900">
-              Gestión de Conceptos
-            </h1>
-
-            <SearchFilterBar
-              search={search}
-              onSearchChange={(value) => {
-                setSearch(value);
-                setCurrentPage(1);
-              }}
-              placeholder="Buscar concepto"
-              groups={conceptFilterGroups}
-            />
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold text-purple-900">
+            Gestión de Conceptos
+          </h1>
 
           <button
             onClick={handleOpenCreateModal}
@@ -232,6 +220,18 @@ export default function ConceptsPage() {
             <PlusIcon className="h-6 w-6" strokeWidth={2} />
             Crear
           </button>
+        </div>
+
+        <div className="mb-6 flex">
+          <SearchFilterBar
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setCurrentPage(1);
+            }}
+            placeholder="Buscar concepto"
+            groups={conceptFilterGroups}
+          />
         </div>
 
         {error && <p className="mt-4 text-red-500">{error}</p>}

@@ -1,6 +1,9 @@
-import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import type { IReportTemplate, QualitativeValuation } from "../types";
 import { QUARTZ_LOGO } from "@/constants/assets";
+import spaceAgeFontUrl from "@/assets/fonts/SpaceAge.woff2";
+
+Font.register({ family: "SpaceAge", src: spaceAgeFontUrl });
 
 const VALUATION_COLORS: Record<QualitativeValuation, string> = {
   Logrado: "#16a34a",
@@ -154,9 +157,11 @@ export default function ChecklistReportDocument({ report, shieldSrc, photoSrc }:
         </View>
 
         <View style={styles.brandFooter} fixed>
-          <Text style={styles.brandText}>Powered by</Text>
-          <Image src={QUARTZ_LOGO} style={styles.brandLogo} />
-          <Text style={styles.brandName}>Quartz</Text>
+          <Text style={styles.brandPoweredBy}>Powered by</Text>
+          <View style={styles.brandRow}>
+            <Image src={QUARTZ_LOGO} style={styles.brandLogo} />
+            <Text style={styles.brandName}>QUARTZ</Text>
+          </View>
         </View>
 
         <Text
@@ -375,26 +380,30 @@ const styles = StyleSheet.create({
   },
   brandFooter: {
     position: "absolute",
-    bottom: 18,
+    bottom: 14,
     left: 40,
+    alignItems: "flex-start",
+  },
+  brandPoweredBy: {
+    fontSize: 6,
+    color: "#9ca3af",
+    marginBottom: 2,
+  },
+  brandRow: {
     flexDirection: "row",
     alignItems: "center",
   },
-  brandText: {
-    fontSize: 6,
-    color: "#9ca3af",
-    marginRight: 4,
-  },
   brandLogo: {
-    height: 10,
-    width: 10,
+    height: 12,
+    width: 12,
     objectFit: "contain",
     marginRight: 4,
   },
   brandName: {
-    fontSize: 7,
-    fontFamily: "Helvetica-Bold",
-    color: "#9ca3af",
+    fontSize: 10,
+    fontFamily: "SpaceAge",
+    color: "#581c87",
+    letterSpacing: 0.5,
   },
   pageNumber: {
     position: "absolute",

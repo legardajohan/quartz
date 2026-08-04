@@ -9,7 +9,10 @@ import { Institution } from '../institution/institution.model';
 import { Period } from '../period/period.model';
 import { findOneScoped } from '../../repositories/base.repository';
 import AppError from '../../utils/AppError';
+import { getImage, keyFromPublicUrl } from '../../services/r2.service';
 import { IReportTemplate } from './report.types';
+
+export type ChecklistReportImageKind = 'shield' | 'photo';
 
 export async function getChecklistReport(
   valuationId: string,
@@ -110,4 +113,27 @@ export async function getChecklistReport(
     },
     generatedAt: new Date().toISOString(),
   };
+}
+
+export async function getChecklistReportImage(
+  valuationId: string,
+  institutionId: string,
+  requestorRole: UserRole,
+  requestorSchoolId: string | undefined,
+  kind: ChecklistReportImageKind
+): Promise<{ buffer: Buffer; contentType: string }> {
+  const report = await getChecklistReport(valuationId, institutionId, requestorRole, requestorSchoolId);
+  const url = kind === 'shield' ? report.institution.shield : report.student.avatarUrl;
+
+  const key = url ? keyFromPublicUrl(url) : null;
+  if (!key) {
+    throw new AppError('Imagen no disponible.', 404);
+  }
+
+  const image = await getImage(key);
+  if (!image) {
+    throw new AppError('Imagen no disponible.', 404);
+  }
+
+  return image;
 }

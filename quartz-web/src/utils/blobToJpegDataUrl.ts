@@ -1,22 +1,20 @@
 const DEFAULT_MAX_SIZE = 400;
 const JPEG_QUALITY = 0.92;
 
-function loadImage(url: string): Promise<HTMLImageElement> {
+function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("No se pudo cargar la imagen."));
-    image.src = url;
+    image.onerror = () => reject(new Error("No se pudo procesar la imagen."));
+    image.src = src;
   });
 }
 
-export async function remoteImageToJpegDataUrl(
-  url: string,
-  maxSize: number = DEFAULT_MAX_SIZE
-): Promise<string | null> {
+export async function blobToJpegDataUrl(blob: Blob, maxSize: number = DEFAULT_MAX_SIZE): Promise<string | null> {
+  const objectUrl = URL.createObjectURL(blob);
+
   try {
-    const image = await loadImage(url);
+    const image = await loadImage(objectUrl);
 
     const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
     const width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -35,5 +33,7 @@ export async function remoteImageToJpegDataUrl(
     return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
   } catch {
     return null;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
   }
 }

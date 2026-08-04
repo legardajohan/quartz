@@ -8,13 +8,12 @@ export const useReportStore = create<ReportState>((set) => ({
   users: [],
   isLoading: false,
   error: null,
-  currentPage: 1,
   currentReport: null,
   isReportLoading: false,
   reportError: null,
 
   fetchUsers: async (query: GetUsersQuery) => {
-    set({ isLoading: true, error: null, currentPage: 1 });
+    set({ isLoading: true, error: null });
     try {
       const data = await apiGet<UserDto[]>('/users', { params: query });
       set({ users: data, isLoading: false });
@@ -34,11 +33,4 @@ export const useReportStore = create<ReportState>((set) => ({
   },
 
   clearReport: () => set({ currentReport: null, reportError: null }),
-
-  nextPage: () => set((state) => {
-    const totalPages = Math.ceil(state.users.length / ITEMS_PER_PAGE);
-    return state.currentPage < totalPages ? { currentPage: state.currentPage + 1 } : {};
-  }),
-
-  prevPage: () => set((state) => (state.currentPage > 1 ? { currentPage: state.currentPage - 1 } : {})),
 }));

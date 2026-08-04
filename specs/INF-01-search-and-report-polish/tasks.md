@@ -51,6 +51,18 @@
 ## Frontend — consistencia de carga
 - [x] `ChecklistsPage.tsx` — `<p>Cargando plantillas…</p>` → `<Loading message="Cargando plantillas…" />`.
 
+## Ajustes post-implementación (mismo spec, ronda 2)
+- [x] `SearchFilterBar.tsx` — `className` default agrega `flex-1 min-w-0` para no depender del ancho de `<h1>` vecinos.
+- [x] `LearningsPage.tsx` / `ConceptsPage.tsx` / `StudentValuationsPage.tsx` / `ReportsPage.tsx` — el buscador sale de la columna del título a su propio bloque de ancho completo.
+- [x] `StudentValuationsPage.tsx` — buscador + filtros Grado/Estado/Sede, paginación local, quita el wrapper `bg-white`.
+- [x] `ReportsPage.tsx` — buscador + filtros Grado/Sede, paginación local.
+- [x] `student-valuation/types/domain.ts` — `getValuationState`, `VALUATION_STATE_ORDER`, `VALUATION_STATE_LABELS` (fuente única, consumida por `ValuationStatusBadge.tsx` y `StudentValuationTable.tsx`).
+- [x] `useStudentValuationStore.ts` / `useReportStore.ts` — quitan `currentPage`/`nextPage`/`prevPage` (ahora viven en la página).
+- [x] `r2.service.ts` — `getImage(key)`.
+- [x] `report.service.ts` / `report.controller.ts` / `report.routes.ts` / `report.validation.ts` — `GET /checklist/:valuationId/image/:kind`, mismo middleware chain y autorización que `getChecklistReport`.
+- [x] `usePdfImage.ts` reescrito sobre el nuevo endpoint (`apiGet` + blob) en vez de `<img crossOrigin>` a R2; `remoteImageToJpegDataUrl.ts` → `blobToJpegDataUrl.ts`.
+- [x] `ChecklistReportDocument.tsx` — pie de marca en dos líneas, tipografía `SpaceAge` registrada vía `Font.register`, color de marca `#581c87` en vez de gris.
+
 ## Verificación final
 - [x] `cd quartz-api && npx tsc --noEmit` en verde.
 - [x] `cd quartz-web && npm run build && npm run lint` en verde.

@@ -21,8 +21,8 @@ export default function ChecklistReportModal({
   onClose,
 }: ChecklistReportModalProps) {
   const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
-  const shieldSrc = usePdfImage(currentReport?.institution.shield);
-  const photoSrc = usePdfImage(currentReport?.student.avatarUrl);
+  const shieldSrc = usePdfImage(valuationId ?? undefined, "shield", !!currentReport?.institution.shield);
+  const photoSrc = usePdfImage(valuationId ?? undefined, "photo", !!currentReport?.student.avatarUrl);
 
   useEffect(() => {
     if (open && valuationId) {

@@ -15,10 +15,9 @@ export const useStudentValuationStore = create<StudentValuationState>((set, get)
   currentValuation: null,
   isLoading: false,
   error: null,
-  currentPage: 1,
 
   fetchUsers: async (query: GetUsersQuery) => {
-    set({ isLoading: true, error: null, currentPage: 1 });
+    set({ isLoading: true, error: null });
 
     const finalQuery = { ...query };
 
@@ -78,24 +77,5 @@ export const useStudentValuationStore = create<StudentValuationState>((set, get)
       set({ error: errorMessage });
       throw new Error(errorMessage);
     }
-  },
-
-  nextPage: () => {
-    set((state) => {
-      const totalPages = Math.ceil(state.users.length / ITEMS_PER_PAGE);
-      if (state.currentPage < totalPages) {
-        return { currentPage: state.currentPage + 1 };
-      }
-      return {};
-    });
-  },
-
-  prevPage: () => {
-    set((state) => {
-      if (state.currentPage > 1) {
-        return { currentPage: state.currentPage - 1 };
-      }
-      return {};
-    });
   },
 }));

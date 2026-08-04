@@ -1,27 +1,37 @@
 import { useEffect, useState } from "react";
-import { remoteImageToJpegDataUrl } from "@/utils/remoteImageToJpegDataUrl";
+import { apiGet } from "@/api/apiClient";
+import { blobToJpegDataUrl } from "@/utils/blobToJpegDataUrl";
 
-export function usePdfImage(url?: string): string | null {
+type ReportImageKind = "shield" | "photo";
+
+export function usePdfImage(
+  valuationId: string | undefined,
+  kind: ReportImageKind,
+  hasSource: boolean
+): string | null {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setDataUrl(null);
 
-    if (!url) {
+    if (!valuationId || !hasSource) {
       return;
     }
 
-    remoteImageToJpegDataUrl(url).then((result) => {
-      if (!cancelled) {
-        setDataUrl(result);
-      }
-    });
+    apiGet<Blob>(`/reports/checklist/${valuationId}/image/${kind}`, { responseType: "blob" })
+      .then((blob) => blobToJpegDataUrl(blob))
+      .then((result) => {
+        if (!cancelled) setDataUrl(result);
+      })
+      .catch(() => {
+        if (!cancelled) setDataUrl(null);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [url]);
+  }, [valuationId, kind, hasSource]);
 
   return dataUrl;
 }

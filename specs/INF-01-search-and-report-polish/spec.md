@@ -21,6 +21,11 @@ Unificar el buscador con filtros en un componente transversal, hacer que la UI n
 - `avatarUrl` del estudiante expuesto en el payload del informe (`quartz-api`).
 - Avatar por defecto unificado en `/avatar-default.svg` en `/evaluacion` (tabla y detalle) e `/informes`, en lugar de la foto de plantilla `assets/images/default-user.jpg`.
 - Estado de carga de `/academico/lista-chequeo` con el componente `Loading` (hoy es un `<p>` suelto).
+- Ancho consistente de `SearchFilterBar` entre páginas (el ancho quedaba acoplado al largo del `<h1>` vecino).
+- `SearchFilterBar` en `/evaluacion` (buscar por nombres/apellidos/identificación; filtrar por Grado, Estado, Sede) y `/informes` (buscar por nombres/apellidos/identificación; filtrar por Grado, Sede).
+- `/evaluacion` sin el contenedor `bg-white` que envolvía toda la página (alineado con `/informes`).
+- Escudo y foto del PDF servidos por un proxy autenticado del backend (`GET /api/reports/checklist/:valuationId/image/:kind`) en vez de lectura directa del navegador a R2 vía `canvas` (bloqueada por falta de CORS en el bucket).
+- Pie de marca del PDF en dos líneas: `Powered by` pequeño arriba; logo + `QUARTZ` abajo con la tipografía `SpaceAge` y color de marca (no gris).
 
 **Fuera:**
 - Búsqueda en servidor / paginación en servidor: el filtrado sigue siendo en cliente sobre la lista ya cargada.
@@ -41,6 +46,9 @@ Unificar el buscador con filtros en un componente transversal, hacer que la UI n
 - [x] En `/academico/conceptos`, cuando el usuario escribe un texto, el sistema deja solo los conceptos cuya `description` lo contiene (sin distinguir mayúsculas ni acentos).
 - [x] En `/gestion/usuarios`, el comportamiento de búsqueda y filtros (nombre completo, identificación, Sede, Grado) es idéntico al actual tras el reemplazo de `UsersToolbar`.
 - [x] En `/academico/aprendizajes` y `/academico/conceptos`, el filtro por periodo sigue inicializándose en el periodo activo.
+- [x] El ancho renderizado de `SearchFilterBar` es el mismo en `/academico/aprendizajes`, `/academico/conceptos`, `/gestion/usuarios`, `/evaluacion` e `/informes`, independiente del texto del título de cada página.
+- [x] En `/evaluacion`, cuando el usuario escribe un texto, el sistema deja solo los estudiantes cuyo nombre completo o número de identificación lo contienen; los filtros Grado, Estado y Sede se combinan con la búsqueda y entre sí.
+- [x] En `/informes`, cuando el usuario escribe un texto, el sistema deja solo los estudiantes cuyo nombre completo o número de identificación lo contienen; los filtros Grado y Sede se combinan con la búsqueda y entre sí.
 
 ### Nomenclatura del eje de valoración
 - [x] Si todos los `Subject` del inquilino comparten el mismo `type`, el sistema usa ese término (singular en labels de formulario y filtro, plural en encabezados y textos de grupo).
@@ -58,6 +66,9 @@ Unificar el buscador con filtros en un componente transversal, hacer que la UI n
 - [x] Si el encabezado de un bloque no tiene espacio para al menos una fila debajo, el sistema lo mueve completo a la página siguiente (sin encabezados huérfanos).
 - [x] Cuando el bloque de Observaciones excede el espacio restante, el sistema lo parte entre páginas en lugar de saltarlo entero.
 - [x] Cuando el backend responde el informe, el payload incluye `student.avatarUrl` cuando el estudiante tiene foto.
+- [x] Cuando el frontend pide `GET /api/reports/checklist/:valuationId/image/:kind`, el sistema responde con los bytes de la imagen y el `Content-Type` real; si el informe no tiene esa imagen o el objeto no existe en R2, responde `404`.
+- [x] Si un `Docente` pide la imagen de un informe fuera de su alcance (mismo criterio que `getChecklistReport`), el sistema responde `403`.
+- [x] Cuando el PDF muestra la marca Quartz, la línea `Powered by` es pequeña y el nombre `QUARTZ` usa la tipografía `SpaceAge` en el color de marca del documento (no gris).
 
 ### Avatares en la app
 - [x] Cuando `/evaluacion` lista estudiantes, el sistema muestra `avatarUrl` si existe y `/avatar-default.svg` si no; nunca la foto de plantilla `default-user.jpg`.
@@ -73,10 +84,9 @@ Unificar el buscador con filtros en un componente transversal, hacer que la UI n
 ## Dependencias
 - `ACAD-01` (campo `type` en `Subject`, expuesto en `sessionData.subjects`) — implementado.
 - `ACAD-03` (`shieldUrl` en `Institution`, `avatarUrl` en `User`) — implementado.
-- Bucket R2 con CORS que permita el origen web (necesario para leer las imágenes en `canvas`). Ver `plan.md` § Notas.
-- Activos ya presentes: `quartz-web/public/quartz-logo.png`, `quartz-web/public/avatar-default.svg`.
+- Activos ya presentes: `quartz-web/public/quartz-logo.png`, `quartz-web/public/avatar-default.svg`, `quartz-web/src/assets/fonts/SpaceAge.woff2`.
 
 ## Trazabilidad
-- Backend:  quartz-api/src/features/report/
+- Backend:  quartz-api/src/features/report/ · quartz-api/src/services/r2.service.ts
 - Frontend: quartz-web/src/components/common/SearchFilterBar.tsx · quartz-web/src/features/{users,learning,concept,student-valuation,report,subject}/ · quartz-web/src/types/domain.ts
 - Branch:   feat/INF-01-search-and-report-polish
