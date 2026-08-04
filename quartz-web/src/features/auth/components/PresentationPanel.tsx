@@ -34,9 +34,8 @@ export function PresentationPanel() {
         </h1>
         {/* Inspirational Text */}
         <div className="text-center max-w-sm">
-          <p className="text-white text-lg font-normal leading-tight">
-            <span className="block">El principio de todo inicia cuando</span>
-            <span className="block">permites lo que mereces</span>
+          <p className="text-white text-xl font-normal leading-tight">
+            <span className="block">Evaluando con sentido</span>
           </p>
         </div>
       </div>
