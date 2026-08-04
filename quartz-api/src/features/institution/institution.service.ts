@@ -90,6 +90,9 @@ export const uploadInstitutionShield = async (
   const timestamp = Date.now();
   const jpegBuffer = await webpToJpeg(file.buffer);
 
+  // Un escudo por institución, subido rara vez y reutilizado en cada informe: se
+  // precomputan ambas variantes una sola vez aquí, no en cada apertura de PDF.
+  // shieldUrl (.webp) → vistas de la app. shieldJpgUrl (.jpg) → proxy de imagen del informe.
   const [shieldUrl, shieldJpgUrl] = await Promise.all([
     uploadImage(`institutions/${institutionId}/shield-${timestamp}.webp`, file.buffer, 'image/webp'),
     uploadImage(`institutions/${institutionId}/shield-${timestamp}.jpg`, jpegBuffer, 'image/jpeg'),

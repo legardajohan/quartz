@@ -42,7 +42,6 @@ export interface IStudent {
         name: string;
     }
     grade: string;
-    avatarUrl?: string;
 }
 
 export interface IStudentValuation {

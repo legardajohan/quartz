@@ -1,12 +1,6 @@
-import { Document, Page, View, Text, Image, StyleSheet, Font } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { IReportTemplate, QualitativeValuation } from "../types";
 import { QUARTZ_LOGO } from "@/constants/assets";
-import spaceAgeFontUrl from "@/assets/fonts/SpaceAge.woff2";
-
-Font.register({
-  family: "SpaceAge",
-  fonts: [{ src: spaceAgeFontUrl, fontWeight: "normal" }],
-});
 
 const VALUATION_COLORS: Record<QualitativeValuation, string> = {
   Logrado: "#16a34a",
@@ -40,10 +34,9 @@ function formatPrintDate(iso: string): string {
 interface ChecklistReportDocumentProps {
   report: IReportTemplate;
   shieldSrc?: string | null;
-  photoSrc?: string | null;
 }
 
-export default function ChecklistReportDocument({ report, shieldSrc, photoSrc }: ChecklistReportDocumentProps) {
+export default function ChecklistReportDocument({ report, shieldSrc }: ChecklistReportDocumentProps) {
   const { institution, period, teacher, student, valuation, generatedAt } = report;
   const hasObservations = !!valuation.observations && valuation.observations.trim().length > 0;
 
@@ -68,11 +61,6 @@ export default function ChecklistReportDocument({ report, shieldSrc, photoSrc }:
               Lista de Chequeo · {period.name} {period.year}
             </Text>
           </View>
-          {photoSrc && (
-            <View style={styles.studentPhotoBox}>
-              <Image src={photoSrc} style={styles.studentPhotoImage} />
-            </View>
-          )}
         </View>
 
         <View style={styles.metaRow}>
@@ -206,20 +194,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     objectFit: "contain",
-  },
-  studentPhotoBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 4,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 16,
-    overflow: "hidden",
-  },
-  studentPhotoImage: {
-    width: 56,
-    height: 56,
-    objectFit: "cover",
   },
   institutionBlock: {
     flex: 1,
@@ -404,10 +378,9 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: 11,
-    fontFamily: "SpaceAge",
-    fontWeight: "normal",
+    fontFamily: "Helvetica-Bold",
     color: "#6b21a8",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   pageNumber: {
     position: "absolute",

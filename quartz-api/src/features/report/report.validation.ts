@@ -8,9 +8,8 @@ export const getChecklistReportSchema = z.object({
   }).strict(),
 });
 
-export const getChecklistReportImageSchema = z.object({
+export const getChecklistReportShieldSchema = z.object({
   params: z.object({
     valuationId: objectIdSchema,
-    kind: z.enum(['shield', 'photo']),
   }).strict(),
 });

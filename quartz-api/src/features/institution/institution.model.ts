@@ -11,8 +11,8 @@ export interface IInstitutionDocument extends Document {
   email: string;
   isActive: boolean;
   settings: IInstitutionSettings;
-  shieldUrl?: string;
-  shieldJpgUrl?: string;
+  shieldUrl?: string; // .webp — consumido por las vistas de la app (Configuración, PDF nunca lo lee directo)
+  shieldJpgUrl?: string; // .jpg — precomputado al subir el escudo; solo lo consume el proxy de imagen del informe PDF
 }
 
 const InstitutionSettingsSchema = new Schema<IInstitutionSettings>(
@@ -36,8 +36,8 @@ const InstitutionSchema = new Schema<IInstitutionDocument>(
     email: { type: String, required: true, unique: true },
     isActive: { type: Boolean, default: true },
     settings: { type: InstitutionSettingsSchema, default: () => ({}) },
-    shieldUrl: { type: String },
-    shieldJpgUrl: { type: String },
+    shieldUrl: { type: String }, // .webp — vistas de la app
+    shieldJpgUrl: { type: String }, // .jpg — proxy de imagen del informe PDF (@react-pdf/renderer no decodifica webp)
   },
   { timestamps: true } // Adds createdAt and updatedAt automatically
 );

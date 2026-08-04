@@ -74,13 +74,26 @@
 - [x] `usePdfImage.ts` — devuelve `{ src, isLoading }`.
 - [x] `ChecklistReportModal.tsx` — `isPdfReady` combina informe + ambas imágenes; `PDFViewer`/`PDFDownloadLink` solo montan cuando `isPdfReady`.
 
+## Ajustes post-implementación (ronda 4: revertir foto de estudiante, arreglar fuente QUARTZ)
+- [x] `ChecklistReportDocument.tsx` — quitar `Font.register`/import de `SpaceAge.woff2`; `brandName.fontFamily` → `Helvetica-Bold`, `color: '#6b21a8'`. Confirmado por el usuario: el problema era la fuente (glyphs invisibles en fontkit), no el color.
+- [x] `ChecklistReportDocument.tsx` — quitar `photoSrc`, el bloque `studentPhotoBox`/`studentPhotoImage` y sus estilos; la foto del estudiante no va en el PDF.
+- [x] `users.service.ts` (`uploadUserPhoto`) — revertir a solo `.webp`; quitar `webpToJpeg`, `avatarJpgUrl` del `$set` y de la limpieza de anteriores.
+- [x] `auth.model.ts` — quitar el campo `avatarJpgUrl` (interfaz + schema).
+- [x] `institution.model.ts` / `institution.service.ts` — sin cambio funcional; comentarios aclarando `shieldUrl` (vistas) vs `shieldJpgUrl` (proxy PDF).
+- [x] `report.service.ts` — `getChecklistReportImage(..., kind)` → `getChecklistReportShield(...)` sin `kind`; ya no consulta `avatarJpgUrl`; `getChecklistReport` deja de mapear `avatarUrl` en `student`.
+- [x] `report.types.ts` / `report/types/api.ts` — quitar `avatarUrl?` de `IStudent`/`IReportStudent`.
+- [x] `report.controller.ts` / `report.routes.ts` / `report.validation.ts` — renombrados a `getChecklistReportShieldController`/`getChecklistReportShieldSchema`; ruta `GET /checklist/:valuationId/shield`.
+- [x] Frontend — `usePdfImage.ts` → `usePdfShieldImage.ts` (renombrado de archivo), sin parámetro `kind`.
+- [x] `ChecklistReportModal.tsx` — quitar `photo`; `isPdfReady` depende solo de `shield.isLoading`.
+- [x] Grep final: sin rastro de `avatarJpgUrl`, `ChecklistReportImageKind`, `photoSrc`, `studentPhotoBox`, ni la ruta vieja `/image/:kind`.
+
 ## Verificación final
 - [x] `cd quartz-api && npx tsc --noEmit` en verde.
 - [x] `cd quartz-web && npm run build && npm run lint` en verde.
 - [x] Servidor y front arrancan sin errores de compilación ni runtime.
 - [x] Manual: `/gestion/usuarios`, `/academico/aprendizajes` y `/academico/conceptos` buscan y filtran; el badge cuenta y limpia; la paginación vuelve a 1.
 - [x] Manual: informe de ≥3 páginas — cada hoja aprovecha el espacio, el encabezado de tabla se repite, no hay encabezados huérfanos, el pie `Powered by Quartz` aparece en todas.
-- [x] Manual: informe con/sin escudo y con/sin foto de estudiante.
+- [x] Manual: informe con/sin escudo (ronda 4: ya no aplica foto de estudiante, se quitó del PDF).
 - [x] Manual: `/evaluacion` muestra `avatar-default.svg` en estudiantes sin foto.
 - [x] Repaso de aislamiento: ninguna query nueva sin `institutionId` del token.
 

@@ -5,7 +5,7 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import ChecklistReportDocument from "./ChecklistReportDocument";
 import { Loading } from "../../../components/ui/Loading";
 import { useReportStore } from "../useReportStore";
-import { usePdfImage } from "../usePdfImage";
+import { usePdfShieldImage } from "../usePdfShieldImage";
 
 interface ChecklistReportModalProps {
   open: boolean;
@@ -21,10 +21,9 @@ export default function ChecklistReportModal({
   onClose,
 }: ChecklistReportModalProps) {
   const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
-  const shield = usePdfImage(valuationId ?? undefined, "shield", !!currentReport?.institution.shield);
-  const photo = usePdfImage(valuationId ?? undefined, "photo", !!currentReport?.student.avatarUrl);
+  const shield = usePdfShieldImage(valuationId ?? undefined, !!currentReport?.institution.shield);
 
-  const isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading && !photo.isLoading;
+  const isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading;
 
   useEffect(() => {
     if (open && valuationId) {
@@ -48,7 +47,7 @@ export default function ChecklistReportModal({
           {isPdfReady && currentReport && (
             <PDFDownloadLink
               document={
-                <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} photoSrc={photo.src} />
+                <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} />
               }
               fileName={fileName}
             >
@@ -80,7 +79,7 @@ export default function ChecklistReportModal({
         )}
         {isPdfReady && currentReport && (
           <PDFViewer width="100%" height="100%" showToolbar={false} style={{ border: "none" }}>
-            <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} photoSrc={photo.src} />
+            <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} />
           </PDFViewer>
         )}
       </DialogBody>

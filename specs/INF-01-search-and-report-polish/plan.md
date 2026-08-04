@@ -4,14 +4,14 @@
 ### quartz-api
 | Acción | Ruta |
 |---|---|
-| tocar | `src/features/report/report.types.ts` — `IStudent.avatarUrl?`, limpiar comentario obsoleto de `IInstitution.shield` |
-| tocar | `src/features/report/report.service.ts` — mapear `studentDoc.avatarUrl` en el bloque `student` + `getChecklistReportImage(...)` (post-implementación, ver § Imágenes del PDF) |
-| tocar | `src/features/report/report.controller.ts` · `report.routes.ts` · `report.validation.ts` — `GET /checklist/:valuationId/image/:kind` (post-implementación) |
-| tocar | `src/services/r2.service.ts` — `getImage(key)` (post-implementación) |
-| crear | `src/utils/webpToJpeg.ts` — conversión con `sharp` (post-implementación, ronda 2) |
-| tocar | `src/features/institution/institution.model.ts` · `institution.service.ts` — `shieldJpgUrl` (post-implementación, ronda 2) |
-| tocar | `src/features/auth/auth.model.ts` · `src/features/users/users.service.ts` — `avatarJpgUrl` (post-implementación, ronda 2) |
-| tocar | `package.json` — dependencia `sharp` (post-implementación, ronda 2) |
+| tocar | `src/features/report/report.types.ts` — limpiar comentario obsoleto de `IInstitution.shield`; `IStudent.avatarUrl?` agregado en ronda 1, quitado en ronda 4 |
+| tocar | `src/features/report/report.service.ts` — `getChecklistReportShield(...)` (`getChecklistReportImage` de ronda 1, sin `kind` desde ronda 4, ver § Imágenes del PDF) |
+| tocar | `src/features/report/report.controller.ts` · `report.routes.ts` · `report.validation.ts` — `GET /checklist/:valuationId/shield` (`/image/:kind` hasta ronda 4) |
+| tocar | `src/services/r2.service.ts` — `getImage(key)` |
+| crear | `src/utils/webpToJpeg.ts` — conversión con `sharp` (ronda 2) |
+| tocar | `src/features/institution/institution.model.ts` · `institution.service.ts` — `shieldJpgUrl`, con comentarios de propósito (ronda 2, aclarado en ronda 4) |
+| tocar | `src/features/auth/auth.model.ts` · `src/features/users/users.service.ts` — `avatarJpgUrl` agregado en ronda 2, **revertido en ronda 4** (solo `.webp` para fotos de usuario) |
+| tocar | `package.json` — dependencia `sharp` (ronda 2) |
 
 ### quartz-web
 | Acción | Ruta |
@@ -20,7 +20,7 @@
 | crear | `src/constants/assets.ts` |
 | crear | `src/features/subject/useSubjectAxisLabel.ts` |
 | crear | `src/utils/blobToDataUrl.ts` (ronda 2, reemplaza `blobToJpegDataUrl.ts`, que reemplazó `remoteImageToJpegDataUrl.ts`) |
-| crear | `src/features/report/usePdfImage.ts` |
+| crear | `src/features/report/usePdfShieldImage.ts` (`usePdfImage.ts` hasta ronda 4; renombrado al quedar exclusivo del escudo) |
 | borrar | `src/features/users/components/UsersToolbar.tsx` |
 | borrar | `src/features/learning/components/LearningsFilters.tsx` |
 | borrar | `src/features/concept/components/ConceptsFilters.tsx` |
@@ -154,19 +154,27 @@ export function usePdfImage(valuationId: string | undefined, kind: 'shield' | 'p
 // apiGet<Blob>(`/reports/checklist/${valuationId}/image/${kind}`, { responseType: 'blob' }) → blobToDataUrl
 // hasSource evita la petición cuando el informe no trae shield/avatarUrl. Cualquier fallo (404, red) ⇒ src: null, isLoading: false.
 ```
-- **`ChecklistReportModal` — un único gate de "listo".** `isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading && !photo.isLoading`. Mientras no es `true`, se muestra `<Loading>` (ni `PDFViewer` ni `PDFDownloadLink` se montan); solo cuando es `true` se renderiza el documento completo de una vez, con `shieldSrc`/`photoSrc` ya resueltos — sin remontaje intermedio, sin parpadeo.
+- **`ChecklistReportModal` — un único gate de "listo".** `isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading` (ronda 4: ya no depende de `photo`). Mientras no es `true`, se muestra `<Loading>` (ni `PDFViewer` ni `PDFDownloadLink` se montan); solo cuando es `true` se renderiza el documento completo de una vez, con `shieldSrc` ya resuelto — sin remontaje intermedio, sin parpadeo.
+
+**Revisión post-implementación (ronda 4 — revertido, solo escudo):** aplicar el mismo `.jpg` precomputado a las fotos de estudiante anulaba el ahorro de `.webp` (cientos de estudiantes, muchos sin informe jamás impreso, todos con dos archivos). Se revierte por completo lo específico de fotos de usuario:
+- `users.service.ts` (`uploadUserPhoto`) vuelve a subir solo `.webp` (sin `webpToJpeg`, sin `avatarJpgUrl`).
+- `auth.model.ts` (`IUser`): se quita el campo `avatarJpgUrl`.
+- El escudo de institución **sí** conserva las dos variantes (`institution.model.ts`/`institution.service.ts` sin cambio funcional, solo comentarios aclarando el propósito de `shieldUrl` vs `shieldJpgUrl`).
+- `report.service.ts`: `getChecklistReportImage(..., kind)` → `getChecklistReportShield(...)`, sin parámetro `kind` (solo escudo; ya no consulta `avatarJpgUrl`). `getChecklistReport` deja de mapear `avatarUrl` en el bloque `student`.
+- `report.types.ts` / `report/types/api.ts`: se quita `avatarUrl?: string` de `IStudent`/`IReportStudent` (sin otros consumidores).
+- `report.controller.ts`/`.routes.ts`/`.validation.ts`: ruta `GET /checklist/:valuationId/image/:kind` → `GET /checklist/:valuationId/shield` (mismo middleware chain).
+- Frontend: `usePdfImage(valuationId, kind, hasSource)` → `usePdfShieldImage(valuationId, hasSource)` (archivo renombrado `usePdfImage.ts` → `usePdfShieldImage.ts`); `ChecklistReportModal` deja de usar `photo`.
 
 ### `ChecklistReportDocument`
 ```ts
 interface ChecklistReportDocumentProps {
   report: IReportTemplate;
   shieldSrc?: string | null;
-  photoSrc?: string | null;
 }
 ```
-- Cabecera: `{shieldSrc && <Image src={shieldSrc} style={styles.shieldImage} />}` — sin `shieldSrc` no se renderiza `shieldBox`. Igual con `photoSrc` / `studentPhotoBox`. Se eliminan `shieldPlaceholderText` y los recuadros punteados.
-- `studentPhotoBox` pasa a 56×56 (las fotos son cuadradas 400×400); `objectFit: 'cover'`, `borderRadius: 4`.
-- Pie de marca fijo en todas las hojas (dos líneas, post-implementación):
+- Cabecera: `{shieldSrc && <Image src={shieldSrc} style={styles.shieldImage} />}` — sin `shieldSrc` no se renderiza `shieldBox`. Se eliminan `shieldPlaceholderText` y los recuadros punteados.
+- **Ronda 4:** se elimina por completo el recuadro de foto del estudiante (`photoSrc`, `studentPhotoBox`, `studentPhotoImage`) — no se incluye en el PDF (ver spec § Fuera).
+- Pie de marca fijo en todas las hojas (dos líneas):
 ```tsx
 <View style={styles.brandFooter} fixed>
   <Text style={styles.brandPoweredBy}>Powered by</Text>
@@ -176,7 +184,8 @@ interface ChecklistReportDocumentProps {
   </View>
 </View>
 ```
-  `brandFooter`: `position: 'absolute', bottom: 14, left: 40`. `brandPoweredBy`: `fontSize: 6`, gris `#9ca3af` — línea superior, pequeña. `brandName`: `fontSize: 10`, `fontFamily: 'SpaceAge'`, color `#581c87` (el mismo púrpura de marca del resto del documento, no gris — debe resaltar). Fuente registrada al inicio del archivo: `Font.register({ family: 'SpaceAge', src: spaceAgeFontUrl })`, con `import spaceAgeFontUrl from '@/assets/fonts/SpaceAge.woff2'` (Vite resuelve el asset a una URL; react-pdf/fontkit decodifica WOFF2 directamente, sin conversión). El `pageNumber` existente queda a la derecha, misma línea base.
+  `brandFooter`: `position: 'absolute', bottom: 14, left: 40`. `brandPoweredBy`: `fontSize: 6`, gris `#9ca3af` — línea superior, pequeña. `brandName`: `fontSize: 11`, color `#6b21a8` (púrpura de marca, el mismo del wordmark `QUARTZ` del navbar — debe resaltar, no gris/blanco).
+  **Ronda 3 → Ronda 4 (revertido):** se intentó `fontFamily: 'SpaceAge'` (con `Font.register`) para igualar el navbar; el texto no renderizaba ningún glyph visible en `@react-pdf/renderer`/fontkit pese a registrar la fuente sin error — incompatibilidad de `.woff2` con ese motor, confirmada por el usuario tras probar el cambio de color solo (no era el color). Se usa `fontFamily: 'Helvetica-Bold'` (la misma fuente ya probada en `institutionName`/`subjectHeader` de este documento) — sin `Font.register` ni import de `SpaceAge.woff2` en este archivo. El resto de la app (navbar, sidebar, login) sigue usando `SpaceAge` vía CSS sin cambios. El `pageNumber` existente queda a la derecha, misma línea base.
 - `styles.page`: `paddingBottom: 56` (el resto sigue en 40) para que el contenido nunca invada el pie fijo.
 
 ### Paginación del PDF (criterio 4)
@@ -188,16 +197,7 @@ interface ChecklistReportDocumentProps {
 - Bloque de firma: se mantiene al final del flujo, `wrap={false}` explícito para que no se parta la línea de firma.
 
 ### Backend — payload del informe
-`report.types.ts`:
-```ts
-export interface IStudent {
-  // …campos actuales
-  avatarUrl?: string;
-}
-```
-`report.service.ts` (bloque `student` del `return`): `avatarUrl: studentDoc.avatarUrl,`.
-Sin cambios en rutas, validación ni permisos: `getChecklistReport` ya resuelve el estudiante con `findOneScoped(User, institutionId, …)`.
-Espejo en `quartz-web/src/features/report/types/api.ts` → `IReportStudent.avatarUrl?: string`.
+**Superado por ronda 4.** Se había agregado `IStudent.avatarUrl?: string` (`report.types.ts`) y su espejo `IReportStudent.avatarUrl?: string` (`report/types/api.ts`) para que el PDF pintara la foto del estudiante. Al quitar esa foto del PDF (ver § Imágenes del PDF, ronda 4), el campo se elimina de ambos tipos y de `getChecklistReport` — sin otros consumidores.
 
 ### `/academico/lista-chequeo`
 `ChecklistsPage.tsx:157-158`: `<p className="text-gray-400 text-sm">Cargando plantillas…</p>` → `<Loading message="Cargando plantillas…" />` (`@/components/ui/Loading`), manteniendo el resto del ternario (vacío / grid).

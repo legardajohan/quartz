@@ -12,8 +12,6 @@ import AppError from '../../utils/AppError';
 import { getImage, keyFromPublicUrl } from '../../services/r2.service';
 import { IReportTemplate } from './report.types';
 
-export type ChecklistReportImageKind = 'shield' | 'photo';
-
 export async function getChecklistReport(
   valuationId: string,
   institutionId: string,
@@ -102,7 +100,6 @@ export async function getChecklistReport(
         name: studentSchoolDoc.name,
       },
       grade: studentDoc.gradesTaught?.[0] ?? '',
-      avatarUrl: studentDoc.avatarUrl,
     },
     valuation: {
       _id: valuation._id,
@@ -115,12 +112,11 @@ export async function getChecklistReport(
   };
 }
 
-export async function getChecklistReportImage(
+export async function getChecklistReportShield(
   valuationId: string,
   institutionId: string,
   requestorRole: UserRole,
-  requestorSchoolId: string | undefined,
-  kind: ChecklistReportImageKind
+  requestorSchoolId: string | undefined
 ): Promise<{ buffer: Buffer; contentType: string }> {
   const valuation = await getStudentValuationById(valuationId, institutionId);
 
@@ -131,7 +127,7 @@ export async function getChecklistReportImage(
   const studentDoc = await findOneScoped(User, institutionId, {
     _id: new Types.ObjectId(valuation.studentId),
   })
-    .select('schoolId avatarJpgUrl')
+    .select('schoolId')
     .lean();
 
   if (!studentDoc) {
@@ -142,15 +138,8 @@ export async function getChecklistReportImage(
     throw new AppError('No tiene permisos para ver el informe de este estudiante.', 403);
   }
 
-  let jpgUrl: string | undefined;
-  if (kind === 'shield') {
-    const institutionDoc = await Institution.findById(institutionId).select('shieldJpgUrl').lean();
-    jpgUrl = institutionDoc?.shieldJpgUrl;
-  } else {
-    jpgUrl = studentDoc.avatarJpgUrl;
-  }
-
-  const key = jpgUrl ? keyFromPublicUrl(jpgUrl) : null;
+  const institutionDoc = await Institution.findById(institutionId).select('shieldJpgUrl').lean();
+  const key = institutionDoc?.shieldJpgUrl ? keyFromPublicUrl(institutionDoc.shieldJpgUrl) : null;
   if (!key) {
     throw new AppError('Imagen no disponible.', 404);
   }
