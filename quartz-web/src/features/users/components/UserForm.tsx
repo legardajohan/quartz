@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input, Select, Option, Checkbox, Typography } from "@material-tailwind/react";
 import { ImageCropUploader } from "@/components/common/ImageCropUploader";
-import type { IdentificationType, GradeLevel } from "@/types/domain";
+import type { IdentificationType, GradeLevel, Shift } from "@/types/domain";
 import type { UserDto, UserSchool, WritableUserRole } from "../types";
 
 const IDENTIFICATION_TYPES: IdentificationType[] = ["CC", "TI", "RC"];
@@ -22,6 +22,7 @@ export interface UserFormData {
   gradesTaught: GradeLevel[];
   email: string;
   password: string;
+  shiftId: string;
 }
 
 const EMPTY_FORM: UserFormData = {
@@ -36,6 +37,7 @@ const EMPTY_FORM: UserFormData = {
   gradesTaught: [],
   email: "",
   password: "",
+  shiftId: "",
 };
 
 function formDataFromUser(user: UserDto): UserFormData {
@@ -51,6 +53,7 @@ function formDataFromUser(user: UserDto): UserFormData {
     gradesTaught: (user.gradesTaught ?? []) as GradeLevel[],
     email: user.email ?? "",
     password: "",
+    shiftId: user.shift?._id ?? "",
   };
 }
 
@@ -58,6 +61,8 @@ interface UserFormProps {
   role: WritableUserRole;
   initialData?: UserDto | null;
   schools: UserSchool[];
+  shifts: Shift[];
+  multipleShifts: boolean;
   avatarUrl?: string;
   onAvatarChange: (blob: Blob) => Promise<void>;
   isUploadingAvatar?: boolean;
@@ -68,6 +73,8 @@ export function UserForm({
   role,
   initialData,
   schools,
+  shifts,
+  multipleShifts,
   avatarUrl,
   onAvatarChange,
   isUploadingAvatar,
@@ -94,6 +101,7 @@ export function UserForm({
       formData.schoolId !== initial.schoolId ||
       formData.email !== initial.email ||
       formData.password !== "" ||
+      formData.shiftId !== initial.shiftId ||
       JSON.stringify(formData.gradesTaught) !== JSON.stringify(initial.gradesTaught);
 
     onFormChange(formData, isDirty);
@@ -233,36 +241,57 @@ export function UserForm({
           </Select>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          <Select
-            name="schoolId"
-            color="purple"
-            label="Sede"
-            value={formData.schoolId}
-            onChange={(val) => update("schoolId", val || "")}
-            key={initialData?._id ? `school-${initialData._id}` : schools.length}
-          >
-            {schools.map((school) => (
-              <Option key={school._id} value={school._id}>
-                {school.name}
-              </Option>
-            ))}
-          </Select>
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              name="schoolId"
+              color="purple"
+              label="Sede"
+              value={formData.schoolId}
+              onChange={(val) => update("schoolId", val || "")}
+              key={initialData?._id ? `school-${initialData._id}` : schools.length}
+            >
+              {schools.map((school) => (
+                <Option key={school._id} value={school._id}>
+                  {school.name}
+                </Option>
+              ))}
+            </Select>
 
-          <Select
-            color="purple"
-            label="Grado"
-            value={formData.gradesTaught[0] ?? ""}
-            onChange={(val) => update("gradesTaught", val ? [val as GradeLevel] : [])}
-            key={initialData?._id ? `grade-${initialData._id}` : "grade-new"}
-          >
-            {GRADE_LEVELS.map((grade) => (
-              <Option key={grade} value={grade}>
-                {grade}
-              </Option>
-            ))}
-          </Select>
-        </div>
+            <Select
+              color="purple"
+              label="Grado"
+              value={formData.gradesTaught[0] ?? ""}
+              onChange={(val) => update("gradesTaught", val ? [val as GradeLevel] : [])}
+              key={initialData?._id ? `grade-${initialData._id}` : "grade-new"}
+            >
+              {GRADE_LEVELS.map((grade) => (
+                <Option key={grade} value={grade}>
+                  {grade}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {multipleShifts && shifts.length > 0 && (
+            <Select
+              name="shiftId"
+              color="purple"
+              label="Jornada (opcional)"
+              value={formData.shiftId}
+              onChange={(val) => update("shiftId", val || "")}
+              menuProps={{ placement: "bottom" }}
+              key={initialData?._id ? `shift-${initialData._id}` : shifts.length}
+            >
+              <Option value="">Sin jornada</Option>
+              {shifts.map((shift) => (
+                <Option key={shift._id} value={shift._id}>
+                  {shift.name}
+                </Option>
+              ))}
+            </Select>
+          )}
+        </>
       )}
 
       <Input

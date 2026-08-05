@@ -50,6 +50,11 @@ export interface Period {
   isActive: boolean;
 }
 
+export interface Shift {
+  _id: string;
+  name: string;
+}
+
 export interface ChecklistTemplates {
     _id: string;
     periodId: string;
@@ -87,4 +92,6 @@ export interface ISessionData {
   subjects: Subject[];
   checklistTemplates: ChecklistTemplates[];
   enabledReports: ReportKind[];
+  multipleShifts: boolean;
+  shifts: Shift[];
 }

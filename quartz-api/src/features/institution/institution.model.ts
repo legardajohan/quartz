@@ -1,5 +1,10 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 import { ReportKind, IInstitutionSettings } from './institution.types';
+
+export interface IShiftDocument extends Document {
+  _id: Types.ObjectId;
+  name: string;
+}
 
 // Interface for the EducationalInstitution document
 export interface IInstitutionDocument extends Document {
@@ -15,6 +20,12 @@ export interface IInstitutionDocument extends Document {
   shieldJpgUrl?: string; // .jpg — precomputado al subir el escudo; solo lo consume el proxy de imagen del informe PDF
 }
 
+// Con `_id` propio: es la fuente del identificador único que referencia User.shiftId
+// (no poblable — la jornada vive embebida en el documento del inquilino, no en su propia colección).
+const ShiftSchema = new Schema<IShiftDocument>({
+  name: { type: String, required: true, trim: true },
+});
+
 const InstitutionSettingsSchema = new Schema<IInstitutionSettings>(
   {
     enabledReports: {
@@ -22,6 +33,8 @@ const InstitutionSettingsSchema = new Schema<IInstitutionSettings>(
       enum: Object.values(ReportKind),
       default: [ReportKind.CHECKLIST, ReportKind.COMMUNICATIVE_LETTER],
     },
+    multipleShifts: { type: Boolean, default: false },
+    shifts: { type: [ShiftSchema], default: [] },
   },
   { _id: false }
 );

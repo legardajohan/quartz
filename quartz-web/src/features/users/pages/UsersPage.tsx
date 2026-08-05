@@ -33,6 +33,8 @@ const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 export default function UsersPage() {
   const { sessionData } = useAuthStore();
   const canManage = sessionData?.user.role === "Jefe de Área";
+  const multipleShifts = sessionData?.multipleShifts ?? false;
+  const shifts = sessionData?.shifts ?? [];
 
   const [activeRole, setActiveRole] = useState<WritableUserRole>("Estudiante");
   const { data: users = [], isLoading, isError, error } = useUsersQuery({ role: activeRole });
@@ -209,6 +211,7 @@ export default function UsersPage() {
       };
       if (formData.email.trim()) payload.email = formData.email.trim();
       if (formData.password.trim()) payload.password = formData.password.trim();
+      if (formRole === "Estudiante") payload.shiftId = formData.shiftId || null;
 
       const promise = updateMutation.mutateAsync({ userId: selectedUser._id, data: payload });
       toast.promise(promise, {
@@ -233,7 +236,7 @@ export default function UsersPage() {
       gradesTaught: formData.gradesTaught,
       ...(activeRole === "Docente"
         ? { email: formData.email.trim(), password: formData.password.trim() }
-        : {}),
+        : { shiftId: formData.shiftId || undefined }),
     };
 
     const promise = createMutation.mutateAsync(payload).then(async (created) => {
@@ -315,6 +318,7 @@ export default function UsersPage() {
           onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
           isLoading={isLoading}
           canManage={canManage}
+          multipleShifts={multipleShifts}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
@@ -343,6 +347,8 @@ export default function UsersPage() {
           role={formRole}
           initialData={selectedUser}
           schools={schools}
+          shifts={shifts}
+          multipleShifts={multipleShifts}
           avatarUrl={selectedUser ? selectedUser.avatarUrl : pendingAvatarPreview ?? undefined}
           onAvatarChange={handleAvatarChange}
           isUploadingAvatar={uploadPhotoMutation.isPending}

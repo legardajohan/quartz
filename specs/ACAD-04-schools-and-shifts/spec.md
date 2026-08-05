@@ -1,7 +1,7 @@
 ---
 id: ACAD-04-schools-and-shifts
 feature: schools-and-shifts
-status: draft
+status: implemented
 created: 2026-08-04
 ---
 
@@ -30,34 +30,34 @@ Dar al `Jefe de Área` control sobre la estructura de su institución: CRUD de s
 ## Criterios de aceptación (EARS)
 
 ### Sedes
-- [ ] Cuando el Jefe de Área envía `POST /api/schools` con un `name`, el sistema crea la sede con `schoolNumber = max(schoolNumber de la institución) + 1` y la devuelve con `201`.
-- [ ] Si el `name` enviado ya existe en la institución (comparación sin distinguir mayúsculas ni espacios sobrantes), el sistema responde `409` y no crea nada.
-- [ ] Cuando el Jefe de Área renombra una sede vía `PATCH /api/schools/:schoolId`, el sistema conserva su `schoolNumber`.
-- [ ] Si se intenta eliminar una sede con usuarios asociados, el sistema responde `409` indicando cuántos usuarios la referencian y no elimina nada.
-- [ ] Si se intenta eliminar la última sede de la institución, el sistema responde `409` (`User.schoolId` es requerido: sin sedes no se puede dar de alta a nadie).
-- [ ] Si un `Docente` invoca `POST`/`PATCH`/`DELETE` de `/api/schools`, el sistema responde `403`. `GET /api/schools` sigue abierto a todo usuario autenticado.
+- [x] Cuando el Jefe de Área envía `POST /api/schools` con un `name`, el sistema crea la sede con `schoolNumber = max(schoolNumber de la institución) + 1` y la devuelve con `201`.
+- [x] Si el `name` enviado ya existe en la institución (comparación sin distinguir mayúsculas ni espacios sobrantes), el sistema responde `409` y no crea nada.
+- [x] Cuando el Jefe de Área renombra una sede vía `PATCH /api/schools/:schoolId`, el sistema conserva su `schoolNumber`.
+- [x] Si se intenta eliminar una sede con usuarios asociados, el sistema responde `409` indicando cuántos usuarios la referencian y no elimina nada.
+- [x] Si se intenta eliminar la última sede de la institución, el sistema responde `409` (`User.schoolId` es requerido: sin sedes no se puede dar de alta a nadie).
+- [x] Si un `Docente` invoca `POST`/`PATCH`/`DELETE` de `/api/schools`, el sistema responde `403`. `GET /api/schools` sigue abierto a todo usuario autenticado.
 
 ### Jornadas
-- [ ] Cuando el Jefe de Área guarda `settings.shifts` con entradas sin `_id`, el sistema les genera un `_id` propio y conserva el `_id` de las que ya lo traían.
-- [ ] Si dos jornadas del payload tienen el mismo nombre (sin distinguir mayúsculas ni espacios sobrantes), el sistema responde `422` y no guarda nada.
-- [ ] Si `multipleShifts` queda en `true` con la lista de jornadas vacía, el sistema responde `422`.
-- [ ] Si el payload omite una jornada que tiene estudiantes asignados, el sistema responde `409` indicando el nombre de la jornada y cuántos estudiantes la referencian.
-- [ ] Si `multipleShifts` pasa a `false` mientras algún usuario conserva `shiftId`, el sistema responde `409`.
-- [ ] Cuando `multipleShifts` pasa a `false` sin asignaciones vivas, el sistema conserva `settings.shifts` tal cual (los nombres no se pierden al reactivar el switch).
-- [ ] Cuando un usuario inicia sesión, `sessionData` incluye `multipleShifts` y `shifts` de su institución, sea cual sea su rol.
+- [x] Cuando el Jefe de Área guarda `settings.shifts` con entradas sin `_id`, el sistema les genera un `_id` propio y conserva el `_id` de las que ya lo traían.
+- [x] Si dos jornadas del payload tienen el mismo nombre (sin distinguir mayúsculas ni espacios sobrantes), el sistema responde `422` y no guarda nada.
+- [x] Si `multipleShifts` queda en `true` con la lista de jornadas vacía, el sistema responde `422`.
+- [x] Si el payload omite una jornada que tiene estudiantes asignados, el sistema responde `409` indicando el nombre de la jornada y cuántos estudiantes la referencian.
+- [x] Si `multipleShifts` pasa a `false` mientras algún usuario conserva `shiftId`, el sistema responde `409`.
+- [x] Cuando `multipleShifts` pasa a `false` sin asignaciones vivas, el sistema conserva `settings.shifts` tal cual (los nombres no se pierden al reactivar el switch).
+- [x] Cuando un usuario inicia sesión, `sessionData` incluye `multipleShifts` y `shifts` de su institución, sea cual sea su rol.
 
 ### Asignación al estudiante
-- [ ] Si `multipleShifts` es `false` o `shifts` está vacío, el modal de usuario no renderiza el campo Jornada y el formulario se comporta exactamente como hoy.
-- [ ] Cuando `multipleShifts` es `true` con ≥1 jornada y el rol del formulario es `Estudiante`, el modal renderiza un `Select` **Jornada (opcional)** con las jornadas del inquilino más la opción «Sin jornada».
-- [ ] Cuando se crea o actualiza un estudiante sin elegir jornada, el sistema persiste el usuario sin `shiftId` y ninguna validación lo impide.
-- [ ] Cuando se edita un estudiante y se elige «Sin jornada», el sistema elimina `shiftId` del documento.
-- [ ] Si `shiftId` no corresponde a ninguna jornada de `settings.shifts` de la institución, el sistema responde `422`.
-- [ ] Si el rol del payload es `Docente`, el sistema rechaza `shiftId` con `400` (esquema `.strict()`).
-- [ ] Cuando `GET /api/users` devuelve estudiantes, cada uno incluye `shift: { _id, name } | null` resuelto desde `Institution.settings.shifts`.
+- [x] Si `multipleShifts` es `false` o `shifts` está vacío, el modal de usuario no renderiza el campo Jornada y el formulario se comporta exactamente como hoy.
+- [x] Cuando `multipleShifts` es `true` con ≥1 jornada y el rol del formulario es `Estudiante`, el modal renderiza un `Select` **Jornada (opcional)** con las jornadas del inquilino más la opción «Sin jornada».
+- [x] Cuando se crea o actualiza un estudiante sin elegir jornada, el sistema persiste el usuario sin `shiftId` y ninguna validación lo impide.
+- [x] Cuando se edita un estudiante y se elige «Sin jornada», el sistema elimina `shiftId` del documento.
+- [x] Si `shiftId` no corresponde a ninguna jornada de `settings.shifts` de la institución, el sistema responde `422`.
+- [x] Si el rol del payload es `Docente`, el sistema rechaza `shiftId` con `400` (esquema `.strict()`).
+- [x] Cuando `GET /api/users` devuelve estudiantes, cada uno incluye `shift: { _id, name } | null` resuelto desde `Institution.settings.shifts`.
 
 ### Transversales
-- [ ] **Aislamiento:** toda lectura/escritura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`. Las jornadas viven dentro del documento del inquilino y se resuelven por `_id === req.user.institutionId`.
-- [ ] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web`.
+- [x] **Aislamiento:** toda lectura/escritura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`. Las jornadas viven dentro del documento del inquilino y se resuelven por `_id === req.user.institutionId`.
+- [x] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web`.
 
 ## Dependencias
 - `ACAD-02-period-settings` — `Institution.settings` y el patrón `GET`/`PATCH /api/institutions/me`.

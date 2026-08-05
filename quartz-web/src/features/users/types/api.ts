@@ -1,10 +1,12 @@
-import type { UserRole, IdentificationType, GradeLevel } from '@/types/domain';
+import type { UserRole, IdentificationType, GradeLevel, Shift } from '@/types/domain';
 
 export interface UserSchool {
   _id: string;
   schoolNumber: number;
   name: string;
 }
+
+export type UserShift = Shift;
 
 export interface UserValuationSummary {
   _id: string;
@@ -27,6 +29,7 @@ export interface UserDto {
   gradesTaught: string[];
   valuations: UserValuationSummary[];
   avatarUrl?: string;
+  shift?: UserShift | null;
 }
 
 export interface GetUsersQuery {
@@ -51,7 +54,11 @@ export interface NewUser {
   gradesTaught: GradeLevel[];
   email?: string;    // requerido si role === 'Docente'
   password?: string; // requerido si role === 'Docente'
+  shiftId?: string;  // solo Estudiante; opcional
 }
 
 // El rol es inmutable tras la creación: no forma parte del payload de actualización.
-export type UpdateUser = Partial<Omit<NewUser, 'role'>>;
+// shiftId admite `null` explícito para desasignar la jornada del estudiante.
+export type UpdateUser = Partial<Omit<NewUser, 'role' | 'shiftId'>> & {
+  shiftId?: string | null;
+};

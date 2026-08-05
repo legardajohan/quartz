@@ -1,8 +1,12 @@
-import type { ReportKind } from '@/types/domain';
+import type { ReportKind, Shift } from '@/types/domain';
 import type { UpdateInstitutionSettings } from './api';
+
+export type ShiftDto = Shift;
 
 export interface InstitutionSettingsDto {
   enabledReports: ReportKind[];
+  multipleShifts: boolean;
+  shifts: ShiftDto[];
 }
 
 export interface InstitutionDto {

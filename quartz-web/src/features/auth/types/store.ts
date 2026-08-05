@@ -1,4 +1,4 @@
-import { ISessionData, Subject, Period, ReportKind } from "@/types/domain";
+import { ISessionData, Subject, Period, ReportKind, Shift } from "@/types/domain";
 
 export interface AuthState {
   token: string | null;
@@ -13,4 +13,5 @@ export interface AuthState {
   setSubjects: (subjects: Subject[]) => void;
   setPeriods: (periods: Period[]) => void;
   setEnabledReports: (enabledReports: ReportKind[]) => void;
+  setShifts: (multipleShifts: boolean, shifts: Shift[]) => void;
 }

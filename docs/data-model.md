@@ -9,9 +9,9 @@ Casi toda colección lleva `institutionId` (ObjectId, **requerido**) y se filtra
 
 | Colección | Feature | Propósito | `institutionId` | Referencias clave |
 |---|---|---|---|---|
-| `Institution` | `institution` | Institución educativa (tenant raíz). Incluye `settings` (`enabledReports`, default ambos). | — (es la raíz) | — |
-| `School` | `school` | Sede / campus. | Requerido | → Institution |
-| `User` | `auth` (gestión en `users`) | Jefe de Área / Docente / Estudiante. | Requerido | → Institution, School |
+| `Institution` | `institution` | Institución educativa (tenant raíz). Incluye `settings` (`enabledReports`, default ambos; `multipleShifts` + `shifts[]` — jornadas embebidas con `_id` propio, ACAD-04). | — (es la raíz) | — |
+| `School` | `school` | Sede / campus. Catálogo gestionable por el Jefe de Área (CRUD, ACAD-04); `schoolNumber` autoasignado, no editable. | Requerido | → Institution |
+| `User` | `auth` (gestión en `users`) | Jefe de Área / Docente / Estudiante. `shiftId` opcional (solo Estudiante) — referencia no poblable a `Institution.settings.shifts[]._id` (ACAD-04). | Requerido | → Institution, School |
 | `Period` | `period` | Período académico. Cantidad por año libre, sin tope (cada institución define cuántos maneja). Solo uno `isActive` (índice parcial único). `year` persistido, `closingAlertDate` opcional. | Requerido | → Institution |
 | `Subject` | `subject` | Dimensión (fase actual) o materia (futuro), según `type`. Catálogo gestionable por institución (ACAD-01). | Requerido | — |
 | `Learning` | `learning` | Aprendizaje esperado, por dimensión y período. | Requerido | → Subject, Period, User |

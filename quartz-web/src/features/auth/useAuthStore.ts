@@ -107,6 +107,14 @@ export const useAuthStore = create<AuthState>()(
             ? { ...state.sessionData, enabledReports }
             : null
         }));
+      },
+
+      setShifts: (multipleShifts, shifts) => {
+        set((state) => ({
+          sessionData: state.sessionData
+            ? { ...state.sessionData, multipleShifts, shifts }
+            : null
+        }));
       }
     }),
     {

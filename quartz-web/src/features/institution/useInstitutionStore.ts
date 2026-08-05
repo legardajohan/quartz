@@ -32,6 +32,7 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
         { settings: data }
       );
       useAuthStore.getState().setEnabledReports(updated.settings.enabledReports);
+      useAuthStore.getState().setShifts(updated.settings.multipleShifts, updated.settings.shifts);
       set({ institution: updated, isSubmitting: false });
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err, 'Falló la actualización de la configuración.');
