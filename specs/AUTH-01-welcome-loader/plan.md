@@ -132,3 +132,50 @@ Import nuevo: `import { useAuthStore } from './features/auth/useAuthStore';` y `
 - Alternar el SO a modo oscuro (o emular `prefers-color-scheme: dark` en DevTools) y repetir el login: el logo debe verse con el relleno de degradado animado en vez de sus colores nativos.
 - Emular `prefers-reduced-motion: reduce` en DevTools y repetir el login: el overlay aparece sin animaciones y sigue desapareciendo tras `durationMs`.
 - Recargar la página con sesión ya iniciada (F5 en `/dashboard`): el overlay NO debe reaparecer.
+
+## Addendum 2026-08-06 — fondo siempre claro + marca "Powered by" en el sidebar
+
+Ajuste post-implementación pedido directamente por el usuario, mismo feature (aún `implemented`, no `released`), misma rama. El usuario compartió el contenido real de `rainbow-fill.css` (antes solo referenciado, no compartido — ver Nota original arriba) y pidió: (1) que el `WelcomeLoader` deje de alternar entre logo nativo (claro) y relleno arcoíris (oscuro), y en su lugar muestre **siempre** el relleno arcoíris sobre fondo **siempre claro**; (2) un componente nuevo, solo el logo con el mismo efecto arcoíris permanente, para el pie del menú lateral ("Powered by" + logo).
+
+### Archivos (adicionales a los ya listados)
+| Acción | Ruta |
+|---|---|
+| crear | `src/components/common/rainbow-fill.css` |
+| crear | `src/components/common/PoweredByBrand.tsx` |
+| crear | `src/components/common/PoweredByBrand.css` |
+| tocar | `src/features/auth/components/WelcomeLoader.tsx` |
+| tocar | `src/features/auth/components/WelcomeLoader.css` |
+| tocar | `src/components/layouts/SidebarMenu.tsx` |
+
+### Cambios
+
+**1. `components/common/rainbow-fill.css` (nuevo, compartido).** Puerto 1:1 del `rainbow-fill.css` real que compartió el usuario: `linear-gradient(90deg, #ff1f5a, #b81fff, #5a3bff, #0a9bff, #16c46a, #ffc21a, #ff7a1a, #ff1f5a)`, `background-size: 200% 100%`, `@keyframes quartz-rainbow` (`0%→100%` de `background-position: 0% 50%` a `200% 50%`), `8s linear infinite`. Única diferencia respecto al original: el original solo animaba bajo `.dark` (Quartz no tiene esa clase); aquí la animación es **incondicional**, porque el efecto pasa a ser el estado permanente de la marca, no una variante de tema. `@media (prefers-reduced-motion: reduce)` se conserva (`animation: none`). Reemplaza la recreación aproximada (`quartzWelcome-rainbowShift`) documentada en la Nota original de este plan — se elimina.
+
+**2. `WelcomeLoader.tsx`/`.css`.**
+- Se quita el `<img className="boot-overlay__art" src="/quartz-name.svg" />` (nunca sería visible: el relleno arcoíris está siempre encima) y su regla CSS.
+- `.boot-overlay__fill` pasa a `opacity: 1` fijo (antes `0`, solo `1` bajo `.dark`); `.boot-overlay__aura` pasa a `opacity: 0.75` fijo (antes `0`).
+- Se elimina el bloque `@media (prefers-color-scheme: dark)` completo (fondo oscuro, `tagline`/`progress` oscuros) — el fondo del wrapper (`radial-gradient` claro) y los colores de `tagline`/`progress` quedan como único estado, siempre.
+- Se elimina la clase local `.quartz-rainbow-fill` y su `@keyframes`; el componente ahora importa `../../../components/common/rainbow-fill.css`.
+- El criterio EARS de `spec.md` sobre `prefers-color-scheme: dark` queda **obsoleto** (ver spec.md, marcado como retirado).
+
+**3. `components/common/PoweredByBrand.tsx` + `.css` (nuevo).** Componente presentacional, sin `apiClient`, named export:
+```tsx
+export function PoweredByBrand(): React.ReactElement {
+  return (
+    <div id="quartz-brandmark">
+      <p className="quartz-brandmark__caption">Powered by</p>
+      <div className="quartz-brandmark__logo" role="img" aria-label="Quartz">
+        <div className="quartz-brandmark__aura quartz-rainbow-fill" aria-hidden="true" />
+        <div className="quartz-brandmark__fill quartz-rainbow-fill" aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+```
+Mismo mecanismo de máscara que `WelcomeLoader` (`mask-image: url("/quartz-name.svg")`), a tamaño reducido (`width: 104px`, `aspect-ratio: 551.23 / 64.38`), sin `<img>` nativo (el efecto arcoíris es el único estado, igual que en el loader). Caption `"Powered by"` en gris lavanda translúcido (`rgba(216, 196, 255, 0.55)`), pensado para el fondo morado oscuro del sidebar. Importa el mismo `rainbow-fill.css` compartido — el bundler lo deduplica por ruta de módulo, no se duplica CSS en el build final.
+
+**4. `components/layouts/SidebarMenu.tsx`.** El `<Card>` pasa a `flex flex-col`; el `<List>` de navegación gana `flex-1 overflow-y-auto thin-scrollbar` (para que crezca y haga scroll si el menú no cabe, sin empujar el pie); se agrega `<PoweredByBrand />` tras el `</List>`, envuelto en un `<div className="border-t border-white/10">` como separador sutil. `PoweredByBrand` persiste montado mientras dure la sesión (vive dentro de `Dashboard`, que no se remonta entre rutas anidadas).
+
+### Verificación adicional
+- `cd quartz-web && npm run build` y `npm run lint` — verdes, mismos 10 errores/7 warnings preexistentes en la base (sin regresiones).
+- Pendiente de confirmación visual del usuario en navegador: login muestra el splash con fondo claro y el logo con el arcoíris en movimiento; el sidebar muestra "Powered by" + logo animado en el pie, con scroll independiente del menú si la lista de opciones crece.

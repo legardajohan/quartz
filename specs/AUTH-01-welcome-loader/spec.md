@@ -12,18 +12,18 @@ Mostrar un overlay de bienvenida a pantalla completa ("boot splash") inmediatame
 
 ## Alcance
 **Incluye:**
-- Overlay `fixed inset-0` a pantalla completa: logo (`public/quartz-name.svg`) con animación de entrada, aura difusa, barrido de brillo (sheen) único, tagline y barra de progreso indeterminada.
+- Overlay `fixed inset-0` a pantalla completa sobre fondo siempre claro: logo (`public/quartz-name.svg`) con animación de entrada, aura difusa, barrido de brillo (sheen) único, tagline y barra de progreso indeterminada.
+- El logo lleva siempre el relleno de degradado arcoíris animado (clase compartida `.quartz-rainbow-fill`, `components/common/rainbow-fill.css`) — no es una variante de tema, es el único estado visual (ver Addendum 2026-08-06 en `plan.md`).
 - Fade-out automático tras una duración fija configurable (default 2200ms).
 - Variante para `prefers-reduced-motion: reduce` (sin animaciones, contenido visible de inmediato).
-- Variante para `prefers-color-scheme: dark` (relleno de logo con degradado animado púrpura→azul vía `mask-image`), activada por preferencia del sistema operativo — sin infraestructura de theming nueva.
 - Disparo automático tras cada login exitoso (`useAuthStore.login()`), sin acción del usuario.
+- Componente adicional `components/common/PoweredByBrand.tsx`: mismo logo con el mismo efecto arcoíris permanente, a tamaño reducido, montado en el pie del menú lateral (`SidebarMenu.tsx`) con la leyenda "Powered by".
 
 **Fuera:**
-- Toggle de tema manual o infraestructura general de modo oscuro (Quartz no la tiene hoy; ver `useAuthStore.ts`/`tailwind.config.ts`).
+- Toggle de tema manual o infraestructura general de modo claro/oscuro (Quartz no la tiene hoy; ver `useAuthStore.ts`/`tailwind.config.ts`). El splash y la marca del sidebar ya no dependen de `prefers-color-scheme` (ver Addendum 2026-08-06 en `plan.md`).
 - Mostrar el splash en otros eventos de sesión (logout, refresh de token, recarga de página con sesión persistida).
 - Contenido o copy configurable más allá de `tagline` (sin CMS, sin i18n).
 - Tests automatizados (no hay runner de tests en el proyecto todavía).
-- Recrear pixel-perfect `rainbow-fill.css` del ejemplo: su contenido no fue compartido por el usuario; se recrea una animación de gradiente púrpura→azul equivalente (ver `plan.md` § Notas) y queda sujeta a ajuste visual en implementación.
 
 ## Criterios de aceptación (EARS)
 - [x] Cuando `useAuthStore.login()` autentica correctamente, el sistema activa `showWelcomeLoader` y el overlay se monta a pantalla completa (`z-index` por encima de cualquier contenido de la app). (`useAuthStore.ts` rama de éxito de `login()`; `#quartz-loader-wrapper` con `z-index: 9999`)
@@ -32,8 +32,9 @@ Mostrar un overlay de bienvenida a pantalla completa ("boot splash") inmediatame
 - [x] Si el usuario recarga la página con una sesión ya persistida (`token`/`sessionData` rehidratados desde `localStorage`), el sistema NO vuelve a mostrar el overlay (`showWelcomeLoader` no se persiste, arranca en `false`). (`partialize` de `useAuthStore.ts` solo persiste `token`/`sessionData`)
 - [x] Cuando el usuario cierra sesión (`logout()`), el sistema deja `showWelcomeLoader` en `false`. (`logout()` lo incluye en su `set`)
 - [x] Si el sistema operativo del usuario tiene `prefers-reduced-motion: reduce`, el overlay se muestra sin animaciones (contenido con opacidad final desde el primer frame) y el fade-out sigue ocurriendo tras `durationMs`. (`@media (prefers-reduced-motion: reduce)` en `WelcomeLoader.css`; el fade-out del wrapper se conserva por ser solo `opacity`)
-- [x] Si el sistema operativo del usuario tiene `prefers-color-scheme: dark`, el logo se renderiza con el relleno de degradado animado (vía `mask-image` sobre `quartz-name.svg`) en vez de sus colores nativos. (`@media (prefers-color-scheme: dark)` en `WelcomeLoader.css`)
+- [x] ~~Si el sistema operativo del usuario tiene `prefers-color-scheme: dark`, el logo se renderiza con el relleno de degradado animado...~~ — **Retirado en el Addendum 2026-08-06**: el relleno arcoíris ya no es una variante de `prefers-color-scheme`, es el único estado visual del logo, siempre, sobre fondo siempre claro.
 - [x] El overlay se navega en paralelo (no bloquea) la redirección existente a `/dashboard` en `LoginPage.tsx`: el dashboard se monta detrás del overlay mientras este permanece visible. (`AppRoot` en `App.tsx` monta el overlay junto al `<Outlet/>`, sin tocar `LoginPage.tsx`)
+- [x] Cuando el menú lateral (`SidebarMenu.tsx`) está montado, el sistema muestra en su pie la leyenda "Powered by" y el logo de Quartz con el relleno arcoíris animado, sin bloquear el scroll del menú de navegación. (`PoweredByBrand.tsx`/`.css`; `List` con `flex-1 overflow-y-auto`)
 - [x] **Aislamiento:** no aplica — feature puramente de UI/animación, sin lectura ni escritura de datos de tenant, sin llamadas a backend.
 - [x] `npx tsc --noEmit` no aplica (no toca `quartz-api`). `npm run build && npm run lint` en verde en `quartz-web`. (build verde; lint con los mismos 10 errores/7 warnings preexistentes en la base, confirmado con `git stash` — cero regresiones)
 

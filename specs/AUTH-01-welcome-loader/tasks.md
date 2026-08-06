@@ -12,7 +12,6 @@
 - [x] `cd quartz-web && npm run build && npm run lint` en verde (lint: mismos 10 errores/7 warnings preexistentes en la base, confirmado con `git stash` — cero regresiones).
 - [x] `npm run dev`: servidor arranca sin errores de compilación ni runtime (backend `quartz-api` en :4000 con `MongoDB connected` + `Server running`; frontend `quartz-web` en :5173, Vite listo).
 - [ ] Login manual en navegador: overlay aparece, anima entrada del logo + tagline + barra de progreso, hace fade-out tras ~2.2s dejando ver el dashboard ya montado detrás. — **Pendiente, el usuario lo prueba directamente.**
-- [ ] Emulando `prefers-color-scheme: dark` en DevTools: el logo se rellena con el degradado animado en vez de sus colores nativos. — **Pendiente de prueba manual.**
 - [ ] Emulando `prefers-reduced-motion: reduce` en DevTools: overlay sin animaciones, sigue desapareciendo tras `durationMs`. — **Pendiente de prueba manual.**
 - [ ] Recarga de página con sesión persistida (F5 en `/dashboard`): el overlay NO reaparece. — **Pendiente de prueba manual.**
 - [ ] Login fallido (credenciales incorrectas): el overlay NO aparece. — **Pendiente de prueba manual.**
@@ -20,3 +19,12 @@
 
 ## Definición de "hecho"
 Todos los criterios EARS de `spec.md` cubiertos y marcados · `status: implemented`.
+
+## Addendum 2026-08-06 — fondo siempre claro + marca "Powered by" en el sidebar
+- [x] `components/common/rainbow-fill.css` — puerto 1:1 del `rainbow-fill.css` real compartido por el usuario (`quartz-rainbow`, 8s linear infinite, incondicional — ya no depende de `.dark`).
+- [x] `features/auth/components/WelcomeLoader.tsx` — se quita el `<img>` nativo (el arcoíris es el único estado); importa el `rainbow-fill.css` compartido.
+- [x] `features/auth/components/WelcomeLoader.css` — `.boot-overlay__fill`/`__aura` a opacidad fija (1 / 0.75); se elimina el bloque `@media (prefers-color-scheme: dark)` y la clase local `.quartz-rainbow-fill` recreada.
+- [x] `components/common/PoweredByBrand.tsx` + `.css` (nuevo) — logo con el mismo efecto arcoíris permanente, a tamaño reducido, con la leyenda "Powered by".
+- [x] `components/layouts/SidebarMenu.tsx` — `Card` en `flex flex-col`, `List` con `flex-1 overflow-y-auto thin-scrollbar`, `<PoweredByBrand />` montado en el pie tras un separador (`border-t border-white/10`).
+- [x] `cd quartz-web && npm run build && npm run lint` — verdes, mismos 10 errores/7 warnings preexistentes (sin regresiones).
+- [ ] Confirmación visual del usuario en navegador: splash con fondo claro + arcoíris en movimiento; sidebar con "Powered by" + logo animado en el pie. — **Pendiente, sin herramienta de navegador con sesión autenticada en este entorno.**

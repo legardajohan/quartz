@@ -27,6 +27,7 @@ import {
 import aqWhite from '../../assets/images/aq-white.svg';
 import starryBackground from '../../assets/images/starry-background.svg';
 import { useAuthStore } from '../../features/auth/useAuthStore';
+import { PoweredByBrand } from '../common/PoweredByBrand';
 import type { UserRole } from '@/types/domain';
 
 interface SidebarMenuProps {
@@ -129,7 +130,7 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
     >
       <Card
         shadow={false}
-        className="h-screen w-full max-w-[20rem] px-4 py-1 text-white shadow-xl shadow-purple-700/50 rounded-none"
+        className="h-screen w-full max-w-[20rem] px-4 py-1 text-white shadow-xl shadow-purple-700/50 rounded-none flex flex-col"
         style={{ background: `${bgPattern}, ${gradient}` }}
       >
         <div className="mb-2 flex items-center gap-3 px-2 py-4">
@@ -141,7 +142,7 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
             <ChevronLeftIcon strokeWidth={3} className="h-4 w-4" />
           </IconButton>
         </div>
-        <List className="mt-4">
+        <List className="mt-4 flex-1 overflow-y-auto thin-scrollbar">
           {visibleMenuItems.map((item) => {
             if (!item.subItems) {
               const isActive = location.pathname.startsWith(item.path!);
@@ -205,6 +206,9 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
             );
           })}
         </List>
+        <div className="border-t border-white/10">
+          <PoweredByBrand />
+        </div>
       </Card>
     </div>
   );

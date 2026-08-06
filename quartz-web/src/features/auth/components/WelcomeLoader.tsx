@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
+import '../../../components/common/rainbow-fill.css';
 import './WelcomeLoader.css';
 
 export interface WelcomeLoaderProps {
@@ -32,7 +33,6 @@ export function WelcomeLoader({
       <div className="boot-overlay">
         <div className="boot-overlay__logo" role="img" aria-label="Quartz">
           <div className="boot-overlay__aura quartz-rainbow-fill" aria-hidden="true" />
-          <img className="boot-overlay__art" src="/quartz-name.svg" alt="" draggable={false} />
           <div className="boot-overlay__fill quartz-rainbow-fill" aria-hidden="true" />
           <div className="boot-overlay__sheen" />
         </div>
