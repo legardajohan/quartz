@@ -21,8 +21,8 @@ import {
 import {
   ChevronRightIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
 } from "@heroicons/react/24/outline";
+import { PanelLeftClose } from "lucide-react";
 
 import starryBackground from '../../assets/images/starry-background.svg';
 import { useAuthStore } from '../../features/auth/useAuthStore';
@@ -125,20 +125,27 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
 
   return (
     <div
-      className={`fixed top-0 left-0 h-screen z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      className={`fixed top-0 left-0 h-screen z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+28px)]"}`}
     >
       <Card
         shadow={false}
-        className="h-screen w-full max-w-[20rem] px-4 py-1 text-white shadow-xl shadow-purple-700/50 rounded-none flex flex-col"
+        className="h-screen w-full max-w-[20rem] py-1 text-white shadow-xl shadow-purple-700/50 rounded-none flex flex-col"
         style={{ background: `${bgPattern}, ${gradient}` }}
       >
-        <div className="mb-2 flex items-center gap-2 px-2 py-4">
-          <InstitutionBrand />
-          <IconButton variant="text" size="sm" className="ml-auto shrink-0 text-purple-400 hover:text-white hover:bg-purple-700/40" onClick={toggleSidebar}>
-            <ChevronLeftIcon strokeWidth={3} className="h-4 w-4" />
+        <div className="relative mb-2 flex items-center gap-2 pl-4 pr-3 py-4">
+          <div className="flex-1 min-w-0">
+            <InstitutionBrand />
+          </div>
+          <IconButton
+            variant="text"
+            size="sm"
+            className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-[calc(50%+6px)] shrink-0 bg-purple-800 text-purple-200 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300/60 hover:bg-purple-700 hover:text-white"
+            onClick={toggleSidebar}
+          >
+            <PanelLeftClose strokeWidth={2} className="h-4 w-4" />
           </IconButton>
         </div>
-        <List className="mt-4 flex-1 overflow-y-auto thin-scrollbar">
+        <List className="mt-4 flex-1 overflow-y-auto thin-scrollbar px-4">
           {visibleMenuItems.map((item) => {
             if (!item.subItems) {
               const isActive = location.pathname.startsWith(item.path!);
@@ -202,7 +209,7 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
             );
           })}
         </List>
-        <div className="border-t border-white/10">
+        <div className="border-t border-white/10 px-4">
           <PoweredByBrand />
         </div>
       </Card>

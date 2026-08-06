@@ -14,13 +14,14 @@ export function PresentationPanel() {
         }}
       />
       {/* Overlay for better contrast */}
-      <div className="absolute inset-0 bg-purple-900/50" style={{ zIndex: 1 }} />
+      <div className="absolute inset-0 bg-black/50" style={{ zIndex: 1 }} />
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center">
         {/* Logo con relleno arcoíris animado */}
         <div className="presentation-brand__logo" role="img" aria-label="Quartz">
           <div className="presentation-brand__aura quartz-rainbow-fill" aria-hidden="true" />
           <div className="presentation-brand__fill quartz-rainbow-fill" aria-hidden="true" />
+          <div className="presentation-brand__sheen" aria-hidden="true" />
         </div>
         {/* Inspirational Text */}
         <div className="text-center max-w-sm mt-6">

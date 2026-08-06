@@ -9,7 +9,7 @@ export interface WelcomeLoaderProps {
   onComplete?: () => void;
 }
 
-const DEFAULT_TAGLINE = 'Preparando tu espacio…';
+const DEFAULT_TAGLINE = 'Preparando tu entorno…';
 const DEFAULT_DURATION_MS = 2200;
 // Debe coincidir con la duración de la animación `quartzWelcome-fadeOut` en WelcomeLoader.css.
 const FADE_OUT_MS = 320;

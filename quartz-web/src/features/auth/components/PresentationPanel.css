@@ -26,3 +26,41 @@
   filter: blur(20px);
   mix-blend-mode: screen;
 }
+
+.presentation-brand__sheen {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: url("/quartz-name-v.svg") center / contain no-repeat;
+  mask: url("/quartz-name-v.svg") center / contain no-repeat;
+  pointer-events: none;
+}
+
+.presentation-brand__sheen::before {
+  content: "";
+  position: absolute;
+  top: -120%;
+  left: 0;
+  width: 7%;
+  height: 340%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.62) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(3px);
+  transform: translateX(1500%) rotate(8deg);
+  animation: presentationBrand-sweep 5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  will-change: transform;
+}
+
+@keyframes presentationBrand-sweep {
+  0%, 58%   { transform: translateX(1500%) rotate(8deg); }
+  76%       { transform: translateX(-250%) rotate(8deg); }
+  76.01%    { transform: translateX(1650%) rotate(8deg); }
+  94%, 100% { transform: translateX(1500%) rotate(8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .presentation-brand__sheen::before { animation: none; display: none; }
+}
