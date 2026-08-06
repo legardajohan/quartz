@@ -17,6 +17,10 @@ export function InstitutionBrand(): React.ReactElement {
 
   const showShield = !!branding?.shieldUrl && !shieldFailed;
 
+  const nameParts = branding?.name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const topName = nameParts.length > 1 ? nameParts[0] : '';
+  const restName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : branding?.name;
+
   return (
     <div className="flex items-center gap-3 min-w-0">
       <div className="h-11 w-11 shrink-0 rounded-full overflow-hidden bg-white/10 ring-1 ring-white/20 flex items-center justify-center">
@@ -32,11 +36,13 @@ export function InstitutionBrand(): React.ReactElement {
         )}
       </div>
       <div className="flex flex-col leading-tight min-w-0">
-        <span className="text-[10px] uppercase tracking-wide text-purple-300/70 font-medium">
-          Institución Educativa
-        </span>
+        {topName && (
+          <span className="text-[10px] uppercase tracking-wide text-purple-300/70 font-medium truncate">
+            {topName}
+          </span>
+        )}
         <span className="text-base text-white font-semibold truncate">
-          {branding?.name ?? 'Cargando…'}
+          {restName ?? 'Cargando…'}
         </span>
       </div>
     </div>

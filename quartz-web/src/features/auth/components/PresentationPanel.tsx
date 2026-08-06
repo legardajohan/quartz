@@ -23,7 +23,7 @@ export function PresentationPanel() {
           <div className="presentation-brand__fill quartz-rainbow-fill" aria-hidden="true" />
         </div>
         {/* Inspirational Text */}
-        <div className="text-center max-w-sm mt-5">
+        <div className="text-center max-w-sm mt-6">
           <p className="text-white text-xl font-normal leading-tight">
             <span className="block">Evaluando con sentido</span>
           </p>
