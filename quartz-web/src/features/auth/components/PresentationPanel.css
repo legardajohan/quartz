@@ -1,0 +1,28 @@
+/* =============================================================
+   PresentationPanel — logo de Quartz con relleno arcoíris animado
+   (clase compartida .quartz-rainbow-fill de
+   components/common/rainbow-fill.css), usando el lockup vertical
+   quartz-name-v.svg. Mismo mecanismo que WelcomeLoader/PoweredByBrand.
+   ============================================================= */
+
+.presentation-brand__logo {
+  position: relative;
+  width: clamp(150px, 20vw, 210px);
+  aspect-ratio: 461.97 / 164.34;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+}
+
+.presentation-brand__fill,
+.presentation-brand__aura {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: url("/quartz-name-v.svg") center / contain no-repeat;
+  mask: url("/quartz-name-v.svg") center / contain no-repeat;
+  pointer-events: none;
+}
+
+.presentation-brand__aura {
+  opacity: 0.6;
+  filter: blur(16px);
+  mix-blend-mode: screen;
+}

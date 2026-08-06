@@ -24,10 +24,10 @@ import {
   ChevronLeftIcon,
 } from "@heroicons/react/24/outline";
 
-import aqWhite from '../../assets/images/aq-white.svg';
 import starryBackground from '../../assets/images/starry-background.svg';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import { PoweredByBrand } from '../common/PoweredByBrand';
+import { InstitutionBrand } from '../common/InstitutionBrand';
 import type { UserRole } from '@/types/domain';
 
 interface SidebarMenuProps {
@@ -96,7 +96,6 @@ const menuItems: SidebarMenuItem[] = [
 ];
 
 export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) {
-  const appName = import.meta.env.VITE_APP_NAME;
   const location = useLocation();
   const navigate = useNavigate();
   const role = useAuthStore((state) => state.sessionData?.user.role);
@@ -133,12 +132,9 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
         className="h-screen w-full max-w-[20rem] px-4 py-1 text-white shadow-xl shadow-purple-700/50 rounded-none flex flex-col"
         style={{ background: `${bgPattern}, ${gradient}` }}
       >
-        <div className="mb-2 flex items-center gap-3 px-2 py-4">
-          <img src={aqWhite} alt="brand" className="h-10 w-10" />
-          <h1 className="font-space text-[27px] text-white">
-            {appName.toUpperCase()}
-          </h1>
-          <IconButton variant="text" size="sm" className="ml-auto text-purple-400 hover:text-white hover:bg-purple-700/40" onClick={toggleSidebar}>
+        <div className="mb-2 flex items-center gap-2 px-2 py-4">
+          <InstitutionBrand />
+          <IconButton variant="text" size="sm" className="ml-auto shrink-0 text-purple-400 hover:text-white hover:bg-purple-700/40" onClick={toggleSidebar}>
             <ChevronLeftIcon strokeWidth={3} className="h-4 w-4" />
           </IconButton>
         </div>

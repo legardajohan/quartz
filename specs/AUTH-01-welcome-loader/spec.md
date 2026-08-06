@@ -18,6 +18,8 @@ Mostrar un overlay de bienvenida a pantalla completa ("boot splash") inmediatame
 - Variante para `prefers-reduced-motion: reduce` (sin animaciones, contenido visible de inmediato).
 - Disparo automático tras cada login exitoso (`useAuthStore.login()`), sin acción del usuario.
 - Componente adicional `components/common/PoweredByBrand.tsx`: mismo logo con el mismo efecto arcoíris permanente, a tamaño reducido, montado en el pie del menú lateral (`SidebarMenu.tsx`) con la leyenda "Powered by".
+- `PresentationPanel.tsx` (panel del login): el logo + nombre de Quartz se reemplazan por el lockup `public/quartz-name-v.svg` con el mismo relleno arcoíris permanente (ver Addendum 2026-08-06 (2) en `plan.md`).
+- `SidebarMenu.tsx`, parte superior: esquema de branding White Label — escudo de la institución inquilina (o ícono por defecto si no lo ha subido) + nombre en dos líneas ("Institución Educativa" / nombre real), en vez del logo de Quartz. Nuevo endpoint `GET /institutions/me/branding` (`Jefe de Área` y `Docente`) — ver Addendum 2026-08-06 (2) en `plan.md`.
 
 **Fuera:**
 - Toggle de tema manual o infraestructura general de modo claro/oscuro (Quartz no la tiene hoy; ver `useAuthStore.ts`/`tailwind.config.ts`). El splash y la marca del sidebar ya no dependen de `prefers-color-scheme` (ver Addendum 2026-08-06 en `plan.md`).
@@ -39,6 +41,10 @@ Mostrar un overlay de bienvenida a pantalla completa ("boot splash") inmediatame
 - [x] `npx tsc --noEmit` no aplica (no toca `quartz-api`). `npm run build && npm run lint` en verde en `quartz-web`. (build verde; lint con los mismos 10 errores/7 warnings preexistentes en la base, confirmado con `git stash` — cero regresiones)
 
 > Nota: los criterios anteriores están verificados por lectura de código + build/lint en verde y arranque limpio de ambos servidores. La prueba manual end-to-end en navegador (ver el splash renderizado, alternar `prefers-color-scheme`/`prefers-reduced-motion`, recarga con sesión persistida) queda pendiente — el usuario la ejecuta directamente. Ver `tasks.md` § Verificación final.
+
+- [x] Cuando el `PresentationPanel` del login se monta, el sistema muestra el lockup `quartz-name-v.svg` con el relleno arcoíris animado, sin el logo/nombre de Quartz anteriores. (`PresentationPanel.tsx`/`.css`)
+- [x] Cuando `SidebarMenu` se monta, el sistema obtiene el branding de la institución del inquilino del token (`GET /institutions/me/branding`, `Jefe de Área` y `Docente`) y muestra su escudo (o el ícono por defecto si no ha subido uno) y su nombre en dos líneas. Si la imagen del escudo falla al cargar, cae al ícono por defecto. (`InstitutionBrand.tsx`, `institution.service.ts#getInstitutionBranding`)
+- [x] **Aislamiento (branding):** `getInstitutionBranding` filtra por `institutionId` del token; ninguna institución ve el escudo/nombre de otro inquilino. (`institution.service.ts`)
 
 ## Dependencias
 - `quartz-web/src/features/auth/useAuthStore.ts` y `types/store.ts` (extensión del estado de sesión).

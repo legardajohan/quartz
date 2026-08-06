@@ -3,6 +3,7 @@ import { Institution } from './institution.model';
 import { User } from '../auth/auth.model';
 import {
   IInstitutionDTO,
+  IInstitutionBrandingDTO,
   UpdateInstitutionSettingsData,
   ReportKind,
   IShiftDTO,
@@ -65,6 +66,18 @@ export const getShiftSettings = async (institutionId: string): Promise<IShiftSet
     multipleShifts: institution?.settings?.multipleShifts ?? false,
     shifts: (institution?.settings?.shifts ?? []).map(mapShiftToDTO),
   };
+};
+
+// Versión mínima de `getInstitutionById` para consumo transversal (p. ej. el sidebar):
+// solo nombre + escudo, expuesta a cualquier rol del inquilino (no solo Jefe de Área).
+export const getInstitutionBranding = async (institutionId: string): Promise<IInstitutionBrandingDTO> => {
+  const institution = await Institution.findById(institutionId).select('name shieldUrl').lean();
+
+  if (!institution) {
+    throw new AppError('Institución no encontrada.', 404);
+  }
+
+  return { name: institution.name, shieldUrl: institution.shieldUrl };
 };
 
 export const getInstitutionById = async (institutionId: string): Promise<IInstitutionDTO> => {

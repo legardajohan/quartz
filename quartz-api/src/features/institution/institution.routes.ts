@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMyInstitutionController, updateMyInstitutionController, uploadShieldController } from './institution.controller';
+import { getMyInstitutionController, getMyInstitutionBrandingController, updateMyInstitutionController, uploadShieldController } from './institution.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { requireTenant } from '../../middlewares/require-tenant.middleware';
 import { authorize } from '../../middlewares/role.middleware';
@@ -17,6 +17,14 @@ router.get(
   requireTenant,
   authorize([UserRole.JEFE_DE_AREA]),
   asyncHandler(getMyInstitutionController)
+);
+
+router.get(
+  '/me/branding',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  asyncHandler(getMyInstitutionBrandingController)
 );
 
 router.patch(

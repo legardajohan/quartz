@@ -25,6 +25,11 @@ export interface IInstitutionSettings {
   shifts: IShiftDTO[];
 }
 
+export interface IInstitutionBrandingDTO {
+  name: string;
+  shieldUrl?: string;
+}
+
 export interface IInstitutionDTO {
   _id: string;
   name: string;

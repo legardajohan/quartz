@@ -4,11 +4,13 @@ import { useAuthStore } from '../auth/useAuthStore';
 import type {
   InstitutionState,
   InstitutionDto,
+  InstitutionBrandingDto,
   UpdateInstitutionSettings
 } from './types';
 
 export const useInstitutionStore = create<InstitutionState>((set) => ({
   institution: null,
+  branding: null,
   isLoading: false,
   isSubmitting: false,
   error: null,
@@ -21,6 +23,15 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err, 'Falló la carga de la configuración institucional.');
       set({ error: errorMessage, isLoading: false });
+    }
+  },
+
+  fetchBranding: async () => {
+    try {
+      const data = await apiGet<InstitutionBrandingDto>('/institutions/me/branding');
+      set({ branding: data });
+    } catch {
+      // Silencioso: el sidebar cae al placeholder por defecto si no hay branding disponible.
     }
   },
 
@@ -49,7 +60,11 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
       const updated = await apiPatch<InstitutionDto, FormData>('/institutions/me/shield', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      set({ institution: updated, isSubmitting: false });
+      set({
+        institution: updated,
+        branding: { name: updated.name, shieldUrl: updated.shieldUrl },
+        isSubmitting: false,
+      });
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err, 'Falló la subida del escudo.');
       set({ error: errorMessage, isSubmitting: false });

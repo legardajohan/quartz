@@ -28,3 +28,17 @@ Todos los criterios EARS de `spec.md` cubiertos y marcados · `status: implement
 - [x] `components/layouts/SidebarMenu.tsx` — `Card` en `flex flex-col`, `List` con `flex-1 overflow-y-auto thin-scrollbar`, `<PoweredByBrand />` montado en el pie tras un separador (`border-t border-white/10`).
 - [x] `cd quartz-web && npm run build && npm run lint` — verdes, mismos 10 errores/7 warnings preexistentes (sin regresiones).
 - [ ] Confirmación visual del usuario en navegador: splash con fondo claro + arcoíris en movimiento; sidebar con "Powered by" + logo animado en el pie. — **Pendiente, sin herramienta de navegador con sesión autenticada en este entorno.**
+
+## Addendum 2026-08-06 (2) — logo del login + branding White Label del sidebar
+- [x] `institution.types.ts` — `IInstitutionBrandingDTO { name, shieldUrl? }`.
+- [x] `institution.service.ts` — `getInstitutionBranding(institutionId)`, scoped, `.select('name shieldUrl').lean()`, `AppError(404)` si no existe.
+- [x] `institution.controller.ts` — `getMyInstitutionBrandingController` (sin `try/catch`, `institutionId` del token).
+- [x] `institution.routes.ts` — `GET /me/branding` con `authorize([JEFE_DE_AREA, DOCENTE])`.
+- [x] `institution/types/api.ts` y `types/store.ts` (web) — `InstitutionBrandingDto`, `InstitutionState.branding`/`fetchBranding`.
+- [x] `useInstitutionStore.ts` — `fetchBranding()` (falla en silencio); `uploadShield()` sincroniza `branding` con el nuevo `shieldUrl`.
+- [x] `components/common/InstitutionBrand.tsx` (nuevo) — escudo circular o `BuildingLibraryIcon` por defecto (con fallback en `onError`), nombre en dos líneas, sin `font-space`.
+- [x] `SidebarMenu.tsx` — reemplaza el logo/nombre de Quartz por `<InstitutionBrand />`; quita imports `aqWhite`/`appName` sin uso.
+- [x] `PresentationPanel.tsx`/`.css` (nuevo) — reemplaza el logo/nombre de Quartz por el lockup `quartz-name-v.svg` con `.quartz-rainbow-fill`.
+- [x] `cd quartz-api && npx tsc --noEmit` — verde.
+- [x] `cd quartz-web && npm run build && npm run lint` — verdes, mismos 10 errores/7 warnings preexistentes (sin regresiones).
+- [ ] Confirmación visual del usuario en navegador: login con el nuevo lockup; sidebar con escudo/nombre real de la institución (o ícono por defecto); verificar como `Docente` que no da 403. — **Pendiente, sin herramienta de navegador con sesión autenticada en este entorno.**

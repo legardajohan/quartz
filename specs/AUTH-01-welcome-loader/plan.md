@@ -179,3 +179,62 @@ Mismo mecanismo de máscara que `WelcomeLoader` (`mask-image: url("/quartz-name.
 ### Verificación adicional
 - `cd quartz-web && npm run build` y `npm run lint` — verdes, mismos 10 errores/7 warnings preexistentes en la base (sin regresiones).
 - Pendiente de confirmación visual del usuario en navegador: login muestra el splash con fondo claro y el logo con el arcoíris en movimiento; el sidebar muestra "Powered by" + logo animado en el pie, con scroll independiente del menú si la lista de opciones crece.
+
+## Addendum 2026-08-06 (2) — logo del login + branding White Label del sidebar
+
+Pedido directo del usuario, mismo feature/rama. Dos cambios: (1) el panel de presentación del login deja de mostrar el logo/nombre de Quartz y en su lugar muestra `quartz-name-v.svg` con el mismo relleno arcoíris; (2) la parte superior del sidebar deja de mostrar la marca de Quartz y pasa a mostrar el **branding de la institución inquilina** (escudo o ícono por defecto + nombre), esquema SaaS White Label.
+
+### Archivos
+| Acción | Ruta |
+|---|---|
+| tocar | `quartz-api/src/features/institution/institution.types.ts` |
+| tocar | `quartz-api/src/features/institution/institution.service.ts` |
+| tocar | `quartz-api/src/features/institution/institution.controller.ts` |
+| tocar | `quartz-api/src/features/institution/institution.routes.ts` |
+| tocar | `quartz-web/src/features/institution/types/api.ts` |
+| tocar | `quartz-web/src/features/institution/types/store.ts` |
+| tocar | `quartz-web/src/features/institution/useInstitutionStore.ts` |
+| crear | `quartz-web/src/components/common/InstitutionBrand.tsx` |
+| tocar | `quartz-web/src/components/layouts/SidebarMenu.tsx` |
+| tocar | `quartz-web/src/features/auth/components/PresentationPanel.tsx` |
+| crear | `quartz-web/src/features/auth/components/PresentationPanel.css` |
+
+### Backend — `GET /institutions/me/branding` (nuevo)
+`GET /institutions/me` (`institution.routes.ts`) ya existe pero está restringido a `Jefe de Área` y devuelve el DTO administrativo completo (email, teléfono, rector, DANE, settings). El sidebar lo necesita para **todos** los roles autenticados del inquilino (`Docente` incluido) pero solo necesita `name`/`shieldUrl` — ampliar `/me` habría expuesto datos administrativos de más a `Docente`. Se agrega un endpoint de solo lectura, mínimo, en su lugar:
+
+```typescript
+// institution.types.ts
+export interface IInstitutionBrandingDTO { name: string; shieldUrl?: string; }
+
+// institution.service.ts
+export const getInstitutionBranding = async (institutionId: string): Promise<IInstitutionBrandingDTO> => {
+  const institution = await Institution.findById(institutionId).select('name shieldUrl').lean();
+  if (!institution) throw new AppError('Institución no encontrada.', 404);
+  return { name: institution.name, shieldUrl: institution.shieldUrl };
+};
+```
+
+| Método | Ruta | Rol | Middlewares |
+|---|---|---|---|
+| GET | `/api/institutions/me/branding` | Jefe de Área, Docente | `authenticateJWT → requireTenant → authorize([JEFE_DE_AREA, DOCENTE]) → asyncHandler` |
+
+Controller sin `try/catch`, `institutionId` del token — mismo patrón que el resto del feature.
+
+### Frontend — `useInstitutionStore`
+- `types/api.ts` — `InstitutionBrandingDto { name: string; shieldUrl?: string }`.
+- `types/store.ts` — `InstitutionState` gana `branding: InstitutionBrandingDto | null` y `fetchBranding: () => Promise<void>`.
+- `useInstitutionStore.ts` — `fetchBranding()` llama `GET /institutions/me/branding` (falla en silencio: si no hay branding disponible, el sidebar cae al ícono por defecto, no rompe la UI). `uploadShield()` ahora también actualiza `branding` con el `shieldUrl` nuevo, para que un `Jefe de Área` vea su propio escudo reflejado de inmediato en su sidebar tras subirlo, sin depender de un refetch.
+
+### `components/common/InstitutionBrand.tsx` (nuevo)
+Presentacional, hace su propio fetch (`useEffect` → `fetchBranding()` al montar). Escudo en círculo (`h-11 w-11 rounded-full overflow-hidden`, `ring-1 ring-white/20`) o `BuildingLibraryIcon` (heroicons) si no hay `shieldUrl`; si la imagen del escudo falla al cargar (`onError`), cae al mismo ícono. Nombre en dos líneas: caption fija `"Institución Educativa"` (10px, uppercase, `text-purple-300/70`) + `branding.name` (texto real de la institución, p. ej. "Agropecuaria La Planada"; `"Cargando…"` mientras `branding` es `null`). **Sin `font-space`** (esa fuente es exclusiva de la marca Quartz): usa el sans-serif por defecto de Tailwind, igual que el resto del texto de la app.
+
+### `SidebarMenu.tsx`
+Se retira el `<img src={aqWhite}>` + `<h1 className="font-space">{appName}</h1>`; el header pasa a `<InstitutionBrand />` + el `IconButton` de colapsar (ahora `shrink-0`, sigue con `ml-auto`). Se retiran los imports `aqWhite` y `appName` (sin uso).
+
+### `PresentationPanel.tsx`/`.css`
+Se retira el `<div>` con `backgroundImage: aqWhite` y el `<h1 className="font-space">{appName}</h1>`; se agrega `.presentation-brand__logo` (mismo mecanismo de máscara + `.quartz-rainbow-fill` que `WelcomeLoader`/`PoweredByBrand`), apuntando a `/quartz-name-v.svg` (`aspect-ratio: 461.97 / 164.34`, proporción real de ese SVG — es un lockup más vertical que `quartz-name.svg`). El texto "Evaluando con sentido" se conserva sin cambios.
+
+### Verificación adicional
+- `cd quartz-api && npx tsc --noEmit` — verde.
+- `cd quartz-web && npm run build && npm run lint` — verdes, mismos 10 errores/7 warnings preexistentes (sin regresiones).
+- Pendiente de confirmación visual del usuario en navegador: login con el nuevo lockup animado; sidebar mostrando el escudo real de la institución actual (o el ícono por defecto) + su nombre; como `Docente`, el sidebar debe mostrar el mismo branding sin 403.

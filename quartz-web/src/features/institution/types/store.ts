@@ -1,5 +1,5 @@
 import type { ReportKind, Shift } from '@/types/domain';
-import type { UpdateInstitutionSettings } from './api';
+import type { UpdateInstitutionSettings, InstitutionBrandingDto } from './api';
 
 export type ShiftDto = Shift;
 
@@ -24,10 +24,12 @@ export interface InstitutionDto {
 
 export interface InstitutionState {
   institution: InstitutionDto | null;
+  branding: InstitutionBrandingDto | null;
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
   fetchInstitution: () => Promise<void>;
+  fetchBranding: () => Promise<void>;
   updateSettings: (data: UpdateInstitutionSettings) => Promise<void>;
   uploadShield: (blob: Blob) => Promise<void>;
 }
