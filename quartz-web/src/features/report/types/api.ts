@@ -91,3 +91,49 @@ export interface IReportTemplate {
   valuation: IReportValuation;
   generatedAt: string;
 }
+
+// --- Carta Comunicativa ---
+
+export interface ILetterConceptOption {
+  _id: string;
+  description: string;
+}
+
+export interface ILetterSubjectBlock {
+  subjectId: string;
+  subjectName: string;
+  evaluationMode: SubjectEvaluationMode;
+  valuationType: QualitativeValuation | null; // null en modo description
+  subjectPercentage: number;
+  assignedConceptId: string | null;
+  conceptText: string; // texto del concepto asignado, o performanceDescription en modo description
+  availableConcepts: ILetterConceptOption[]; // [] en modo description
+}
+
+export interface ICommunicativeLetterTemplate {
+  _id: string;
+  institution: IReportInstitution;
+  period: IReportPeriod;
+  teacher: IReportTeacher;
+  student: IReportStudent;
+  subjects: ILetterSubjectBlock[];
+  observations: string | null;
+  generatedAt: string;
+}
+
+export interface IMissingConceptCoverage {
+  subjectId: string;
+  subjectName: string;
+  missingValuationTypes: QualitativeValuation[];
+}
+
+export interface ILetterAvailability {
+  periodId: string;
+  isAvailable: boolean;
+  missing: IMissingConceptCoverage[];
+}
+
+export type ConceptAssignmentUpdate = {
+  subjectId: string;
+  conceptId: string;
+};

@@ -2,6 +2,7 @@ import { ClipboardDocumentListIcon, TrashIcon } from "@heroicons/react/24/solid"
 import {
     ArrowLeftIcon,
     ArrowRightIcon,
+    EnvelopeIcon,
     PlusIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -41,6 +42,9 @@ const TABLE_HEAD = [
 interface StudentValuationTableProps {
     users: UserDto[];
     onOpenChecklist?: (studentId: string) => void;
+    onViewLetter?: (valuationId: string) => void;
+    isLetterEnabled?: boolean;
+    isLetterAvailable?: boolean;
     currentPage: number;
     totalPages: number;
     onNextPage: () => void;
@@ -48,7 +52,17 @@ interface StudentValuationTableProps {
 }
 import { Loading } from "../../../components/ui/Loading";
 
-export default function StudentValuationTable({ users, onOpenChecklist, currentPage, totalPages, onNextPage, onPrevPage }: StudentValuationTableProps) {
+export default function StudentValuationTable({
+    users,
+    onOpenChecklist,
+    onViewLetter,
+    isLetterEnabled = false,
+    isLetterAvailable = false,
+    currentPage,
+    totalPages,
+    onNextPage,
+    onPrevPage,
+}: StudentValuationTableProps) {
     const { isLoading, error, deleteValuation } = useStudentValuationStore();
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
@@ -221,6 +235,31 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                                     )}
                                                 </IconButton>
                                             </Tooltip>
+                                            {isLetterEnabled && (() => {
+                                                const isLetterReady = valuationState === 'COMPLETED' && isLetterAvailable;
+                                                const letterTooltip = valuationState !== 'COMPLETED'
+                                                    ? "Disponible cuando la evaluación esté completa"
+                                                    : !isLetterAvailable
+                                                        ? "Faltan conceptos por dimensión"
+                                                        : "Ver Carta Comunicativa";
+
+                                                return (
+                                                    <Tooltip content={letterTooltip} size="sm">
+                                                        <span>
+                                                            <IconButton
+                                                                variant="text"
+                                                                disabled={!isLetterReady}
+                                                                onClick={() => user.valuations[0] && onViewLetter?.(user.valuations[0]._id)}
+                                                                size="sm"
+                                                                color="white"
+                                                                className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                                                            >
+                                                                <EnvelopeIcon className={`h-5 w-5 ${isLetterReady ? 'text-purple-700' : 'text-gray-400'}`} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                );
+                                            })()}
                                             {valuationState !== 'NOT_STARTED' && user.valuations[0]?._id && (
                                                 <Tooltip content="Borrar Evaluación" size="sm">
                                                     <IconButton

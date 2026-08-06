@@ -7,3 +7,15 @@ export const getChecklistReportSchema = z.object({
     valuationId: objectIdSchema,
   }).strict(),
 });
+
+export const getCommunicativeLetterSchema = z.object({
+  params: z.object({
+    valuationId: objectIdSchema,
+  }).strict(),
+});
+
+export const getLetterAvailabilitySchema = z.object({
+  query: z.object({
+    periodId: objectIdSchema,
+  }).strict(),
+});

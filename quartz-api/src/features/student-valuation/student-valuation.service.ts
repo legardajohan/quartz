@@ -12,6 +12,7 @@ import { validateAllExist } from '../../services/document-validator.service';
 import {
   StudentValuationCreationData,
   StudentValuationUpdateData,
+  StudentValuationConceptsUpdateData,
   IStudentValuationDTO,
   IValuationBySubjectDTO,
   GlobalValuationStatus,
@@ -21,6 +22,20 @@ import AppError from '../../utils/AppError';
 import { User } from '../auth/auth.model';
 import { Subject } from '../subject/subject.model';
 import { SubjectEvaluationMode } from '../subject/subject.types';
+import { ConceptModel } from '../concept/concept.model';
+
+// -----------------------------------------------------------------------------
+// 0. DOMAIN RULES
+// -----------------------------------------------------------------------------
+
+/**
+ * Umbrales de docs/domain.md §Concepto por dimensión: 80-100 Logrado · 46-79 En proceso · 0-45 Con dificultad.
+ */
+export function resolveQualitativeValuation(subjectPercentage: number): QualitativeValuation {
+  if (subjectPercentage >= 80) return QualitativeValuation.ACHIEVED;
+  if (subjectPercentage >= 46) return QualitativeValuation.IN_PROCESS;
+  return QualitativeValuation.WITH_DIFICULTY;
+}
 
 // -----------------------------------------------------------------------------
 // I. CENTRALIZED POPULATION AND DTO MAPPING (CORRECTED)
@@ -367,13 +382,52 @@ export async function updateStudentValuation(
     }
   });
 
-  // 3. Persist optional free-text observations, normalizing blank input to null.
+  // 3. Assign the default Concept for each fully-valued checklist subject, by qualitative level.
+  const periodConcepts = await findScoped(ConceptModel, institutionId, {
+    periodId: valuation.periodId,
+  })
+    .select('subjectId valuationType createdAt')
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const conceptCandidatesByKey = new Map<string, string[]>();
+  periodConcepts.forEach(concept => {
+    const key = `${concept.subjectId.toString()}|${concept.valuationType}`;
+    const candidates = conceptCandidatesByKey.get(key);
+    if (candidates) {
+      candidates.push(concept._id.toString());
+    } else {
+      conceptCandidatesByKey.set(key, [concept._id.toString()]);
+    }
+  });
+
+  valuation.valuationsBySubject.forEach(subject => {
+    if (subject.evaluationMode !== SubjectEvaluationMode.CHECKLIST) return;
+
+    const isFullyValued = subject.learningValuations.length > 0
+      && subject.learningValuations.every(lv => lv.qualitativeValuation !== null);
+
+    if (!isFullyValued) {
+      subject.assignedConceptId = undefined;
+      return;
+    }
+
+    const level = resolveQualitativeValuation(subject.subjectPercentage);
+    const candidates = conceptCandidatesByKey.get(`${subject.subjectId.toString()}|${level}`) ?? [];
+    const currentConceptId = subject.assignedConceptId?.toString();
+
+    if (currentConceptId && candidates.includes(currentConceptId)) return;
+
+    subject.assignedConceptId = candidates.length > 0 ? new Types.ObjectId(candidates[0]) : undefined;
+  });
+
+  // 4. Persist optional free-text observations, normalizing blank input to null.
   if (updateData.observations !== undefined) {
     const trimmedObservations = updateData.observations?.trim() ?? '';
     valuation.observations = trimmedObservations.length > 0 ? trimmedObservations : null;
   }
 
-  // 4. Determine Global Status
+  // 5. Determine Global Status
   if (valuatedLearnings === 0) {
     valuation.globalStatus = GlobalValuationStatus.CREATED;
   } else if (valuatedLearnings === totalLearnings && totalLearnings > 0) {
@@ -385,6 +439,71 @@ export async function updateStudentValuation(
   await valuation.save();
 
   // Directly populate and map the updated document without a second DB query.
+  return populateAndMapValuation(valuation);
+}
+
+export async function updateValuationConcepts(
+  valuationId: string,
+  institutionId: string,
+  data: StudentValuationConceptsUpdateData
+): Promise<IStudentValuationDTO> {
+  const valuation = await findOneScoped(StudentValuationModel, institutionId, {
+    _id: new Types.ObjectId(valuationId),
+  });
+
+  if (!valuation) {
+    throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
+  }
+
+  if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
+    throw new AppError('La Lista de Chequeo aún no está evaluada completamente.', 409);
+  }
+
+  const conceptIds = data.assignments.map(assignment => new Types.ObjectId(assignment.conceptId));
+  const concepts = await findScoped(ConceptModel, institutionId, {
+    _id: { $in: conceptIds },
+  })
+    .select('subjectId periodId valuationType')
+    .lean();
+
+  const conceptsById = new Map(concepts.map(concept => [concept._id.toString(), concept]));
+
+  // Validate every assignment before mutating the document, so a single invalid entry aborts the whole request.
+  data.assignments.forEach(assignment => {
+    const subject = valuation.valuationsBySubject.find(
+      s => s.subjectId.toString() === assignment.subjectId
+    );
+
+    if (!subject || subject.evaluationMode !== SubjectEvaluationMode.CHECKLIST) {
+      throw new AppError('La dimensión no existe en esta valoración o no admite conceptos.', 422);
+    }
+
+    const concept = conceptsById.get(assignment.conceptId);
+    if (!concept) {
+      throw new AppError('El concepto no existe o no pertenece a la institución.', 422);
+    }
+
+    const level = resolveQualitativeValuation(subject.subjectPercentage);
+    const matchesSubject = concept.subjectId.toString() === assignment.subjectId;
+    const matchesPeriod = concept.periodId.toString() === valuation.periodId.toString();
+    const matchesLevel = concept.valuationType === level;
+
+    if (!matchesSubject || !matchesPeriod || !matchesLevel) {
+      throw new AppError('El concepto no corresponde a la dimensión, el período o el nivel obtenido.', 422);
+    }
+  });
+
+  data.assignments.forEach(assignment => {
+    const subject = valuation.valuationsBySubject.find(
+      s => s.subjectId.toString() === assignment.subjectId
+    );
+    if (subject) {
+      subject.assignedConceptId = new Types.ObjectId(assignment.conceptId);
+    }
+  });
+
+  await valuation.save();
+
   return populateAndMapValuation(valuation);
 }
 

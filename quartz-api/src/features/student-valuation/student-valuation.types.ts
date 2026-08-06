@@ -118,3 +118,12 @@ export type StudentValuationUpdateData = {
   valuationsBySubject: ValuationBySubjectUpdate[];
   observations?: string | null;
 };
+
+export type ConceptAssignmentUpdate = {
+  subjectId: string;
+  conceptId: string;
+};
+
+export type StudentValuationConceptsUpdateData = {
+  assignments: ConceptAssignmentUpdate[];
+};

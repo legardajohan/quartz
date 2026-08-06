@@ -15,7 +15,9 @@ interface ReportsTableProps {
   onPrevPage: () => void;
   isLoading?: boolean;
   onViewChecklist: (valuationId: string) => void;
+  onViewLetter: (valuationId: string) => void;
   enabledReports: ReportKind[];
+  isLetterAvailable: boolean;
 }
 
 export default function ReportsTable({
@@ -26,7 +28,9 @@ export default function ReportsTable({
   onPrevPage,
   isLoading,
   onViewChecklist,
+  onViewLetter,
   enabledReports,
+  isLetterAvailable,
 }: ReportsTableProps) {
   const isChecklistEnabled = enabledReports.includes("checklist");
   const isCommunicativeLetterEnabled = enabledReports.includes("communicative-letter");
@@ -139,21 +143,31 @@ export default function ReportsTable({
                 </span>
               </Tooltip>
             )}
-            {isCommunicativeLetterEnabled && (
-              <Tooltip content="Próximamente" size="sm">
-                <span>
-                  <IconButton
-                    variant="text"
-                    size="sm"
-                    color="white"
-                    disabled
-                    className="shadow-none bg-white border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            )}
+            {isCommunicativeLetterEnabled && (() => {
+              const isLetterReady = isChecklistReady && isLetterAvailable;
+              const letterTooltip = !isChecklistReady
+                ? "Disponible cuando la evaluación esté completa"
+                : !isLetterAvailable
+                  ? "Faltan conceptos por dimensión"
+                  : "Ver Carta Comunicativa";
+
+              return (
+                <Tooltip content={letterTooltip} size="sm">
+                  <span>
+                    <IconButton
+                      variant="text"
+                      size="sm"
+                      color="white"
+                      disabled={!isLetterReady}
+                      onClick={() => valuation && onViewLetter(valuation._id)}
+                      className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      <EnvelopeIcon className={`h-5 w-5 ${isLetterReady ? "text-purple-700" : "text-gray-400"}`} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              );
+            })()}
           </div>
         );
       },

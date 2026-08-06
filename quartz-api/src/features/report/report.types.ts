@@ -1,4 +1,5 @@
-import { GlobalValuationStatus, IValuationBySubjectDTO } from "../student-valuation/student-valuation.types";
+import { GlobalValuationStatus, IValuationBySubjectDTO, QualitativeValuation } from "../student-valuation/student-valuation.types";
+import { SubjectEvaluationMode } from "../subject/subject.types";
 
 // Definicion de interfaces de evaluacion de estudiante
 
@@ -62,4 +63,45 @@ export interface IReportTemplate {
     student: IStudent;
     valuation: IStudentValuation;
     generatedAt: string; // Fecha de generación/impresión (ISO), calculada al momento de la petición
+}
+
+// Interfaces de la Carta Comunicativa
+
+export interface ILetterConceptOption {
+    _id: string;
+    description: string;
+}
+
+export interface ILetterSubjectBlock {
+    subjectId: string;
+    subjectName: string;
+    evaluationMode: SubjectEvaluationMode;
+    valuationType: QualitativeValuation | null; // null en modo description
+    subjectPercentage: number;
+    assignedConceptId: string | null;
+    conceptText: string; // texto del concepto asignado, o performanceDescription en modo description
+    availableConcepts: ILetterConceptOption[]; // [] en modo description
+}
+
+export interface ICommunicativeLetterTemplate {
+    _id: string;
+    institution: IInstitution;
+    period: IPeriod;
+    teacher: ITeacher;
+    student: IStudent;
+    subjects: ILetterSubjectBlock[];
+    observations: string | null;
+    generatedAt: string;
+}
+
+export interface IMissingConceptCoverage {
+    subjectId: string;
+    subjectName: string;
+    missingValuationTypes: QualitativeValuation[];
+}
+
+export interface ILetterAvailability {
+    periodId: string;
+    isAvailable: boolean;
+    missing: IMissingConceptCoverage[];
 }

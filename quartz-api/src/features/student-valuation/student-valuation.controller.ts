@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import {
   initializeStudentValuation,
   updateStudentValuation,
+  updateValuationConcepts,
   deleteStudentValuation,
   getStudentValuationById,
   getStudentValuations
@@ -38,6 +39,14 @@ export async function updateValuationController(req: Request, res: Response) {
   const institutionId = req.user!.institutionId.toString();
 
   const updatedValuation = await updateStudentValuation(valuationId, institutionId, updateData);
+  res.status(200).json(updatedValuation);
+}
+
+export async function updateValuationConceptsController(req: Request, res: Response) {
+  const { valuationId } = req.params;
+  const institutionId = req.user!.institutionId.toString();
+
+  const updatedValuation = await updateValuationConcepts(valuationId, institutionId, req.body);
   res.status(200).json(updatedValuation);
 }
 

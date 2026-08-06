@@ -1,6 +1,14 @@
 import { create } from 'zustand';
-import { apiGet, extractErrorMessage } from '../../api/apiClient';
-import type { ReportState, GetUsersQuery, UserDto, IReportTemplate } from './types';
+import { apiGet, apiPatch, extractErrorMessage } from '../../api/apiClient';
+import type {
+  ReportState,
+  GetUsersQuery,
+  UserDto,
+  IReportTemplate,
+  ICommunicativeLetterTemplate,
+  ILetterAvailability,
+  ConceptAssignmentUpdate,
+} from './types';
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -12,6 +20,10 @@ export const useReportStore = create<ReportState>((set) => ({
   currentReport: null,
   isReportLoading: false,
   reportError: null,
+  currentLetter: null,
+  isLetterLoading: false,
+  letterError: null,
+  letterAvailability: null,
 
   fetchUsers: async (query: GetUsersQuery) => {
     set({ isLoading: true, error: null, currentPage: 1 });
@@ -34,6 +46,41 @@ export const useReportStore = create<ReportState>((set) => ({
   },
 
   clearReport: () => set({ currentReport: null, reportError: null }),
+
+  fetchLetterAvailability: async (periodId: string) => {
+    try {
+      const data = await apiGet<ILetterAvailability>('/reports/communicative-letter/availability', {
+        params: { periodId },
+      });
+      set({ letterAvailability: data });
+    } catch {
+      set({ letterAvailability: null });
+    }
+  },
+
+  fetchCommunicativeLetter: async (valuationId: string) => {
+    set({ isLetterLoading: true, letterError: null, currentLetter: null });
+    try {
+      const data = await apiGet<ICommunicativeLetterTemplate>(`/reports/communicative-letter/${valuationId}`);
+      set({ currentLetter: data, isLetterLoading: false });
+    } catch (err: unknown) {
+      set({ letterError: extractErrorMessage(err, 'Falló la carga de la Carta Comunicativa.'), isLetterLoading: false });
+    }
+  },
+
+  saveLetterConcepts: async (valuationId: string, assignments: ConceptAssignmentUpdate[]) => {
+    try {
+      await apiPatch(`/student-valuations/${valuationId}/concepts`, { assignments });
+      const data = await apiGet<ICommunicativeLetterTemplate>(`/reports/communicative-letter/${valuationId}`);
+      set({ currentLetter: data });
+    } catch (err: unknown) {
+      const message = extractErrorMessage(err, 'Falló guardar la selección de conceptos.');
+      set({ letterError: message });
+      throw new Error(message);
+    }
+  },
+
+  clearLetter: () => set({ currentLetter: null, letterError: null, isLetterLoading: false }),
 
   nextPage: () => set((state) => {
     const totalPages = Math.ceil(state.users.length / ITEMS_PER_PAGE);

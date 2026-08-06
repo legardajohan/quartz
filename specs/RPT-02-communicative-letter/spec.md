@@ -1,7 +1,7 @@
 ---
 id: RPT-02-communicative-letter
 feature: communicative-letter
-status: draft
+status: implemented
 created: 2026-08-05
 ---
 
@@ -19,7 +19,7 @@ Cierra el puente `subjectPercentage → QualitativeValuation → Concept`, decla
 - Agregado `getCommunicativeLetterReport` + endpoint de disponibilidad de conceptos por período.
 - `CommunicativeLetterDocument.tsx` (PDF tamaño carta) y modal de edición con previsualización en vivo.
 - Activación del icono de Carta Comunicativa en `/informes` (hoy placeholder deshabilitado) y nueva acción en la tabla de `/evaluacion`, ambas sujetas a `sessionData.enabledReports`.
-- Sincronización de `docs/data-model.md` y `docs/data-base.md` §1.1, que afirman que `Concept` no tiene modelo en código.
+- Sincronización de `docs/data-model.md` y `docs/data-base.md` §1.1, que afirman que `Concept` no tiene modelo en código. *(Diferida a `/sdd-release`: `/sdd-implement` no escribe documentación por regla de la skill; ver `tasks.md`.)*
 
 **Fuera:**
 - CRUD de `Concept` — ya implementado (`specs/concepts.spec.md`).
@@ -30,35 +30,35 @@ Cierra el puente `subjectPercentage → QualitativeValuation → Concept`, decla
 ## Criterios de aceptación (EARS)
 
 ### Asignación del concepto
-- [ ] Cuando el docente guarda `PATCH /api/student-valuations/:valuationId` y una dimensión en modo `checklist` tiene **todos** sus ítems valorados, el sistema deriva su nivel cualitativo del `subjectPercentage` y le asigna un `Concept` de su institución que coincida en `subjectId`, `periodId` y `valuationType`.
-- [ ] Si existen varios `Concept` candidatos, el sistema asigna el más antiguo por `createdAt` como valor por defecto.
-- [ ] Si la dimensión ya tenía `assignedConceptId` y ese concepto sigue perteneciendo a los candidatos del nivel derivado, el sistema **conserva** la elección; si el nivel cambió, la reemplaza por el nuevo valor por defecto.
-- [ ] Si una dimensión en modo `checklist` tiene ítems sin valorar, el sistema deja su `assignedConceptId` sin definir.
-- [ ] Si no existe ningún `Concept` para el nivel derivado, el sistema deja `assignedConceptId` sin definir y responde `200` sin fallar.
-- [ ] Si una dimensión está en modo `description`, el sistema nunca le asigna `assignedConceptId` (invariante de `docs/data-base.md` §2.2).
-- [ ] Cuando el docente envía `PATCH /api/student-valuations/:valuationId/concepts`, el sistema persiste la selección sólo si cada `conceptId` pertenece a su institución y coincide con el `subjectId`, el `periodId` y el nivel derivado de esa dimensión; en caso contrario responde `422`.
-- [ ] Si la valoración no está en `Evaluado`, el sistema rechaza `PATCH /:valuationId/concepts` con `409`.
+- [x] Cuando el docente guarda `PATCH /api/student-valuations/:valuationId` y una dimensión en modo `checklist` tiene **todos** sus ítems valorados, el sistema deriva su nivel cualitativo del `subjectPercentage` y le asigna un `Concept` de su institución que coincida en `subjectId`, `periodId` y `valuationType`.
+- [x] Si existen varios `Concept` candidatos, el sistema asigna el más antiguo por `createdAt` como valor por defecto.
+- [x] Si la dimensión ya tenía `assignedConceptId` y ese concepto sigue perteneciendo a los candidatos del nivel derivado, el sistema **conserva** la elección; si el nivel cambió, la reemplaza por el nuevo valor por defecto.
+- [x] Si una dimensión en modo `checklist` tiene ítems sin valorar, el sistema deja su `assignedConceptId` sin definir.
+- [x] Si no existe ningún `Concept` para el nivel derivado, el sistema deja `assignedConceptId` sin definir y responde `200` sin fallar.
+- [x] Si una dimensión está en modo `description`, el sistema nunca le asigna `assignedConceptId` (invariante de `docs/data-base.md` §2.2).
+- [x] Cuando el docente envía `PATCH /api/student-valuations/:valuationId/concepts`, el sistema persiste la selección sólo si cada `conceptId` pertenece a su institución y coincide con el `subjectId`, el `periodId` y el nivel derivado de esa dimensión; en caso contrario responde `422`.
+- [x] Si la valoración no está en `Evaluado`, el sistema rechaza `PATCH /:valuationId/concepts` con `409`.
 
 ### Informe
-- [ ] Cuando un Docente o Jefe de Área solicita `GET /api/reports/communicative-letter/:valuationId` y la valoración está en `Evaluado`, el sistema devuelve el agregado de la Carta con un bloque por dimensión.
-- [ ] Si la valoración no está en `Evaluado`, el sistema responde `409`.
-- [ ] Si alguna dimensión en modo `checklist` de esa valoración carece de al menos un `Concept` de `Logrado`, uno de `En proceso` y uno de `Con dificultad` para su período, el sistema responde `422` detallando la dimensión y los niveles faltantes.
-- [ ] Cuando el bloque corresponde a una dimensión en modo `checklist`, el sistema devuelve el texto del concepto asignado y la lista de conceptos alternativos **del mismo nivel**.
-- [ ] Cuando el bloque corresponde a una dimensión en modo `description`, el sistema imprime la `performanceDescription` que el docente escribió en la Lista de Chequeo, sin nivel ni conceptos alternativos.
-- [ ] Si un Docente solicita la Carta de un estudiante fuera de su sede, el sistema responde `403`.
-- [ ] Cuando el usuario solicita la disponibilidad de la Carta para un período, el sistema devuelve si hay cobertura de conceptos y, si no la hay, qué dimensiones y niveles faltan.
+- [x] Cuando un Docente o Jefe de Área solicita `GET /api/reports/communicative-letter/:valuationId` y la valoración está en `Evaluado`, el sistema devuelve el agregado de la Carta con un bloque por dimensión.
+- [x] Si la valoración no está en `Evaluado`, el sistema responde `409`.
+- [x] Si alguna dimensión en modo `checklist` de esa valoración carece de al menos un `Concept` de `Logrado`, uno de `En proceso` y uno de `Con dificultad` para su período, el sistema responde `422` detallando la dimensión y los niveles faltantes.
+- [x] Cuando el bloque corresponde a una dimensión en modo `checklist`, el sistema devuelve el texto del concepto asignado y la lista de conceptos alternativos **del mismo nivel**.
+- [x] Cuando el bloque corresponde a una dimensión en modo `description`, el sistema imprime la `performanceDescription` que el docente escribió en la Lista de Chequeo, sin nivel ni conceptos alternativos.
+- [x] Si un Docente solicita la Carta de un estudiante fuera de su sede, el sistema responde `403`.
+- [x] Cuando el usuario solicita la disponibilidad de la Carta para un período, el sistema devuelve si hay cobertura de conceptos y, si no la hay, qué dimensiones y niveles faltan.
 
 ### Interfaz
-- [ ] Cuando un usuario abre `/informes` o `/evaluacion`, el sistema habilita el icono de Carta Comunicativa sólo si la institución tiene `communicative-letter` en `enabledReports`, la valoración está en `Evaluado` y hay cobertura de conceptos; en cualquier otro caso lo muestra deshabilitado con el motivo en el tooltip.
-- [ ] Cuando el usuario pulsa el icono habilitado, el sistema abre un modal con el panel de selección de concepto por dimensión y la vista previa del PDF.
-- [ ] Cuando el usuario cambia la selección de un concepto, el sistema actualiza la vista previa sin recargar el informe.
-- [ ] Cuando el usuario guarda la selección y vuelve a abrir la Carta, el sistema muestra los conceptos que eligió.
-- [ ] Cuando el sistema no puede componer la Carta por falta de conceptos, el modal muestra las dimensiones y niveles faltantes en lugar de la vista previa.
-- [ ] Cuando el usuario pulsa Descargar, el sistema produce el PDF en tamaño carta bajo demanda y nunca lo almacena.
+- [x] Cuando un usuario abre `/informes` o `/evaluacion`, el sistema habilita el icono de Carta Comunicativa sólo si la institución tiene `communicative-letter` en `enabledReports`, la valoración está en `Evaluado` y hay cobertura de conceptos; en cualquier otro caso lo muestra deshabilitado con el motivo en el tooltip.
+- [x] Cuando el usuario pulsa el icono habilitado, el sistema abre un modal con el panel de selección de concepto por dimensión y la vista previa del PDF.
+- [x] Cuando el usuario cambia la selección de un concepto, el sistema actualiza la vista previa sin recargar el informe.
+- [x] Cuando el usuario guarda la selección y vuelve a abrir la Carta, el sistema muestra los conceptos que eligió.
+- [x] Cuando el sistema no puede componer la Carta por falta de conceptos, el modal muestra las dimensiones y niveles faltantes en lugar de la vista previa.
+- [x] Cuando el usuario pulsa Descargar, el sistema produce el PDF en tamaño carta bajo demanda y nunca lo almacena.
 
 ### Transversales
-- [ ] **Aislamiento:** toda lectura/escritura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`.
-- [ ] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web`.
+- [x] **Aislamiento:** toda lectura/escritura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`.
+- [x] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web`.
 
 ## Dependencias
 - `concepts` (implemented) — banco de `Concept` con `subjectId`, `periodId` y `valuationType`.

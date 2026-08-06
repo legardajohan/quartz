@@ -16,6 +16,12 @@ const valuationBySubjectUpdateSchema = z.object({
   performanceDescription: z.string().max(2000, 'La descripción no puede superar los 2000 caracteres').nullable().optional(),
 });
 
+// Schema for a single concept assignment
+const conceptAssignmentSchema = z.object({
+  subjectId: objectIdSchema,
+  conceptId: objectIdSchema,
+}).strict();
+
 
 export const studentValuationValidation = {
   initializeValuation: z.object({
@@ -51,5 +57,14 @@ export const studentValuationValidation = {
     params: z.object({
       valuationId: objectIdSchema,
     }),
+  }),
+
+  updateValuationConcepts: z.object({
+    params: z.object({
+      valuationId: objectIdSchema,
+    }),
+    body: z.object({
+      assignments: z.array(conceptAssignmentSchema).min(1),
+    }).strict(),
   }),
 };
