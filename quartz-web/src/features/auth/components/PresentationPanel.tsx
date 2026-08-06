@@ -14,7 +14,7 @@ export function PresentationPanel() {
         }}
       />
       {/* Overlay for better contrast */}
-      <div className="absolute inset-0 bg-purple-900/40" style={{ zIndex: 1 }} />
+      <div className="absolute inset-0 bg-purple-900/50" style={{ zIndex: 1 }} />
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center">
         {/* Logo con relleno arcoíris animado */}
