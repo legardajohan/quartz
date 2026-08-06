@@ -5,6 +5,7 @@ export interface AuthState {
   sessionData: ISessionData | null;
   isLoading: boolean;
   error: string | null;
+  showWelcomeLoader: boolean;
 
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -14,4 +15,5 @@ export interface AuthState {
   setPeriods: (periods: Period[]) => void;
   setEnabledReports: (enabledReports: ReportKind[]) => void;
   setShifts: (multipleShifts: boolean, shifts: Shift[]) => void;
+  dismissWelcomeLoader: () => void;
 }
