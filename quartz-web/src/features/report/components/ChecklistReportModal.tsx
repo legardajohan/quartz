@@ -5,6 +5,7 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import ChecklistReportDocument from "./ChecklistReportDocument";
 import { Loading } from "../../../components/ui/Loading";
 import { useReportStore } from "../useReportStore";
+import { usePdfShieldImage } from "../usePdfShieldImage";
 
 interface ChecklistReportModalProps {
   open: boolean;
@@ -20,6 +21,9 @@ export default function ChecklistReportModal({
   onClose,
 }: ChecklistReportModalProps) {
   const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
+  const shield = usePdfShieldImage(valuationId ?? undefined, !!currentReport?.institution.shield);
+
+  const isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading;
 
   useEffect(() => {
     if (open && valuationId) {
@@ -40,9 +44,11 @@ export default function ChecklistReportModal({
           Lista de Chequeo · {studentName}
         </Typography>
         <div className="flex items-center gap-2">
-          {currentReport && (
+          {isPdfReady && currentReport && (
             <PDFDownloadLink
-              document={<ChecklistReportDocument report={currentReport} />}
+              document={
+                <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} />
+              }
               fileName={fileName}
             >
               {({ loading }) => (
@@ -59,7 +65,7 @@ export default function ChecklistReportModal({
         </div>
       </DialogHeader>
       <DialogBody className="h-[80vh] p-0">
-        {isReportLoading && (
+        {!isPdfReady && !reportError && (
           <div className="flex h-full items-center justify-center">
             <Loading message="Generando vista previa…" />
           </div>
@@ -71,9 +77,9 @@ export default function ChecklistReportModal({
             </Typography>
           </div>
         )}
-        {currentReport && !isReportLoading && !reportError && (
+        {isPdfReady && currentReport && (
           <PDFViewer width="100%" height="100%" showToolbar={false} style={{ border: "none" }}>
-            <ChecklistReportDocument report={currentReport} />
+            <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} />
           </PDFViewer>
         )}
       </DialogBody>

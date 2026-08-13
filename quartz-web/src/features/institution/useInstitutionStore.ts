@@ -4,11 +4,13 @@ import { useAuthStore } from '../auth/useAuthStore';
 import type {
   InstitutionState,
   InstitutionDto,
+  InstitutionBrandingDto,
   UpdateInstitutionSettings
 } from './types';
 
 export const useInstitutionStore = create<InstitutionState>((set) => ({
   institution: null,
+  branding: null,
   isLoading: false,
   isSubmitting: false,
   error: null,
@@ -24,6 +26,15 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
     }
   },
 
+  fetchBranding: async () => {
+    try {
+      const data = await apiGet<InstitutionBrandingDto>('/institutions/me/branding');
+      set({ branding: data });
+    } catch {
+      // Silencioso: el sidebar cae al placeholder por defecto si no hay branding disponible.
+    }
+  },
+
   updateSettings: async (data: UpdateInstitutionSettings) => {
     set({ isSubmitting: true });
     try {
@@ -32,6 +43,7 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
         { settings: data }
       );
       useAuthStore.getState().setEnabledReports(updated.settings.enabledReports);
+      useAuthStore.getState().setShifts(updated.settings.multipleShifts, updated.settings.shifts);
       set({ institution: updated, isSubmitting: false });
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err, 'Falló la actualización de la configuración.');
@@ -48,7 +60,11 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
       const updated = await apiPatch<InstitutionDto, FormData>('/institutions/me/shield', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      set({ institution: updated, isSubmitting: false });
+      set({
+        institution: updated,
+        branding: { name: updated.name, shieldUrl: updated.shieldUrl },
+        isSubmitting: false,
+      });
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err, 'Falló la subida del escudo.');
       set({ error: errorMessage, isSubmitting: false });

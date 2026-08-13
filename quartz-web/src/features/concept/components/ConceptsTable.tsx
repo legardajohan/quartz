@@ -6,6 +6,7 @@ import {
 } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { DataTable, Column } from "../../../components/common/DataTable";
+import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConceptDto, QualitativeValuation } from "../types";
 
 const VALUATION_CHIP_COLOR: Record<QualitativeValuation, "green" | "amber" | "red"> = {
@@ -37,6 +38,7 @@ export function ConceptsTable({
     onEdit,
     onDelete,
 }: ConceptsTableProps) {
+    const axis = useSubjectAxisLabel();
     const columns: Column<ConceptDto>[] = [
         {
             header: "Descripción",
@@ -81,7 +83,7 @@ export function ConceptsTable({
             ),
         },
         {
-            header: "Dimensión",
+            header: axis.singular,
             accessor: (item) => (
                 <Typography variant="small" className="font-normal min-w-[50px]">
                     {item.subject.name}

@@ -4,13 +4,17 @@ import toast from "react-hot-toast";
 
 import { useConceptStore } from "../useConceptStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
+import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import { ConceptDto, NewConcept, UpdateConcept, QualitativeValuation } from "../types";
 import { ConceptForm, ConceptFormData } from "../components/ConceptForm";
 import { ConceptsTable } from "../components/ConceptsTable";
-import { ConceptsFilters } from "../components/ConceptsFilters";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
+import { normalizeText } from "../../../utils/normalizeText";
+
+const VALUATION_TYPES: QualitativeValuation[] = ["Logrado", "En proceso", "Con dificultad"];
 
 export default function ConceptsPage() {
   const { concepts, isLoading, isSubmitting, error, createConcept, updateConcept, deleteConcept } =
@@ -20,6 +24,7 @@ export default function ConceptsPage() {
   const subjects = sessionData?.subjects ?? [];
   const periods = sessionData?.periods ?? [];
   const currentUser = sessionData?.user;
+  const axis = useSubjectAxisLabel();
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
@@ -29,6 +34,7 @@ export default function ConceptsPage() {
   const [isFormDirty, setIsFormDirty] = useState(false);
 
   // Filters
+  const [search, setSearch] = useState("");
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedValuationTypes, setSelectedValuationTypes] = useState<QualitativeValuation[]>([]);
@@ -155,13 +161,39 @@ export default function ConceptsPage() {
   };
 
   const filteredConcepts = useMemo(() => {
+    const term = normalizeText(search);
     return concepts.filter(concept => {
+      const matchSearch = term === "" || normalizeText(concept.description).includes(term);
       const matchPeriod = selectedPeriods.length === 0 || selectedPeriods.includes(concept.period._id);
       const matchSubject = selectedSubjects.length === 0 || selectedSubjects.includes(concept.subject._id);
       const matchValuation = selectedValuationTypes.length === 0 || selectedValuationTypes.includes(concept.valuationType);
-      return matchPeriod && matchSubject && matchValuation;
+      return matchSearch && matchPeriod && matchSubject && matchValuation;
     });
-  }, [concepts, selectedPeriods, selectedSubjects, selectedValuationTypes]);
+  }, [concepts, search, selectedPeriods, selectedSubjects, selectedValuationTypes]);
+
+  const conceptFilterGroups: FilterGroup[] = [
+    {
+      id: "period",
+      label: "Periodo",
+      options: periods.map((period) => ({ value: period._id, label: period.name })),
+      selected: selectedPeriods,
+      onToggle: togglePeriodFilter,
+    },
+    {
+      id: "subject",
+      label: axis.plural,
+      options: subjects.map((subject) => ({ value: subject._id, label: subject.name })),
+      selected: selectedSubjects,
+      onToggle: toggleSubjectFilter,
+    },
+    {
+      id: "valuation",
+      label: "Valoración",
+      options: VALUATION_TYPES.map((v) => ({ value: v, label: v })),
+      selected: selectedValuationTypes,
+      onToggle: (value) => toggleValuationTypeFilter(value as QualitativeValuation),
+    },
+  ];
 
   const totalPages = Math.ceil(filteredConcepts.length / ITEMS_PER_PAGE);
   const paginatedConcepts = filteredConcepts.slice(
@@ -175,23 +207,10 @@ export default function ConceptsPage() {
   return (
     <>
       <div className="w-full relative">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-purple-900">
-              Gestión de Conceptos
-            </h1>
-
-            <ConceptsFilters
-              periods={periods}
-              subjects={subjects}
-              selectedPeriods={selectedPeriods}
-              selectedSubjects={selectedSubjects}
-              selectedValuationTypes={selectedValuationTypes}
-              onTogglePeriod={togglePeriodFilter}
-              onToggleSubject={toggleSubjectFilter}
-              onToggleValuationType={toggleValuationTypeFilter}
-            />
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold text-purple-900">
+            Gestión de Conceptos
+          </h1>
 
           <button
             onClick={handleOpenCreateModal}
@@ -201,6 +220,18 @@ export default function ConceptsPage() {
             <PlusIcon className="h-6 w-6" strokeWidth={2} />
             Crear
           </button>
+        </div>
+
+        <div className="mb-6 flex">
+          <SearchFilterBar
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setCurrentPage(1);
+            }}
+            placeholder="Buscar concepto"
+            groups={conceptFilterGroups}
+          />
         </div>
 
         {error && <p className="mt-4 text-red-500">{error}</p>}

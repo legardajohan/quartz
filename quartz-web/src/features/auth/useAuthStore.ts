@@ -10,6 +10,7 @@ export const useAuthStore = create<AuthState>()(
       sessionData: null,
       isLoading: false,
       error: null,
+      showWelcomeLoader: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -24,7 +25,8 @@ export const useAuthStore = create<AuthState>()(
             token,
             sessionData,
             isLoading: false,
-            error: null
+            error: null,
+            showWelcomeLoader: true
           });
 
         } catch (error: unknown) {
@@ -44,7 +46,8 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           sessionData: null,
           isLoading: false,
-          error: null
+          error: null,
+          showWelcomeLoader: false
         });
       },
 
@@ -107,6 +110,18 @@ export const useAuthStore = create<AuthState>()(
             ? { ...state.sessionData, enabledReports }
             : null
         }));
+      },
+
+      setShifts: (multipleShifts, shifts) => {
+        set((state) => ({
+          sessionData: state.sessionData
+            ? { ...state.sessionData, multipleShifts, shifts }
+            : null
+        }));
+      },
+
+      dismissWelcomeLoader: () => {
+        set({ showWelcomeLoader: false });
       }
     }),
     {

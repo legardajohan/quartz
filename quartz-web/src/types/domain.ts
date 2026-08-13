@@ -7,6 +7,32 @@ export type GradeLevel = 'Transición' | '1ro' | '2do' | '3ro' | '4to' | '5to' |
 export const SUBJECT_TYPES = ['Dimensión', 'Asignatura', 'Área', 'Materia'] as const;
 export type SubjectType = typeof SUBJECT_TYPES[number];
 
+export interface SubjectAxisLabel {
+  singular: string;
+  plural: string;
+}
+
+export const SUBJECT_TYPE_LABELS: Record<SubjectType, SubjectAxisLabel> = {
+  'Dimensión': { singular: 'Dimensión', plural: 'Dimensiones' },
+  'Asignatura': { singular: 'Asignatura', plural: 'Asignaturas' },
+  'Área': { singular: 'Área', plural: 'Áreas' },
+  'Materia': { singular: 'Materia', plural: 'Materias' },
+};
+
+export const SUBJECT_AXIS_FALLBACK: SubjectAxisLabel = {
+  singular: 'Eje de Valoración',
+  plural: 'Ejes de Valoración',
+};
+
+export function resolveSubjectAxisLabel(subjects: Pick<Subject, 'type'>[]): SubjectAxisLabel {
+  const types = new Set(subjects.map((s) => s.type));
+  if (types.size === 1) {
+    const [onlyType] = types;
+    return SUBJECT_TYPE_LABELS[onlyType];
+  }
+  return SUBJECT_AXIS_FALLBACK;
+}
+
 export type SubjectEvaluationMode = 'checklist' | 'description';
 
 export type ReportKind = 'checklist' | 'communicative-letter';
@@ -22,6 +48,11 @@ export interface Period {
   _id: string;
   name: string;
   isActive: boolean;
+}
+
+export interface Shift {
+  _id: string;
+  name: string;
 }
 
 export interface ChecklistTemplates {
@@ -61,4 +92,6 @@ export interface ISessionData {
   subjects: Subject[];
   checklistTemplates: ChecklistTemplates[];
   enabledReports: ReportKind[];
+  multipleShifts: boolean;
+  shifts: Shift[];
 }

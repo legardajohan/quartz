@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../useAuthStore';
 import { PresentationPanel } from '../components/PresentationPanel';
 import { LoginPanel } from '../components/LoginPanel';
-import circleBg from '../../../assets/images/circle-bg.png';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -38,15 +37,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center"
-      style={{
-        backgroundImage: `url(${circleBg})`,
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-      }}
-    >
+    <div className="min-h-screen w-full flex items-center justify-center">
       <div className="flex flex-col md:flex-row rounded-3xl shadow-2xl bg-white/90 overflow-hidden max-w-5xl w-full min-h-[600px]">
         <PresentationPanel />
         <LoginPanel

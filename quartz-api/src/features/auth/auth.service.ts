@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { getPeriodsByInstitution } from '../period/period.service';
 import { getSubjectsByInstitution } from '../subject/subject.service';
 import { getChecklistTemplatesForSession } from '../checklist-template/checklist-template.service';
-import { getEnabledReports } from '../institution/institution.service';
+import { getEnabledReports, getShiftSettings } from '../institution/institution.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
@@ -25,11 +25,12 @@ async function getSessionData(user: SafeUser): Promise<ISessionData> {
     const institutionId = user.institutionId.toString();
     const userId = user._id.toString();
 
-    const [periods, subjects, checklistTemplates, enabledReports] = await Promise.all([
+    const [periods, subjects, checklistTemplates, enabledReports, shiftSettings] = await Promise.all([
         getPeriodsByInstitution(institutionId),
         getSubjectsByInstitution(institutionId),
         getChecklistTemplatesForSession(userId, institutionId),
         getEnabledReports(institutionId),
+        getShiftSettings(institutionId),
     ]);
 
     const sessionData: ISessionData = {
@@ -38,6 +39,8 @@ async function getSessionData(user: SafeUser): Promise<ISessionData> {
         subjects: subjects.map(s => ({ _id: s._id.toString(), name: s.name, type: s.type, evaluationMode: s.evaluationMode })),
         checklistTemplates: checklistTemplates,
         enabledReports,
+        multipleShifts: shiftSettings.multipleShifts,
+        shifts: shiftSettings.shifts,
     };
 
     return sessionData;

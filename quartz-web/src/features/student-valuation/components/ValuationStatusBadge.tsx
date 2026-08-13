@@ -1,5 +1,5 @@
 import { Chip } from '@material-tailwind/react';
-import { ValuationState } from '../types/domain';
+import { ValuationState, VALUATION_STATE_LABELS } from '../types/domain';
 
 interface StatusConfig {
   label: string;
@@ -11,21 +11,21 @@ interface StatusConfig {
 
 const VALUATION_STATES: Record<ValuationState, StatusConfig> = {
   COMPLETED: {
-    label: 'Evaluado',
+    label: VALUATION_STATE_LABELS.COMPLETED,
     color: 'green',
     variant: 'ghost',
     className: 'bg-green-50 text-green-900',
     dotColor: 'bg-green-500',
   },
   IN_PROGRESS: {
-    label: 'Evaluando',
+    label: VALUATION_STATE_LABELS.IN_PROGRESS,
     color: 'blue',
     variant: 'ghost',
     className: 'bg-blue-50 text-blue-900',
     dotColor: 'bg-blue-500',
   },
   CREATED: {
-    label: 'Por diligenciar',
+    label: VALUATION_STATE_LABELS.CREATED,
     color: 'gray', // blue-gray no es un color de Chip, usamos gray
     variant: 'ghost',
     className:
@@ -33,7 +33,7 @@ const VALUATION_STATES: Record<ValuationState, StatusConfig> = {
     dotColor: 'bg-gray-500',
   },
   NOT_STARTED: {
-    label: 'Sin iniciar',
+    label: VALUATION_STATE_LABELS.NOT_STARTED,
     color: 'gray',
     variant: 'filled',
     className:

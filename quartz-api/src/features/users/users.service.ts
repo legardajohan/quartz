@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs';
 import { IUser, IUserDocument, User, SafeUser } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
-import { UserWithValuations, School, ValuationSummary, CreateUserDTO, UpdateUserDTO } from './users.types';
+import { UserWithValuations, School, Shift, ValuationSummary, CreateUserDTO, UpdateUserDTO } from './users.types';
 import { SchoolModel, ISchoolDocument } from '../school/school.model';
+import { getShiftSettings } from '../institution/institution.service';
 import {
   findScoped,
   findOneScoped,
@@ -36,7 +37,8 @@ function mapSchoolToDTO(school: Pick<ISchoolDocument, '_id' | 'schoolNumber' | '
 
 function mapUserToDTO(
   user: IUser & { _id: Types.ObjectId },
-  school: Pick<ISchoolDocument, '_id' | 'schoolNumber' | 'name'>
+  school: Pick<ISchoolDocument, '_id' | 'schoolNumber' | 'name'>,
+  shift: Shift | null = null
 ): UserWithValuations {
   return {
     _id: user._id.toString(),
@@ -52,7 +54,24 @@ function mapUserToDTO(
     gradesTaught: user.gradesTaught ?? [],
     valuations: [],
     avatarUrl: user.avatarUrl,
+    shift,
   };
+}
+
+// Jornadas embebidas en Institution.settings (referencia no poblable): se
+// resuelven en memoria con un Map en vez de un populate.
+async function resolveShiftMap(institutionId: string): Promise<Map<string, Shift>> {
+  const { shifts } = await getShiftSettings(institutionId);
+  return new Map(shifts.map((s) => [s._id, s]));
+}
+
+async function assertAssignableShift(institutionId: string, shiftId: string): Promise<Shift> {
+  const { multipleShifts, shifts } = await getShiftSettings(institutionId);
+  const found = multipleShifts ? shifts.find((s) => s._id === shiftId) : undefined;
+  if (!found) {
+    throw new AppError('La jornada no existe o no está habilitada en la institución.', 422);
+  }
+  return found;
 }
 
 export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserWithValuations[]> => {
@@ -98,6 +117,7 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
         schoolId: 1,
         gradesTaught: 1,
         avatarUrl: 1,
+        shiftId: 1,
       })
       .lean()
       .exec();
@@ -124,6 +144,9 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
       .lean()
       .exec();
 
+    // Jornadas del inquilino (no poblable): un solo Map para toda la respuesta.
+    const shiftMap = await resolveShiftMap(filters.institutionId);
+
     // 3. Group valuations by studentId for efficient lookup.
     const valuationsMap = new Map<string, ValuationSummary[]>();
     for (const valuation of valuations) {
@@ -149,7 +172,8 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
         name: (userSchool as any).name
       } : undefined;
 
-      const { schoolId, ...userWithoutSchoolId } = user as any;
+      const { schoolId, shiftId, ...userWithoutSchoolId } = user as any;
+      const shift = shiftId ? shiftMap.get(shiftId.toString()) ?? null : null;
 
       return {
         ...userWithoutSchoolId,
@@ -157,6 +181,7 @@ export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserW
         school: schoolDTO!,
         gradesTaught: (user as any).gradesTaught || [],
         valuations: userValuations,
+        shift,
       };
     });
 
@@ -196,6 +221,12 @@ export const createUser = async (
     gradesTaught: data.gradesTaught,
   };
 
+  let shift: Shift | null = null;
+  if (data.shiftId !== undefined) {
+    shift = await assertAssignableShift(institutionId, data.shiftId);
+    userData.shiftId = new Types.ObjectId(data.shiftId);
+  }
+
   if (data.role === UserRole.DOCENTE) {
     const existingEmail = await User.findOne({ email: data.email }).lean();
     if (existingEmail) {
@@ -207,7 +238,7 @@ export const createUser = async (
 
   const created = await createScoped(User, institutionId, userData);
 
-  return mapUserToDTO(created.toObject() as unknown as IUser & { _id: Types.ObjectId }, school);
+  return mapUserToDTO(created.toObject() as unknown as IUser & { _id: Types.ObjectId }, school, shift);
 };
 
 export const updateUser = async (
@@ -253,6 +284,7 @@ export const updateUser = async (
 
   const updatePayload: Record<string, unknown> = { ...data };
   delete updatePayload.password;
+  delete updatePayload.shiftId;
   if (data.schoolId !== undefined) {
     updatePayload.schoolId = new Types.ObjectId(data.schoolId);
   }
@@ -260,11 +292,27 @@ export const updateUser = async (
     updatePayload.passwordHash = await bcrypt.hash(data.password, 10);
   }
 
+  // shiftId: undefined → no se toca; null → se desasigna (`$unset`); string → se valida y reasigna.
+  let resolvedShift: Shift | null | undefined;
+  if (data.shiftId !== undefined) {
+    if (data.shiftId === null) {
+      resolvedShift = null;
+    } else {
+      resolvedShift = await assertAssignableShift(institutionId, data.shiftId);
+      updatePayload.shiftId = new Types.ObjectId(data.shiftId);
+    }
+  }
+
+  const updateQuery: Record<string, unknown> = { $set: updatePayload };
+  if (data.shiftId === null) {
+    updateQuery.$unset = { shiftId: 1 };
+  }
+
   const updated = await findOneAndUpdateScoped(
     User,
     institutionId,
     { _id: new Types.ObjectId(userId) },
-    { $set: updatePayload },
+    updateQuery,
     { new: true, runValidators: true }
   ).lean();
 
@@ -277,7 +325,17 @@ export const updateUser = async (
     throw new AppError('La sede no existe o no pertenece a la institución.', 422);
   }
 
-  return mapUserToDTO(updated as unknown as IUser & { _id: Types.ObjectId }, resolvedSchool);
+  if (resolvedShift === undefined) {
+    const updatedShiftId = (updated as unknown as IUser).shiftId;
+    if (updatedShiftId) {
+      const shiftMap = await resolveShiftMap(institutionId);
+      resolvedShift = shiftMap.get(updatedShiftId.toString()) ?? null;
+    } else {
+      resolvedShift = null;
+    }
+  }
+
+  return mapUserToDTO(updated as unknown as IUser & { _id: Types.ObjectId }, resolvedSchool, resolvedShift);
 };
 
 export const deleteUser = async (institutionId: string, userId: string): Promise<void> => {
