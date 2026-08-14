@@ -61,6 +61,7 @@ interface PopulatedValuationBySubject {
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: Types.ObjectId;
+  assignedConceptText?: string | null;
 }
 
 interface PopulatedValuationDoc extends Document {
@@ -124,6 +125,7 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
       maxSubjectScore: vs.maxSubjectScore,
       subjectPercentage: vs.subjectPercentage,
       assignedConceptId: vs.assignedConceptId?.toString(),
+      assignedConceptText: vs.assignedConceptText ?? undefined,
     };
 
     if (vs.evaluationMode === SubjectEvaluationMode.DESCRIPTION) {
@@ -386,18 +388,19 @@ export async function updateStudentValuation(
   const periodConcepts = await findScoped(ConceptModel, institutionId, {
     periodId: valuation.periodId,
   })
-    .select('subjectId valuationType createdAt')
+    .select('subjectId valuationType createdAt description')
     .sort({ createdAt: 1 })
     .lean();
 
-  const conceptCandidatesByKey = new Map<string, string[]>();
+  const conceptCandidatesByKey = new Map<string, { id: string; description: string }[]>();
   periodConcepts.forEach(concept => {
     const key = `${concept.subjectId.toString()}|${concept.valuationType}`;
+    const candidate = { id: concept._id.toString(), description: concept.description };
     const candidates = conceptCandidatesByKey.get(key);
     if (candidates) {
-      candidates.push(concept._id.toString());
+      candidates.push(candidate);
     } else {
-      conceptCandidatesByKey.set(key, [concept._id.toString()]);
+      conceptCandidatesByKey.set(key, [candidate]);
     }
   });
 
@@ -409,6 +412,7 @@ export async function updateStudentValuation(
 
     if (!isFullyValued) {
       subject.assignedConceptId = undefined;
+      subject.assignedConceptText = undefined;
       return;
     }
 
@@ -416,9 +420,11 @@ export async function updateStudentValuation(
     const candidates = conceptCandidatesByKey.get(`${subject.subjectId.toString()}|${level}`) ?? [];
     const currentConceptId = subject.assignedConceptId?.toString();
 
-    if (currentConceptId && candidates.includes(currentConceptId)) return;
+    if (currentConceptId && candidates.some(c => c.id === currentConceptId)) return;
 
-    subject.assignedConceptId = candidates.length > 0 ? new Types.ObjectId(candidates[0]) : undefined;
+    const chosen = candidates[0];
+    subject.assignedConceptId = chosen ? new Types.ObjectId(chosen.id) : undefined;
+    subject.assignedConceptText = chosen ? chosen.description : undefined;
   });
 
   // 4. Persist optional free-text observations, normalizing blank input to null.
@@ -499,6 +505,7 @@ export async function updateValuationConcepts(
     );
     if (subject) {
       subject.assignedConceptId = new Types.ObjectId(assignment.conceptId);
+      subject.assignedConceptText = assignment.conceptText;
     }
   });
 

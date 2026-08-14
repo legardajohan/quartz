@@ -36,6 +36,7 @@ type ValuationBySubjectBase = {
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: string;
+  assignedConceptText?: string | null;
 };
 
 export type IValuationBySubjectDTO =
@@ -122,6 +123,7 @@ export type StudentValuationUpdateData = {
 export type ConceptAssignmentUpdate = {
   subjectId: string;
   conceptId: string;
+  conceptText: string;
 };
 
 export type StudentValuationConceptsUpdateData = {

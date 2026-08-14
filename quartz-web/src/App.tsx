@@ -10,6 +10,7 @@ import ConceptsPage from './features/concept/pages/ConceptsPage';
 import ChecklistsPage from './features/checklist-template/pages/ChecklistsPage';
 import StudentValuationsPage from './features/student-valuation/pages/StudentValuationsPage';
 import ReportsPage from './features/report/pages/ReportsPage';
+import CommunicativeLetterEditPage from './features/report/pages/CommunicativeLetterEditPage';
 import UsersPage from './features/users/pages/UsersPage';
 import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
 import ConfigurationPage from './features/configuration/pages/ConfigurationPage';
@@ -76,6 +77,7 @@ export const router = createBrowserRouter(
 
           <Route path="/evaluacion" element={<StudentValuationsPage />} />
           <Route path="/evaluacion/:studentId" element={<StudentValuationsPage />} />
+          <Route path="/evaluacion/:studentId/carta-comunicativa/:valuationId" element={<CommunicativeLetterEditPage />} />
           <Route path="/informes" element={<ReportsPage />} />
           <Route path="/gestion/usuarios" element={<UsersPage />} />
           <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />

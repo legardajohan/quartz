@@ -5,7 +5,6 @@ import { useStudentValuationStore, ITEMS_PER_PAGE } from "../useStudentValuation
 import { useAuthStore } from "../../auth/useAuthStore";
 import { useReportStore } from "../../report/useReportStore";
 import StudentValuationDetail from "../components/StudentValuationDetail";
-import CommunicativeLetterModal from "../../report/components/CommunicativeLetterModal";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import {
   getValuationState,
@@ -26,9 +25,6 @@ export default function StudentValuationsPage() {
   const { fetchUsers, users } = useStudentValuationStore();
   const { sessionData } = useAuthStore();
   const { fetchLetterAvailability, letterAvailability } = useReportStore();
-
-  const [selectedLetterValuationId, setSelectedLetterValuationId] = useState<string | null>(null);
-  const [selectedLetterStudentName, setSelectedLetterStudentName] = useState("");
 
   const [search, setSearch] = useState("");
   const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
@@ -125,14 +121,8 @@ export default function StudentValuationsPage() {
     navigate(`/evaluacion/${id}`);
   };
 
-  const handleViewLetter = (valuationId: string) => {
-    const owner = users.find((user) => user.valuations.some((v) => v._id === valuationId));
-    const name = owner
-      ? [owner.firstName, owner.lastName, owner.secondLastName].filter(Boolean).join(" ")
-      : "Estudiante";
-
-    setSelectedLetterStudentName(name);
-    setSelectedLetterValuationId(valuationId);
+  const handleViewLetter = (studentId: string, valuationId: string) => {
+    navigate(`/evaluacion/${studentId}/carta-comunicativa/${valuationId}`);
   };
 
   return (
@@ -163,12 +153,6 @@ export default function StudentValuationsPage() {
         totalPages={totalPages}
         onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
-      />
-      <CommunicativeLetterModal
-        open={!!selectedLetterValuationId}
-        valuationId={selectedLetterValuationId}
-        studentName={selectedLetterStudentName}
-        onClose={() => setSelectedLetterValuationId(null)}
       />
     </div>
   );

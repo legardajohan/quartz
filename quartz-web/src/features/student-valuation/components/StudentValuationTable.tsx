@@ -1,10 +1,5 @@
-import { ClipboardDocumentListIcon, TrashIcon } from "@heroicons/react/24/solid";
-import {
-    ArrowLeftIcon,
-    ArrowRightIcon,
-    EnvelopeIcon,
-    PlusIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { ClipboardList, Mail, Plus, Trash2 } from "lucide-react";
 import {
     Avatar,
     Card,
@@ -39,7 +34,7 @@ const TABLE_HEAD = [
 interface StudentValuationTableProps {
     users: UserDto[];
     onOpenChecklist?: (studentId: string) => void;
-    onViewLetter?: (valuationId: string) => void;
+    onViewLetter?: (studentId: string, valuationId: string) => void;
     isLetterEnabled?: boolean;
     isLetterAvailable?: boolean;
     currentPage: number;
@@ -213,10 +208,10 @@ export default function StudentValuationTable({
                                                     className="shadow-none hover:shadow-md bg-white transition-all border border-gray-200"
                                                 >
                                                     {valuationState === 'NOT_STARTED' ? (
-                                                        <PlusIcon className="h-5 w-5 text-gray-500" />
+                                                        <Plus className="h-5 w-5 text-gray-500" />
                                                     ) : (
 
-                                                        <ClipboardDocumentListIcon
+                                                        <ClipboardList
                                                             className={`h-5 w-5 ${valuationState === 'COMPLETED'
                                                                 ? 'text-green-500'
                                                                 : valuationState === 'IN_PROGRESS'
@@ -241,12 +236,12 @@ export default function StudentValuationTable({
                                                             <IconButton
                                                                 variant="text"
                                                                 disabled={!isLetterReady}
-                                                                onClick={() => user.valuations[0] && onViewLetter?.(user.valuations[0]._id)}
+                                                                onClick={() => user.valuations[0] && onViewLetter?.(user._id, user.valuations[0]._id)}
                                                                 size="sm"
                                                                 color="white"
                                                                 className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                                                             >
-                                                                <EnvelopeIcon className={`h-5 w-5 ${isLetterReady ? 'text-purple-700' : 'text-gray-400'}`} />
+                                                                <Mail className={`h-5 w-5 ${isLetterReady ? 'text-purple-700' : 'text-gray-400'}`} />
                                                             </IconButton>
                                                         </span>
                                                     </Tooltip>
@@ -265,7 +260,7 @@ export default function StudentValuationTable({
                                                         size="sm"
                                                         className="text-gray-500 shadow-none hover:shadow-md hover:text-pink-500 transition-all border border-gray-200"
                                                     >
-                                                        <TrashIcon className="h-4 w-4" />
+                                                        <Trash2 className="h-4 w-4" />
                                                     </IconButton>
                                                 </Tooltip>
                                             )}

@@ -244,10 +244,12 @@ export async function getCommunicativeLetterReport(
 
     const level = resolveQualitativeValuation(subject.subjectPercentage);
     const candidates = conceptsByKey.get(`${subject.subjectId}|${level}`) ?? [];
-    const assignedConceptId = subject.assignedConceptId && candidates.some(c => c._id === subject.assignedConceptId)
-      ? subject.assignedConceptId
-      : candidates[0]?._id ?? null;
-    const conceptText = candidates.find(c => c._id === assignedConceptId)?.description ?? '';
+    const isAssignmentValid = !!subject.assignedConceptId && candidates.some(c => c._id === subject.assignedConceptId);
+
+    const assignedConceptId = isAssignmentValid ? subject.assignedConceptId! : candidates[0]?._id ?? null;
+    const conceptText = isAssignmentValid
+      ? (subject.assignedConceptText || candidates.find(c => c._id === assignedConceptId)?.description || '')
+      : (candidates[0]?.description ?? '');
 
     return {
       subjectId: subject.subjectId,
@@ -313,6 +315,46 @@ export async function getChecklistReportShield(
 
   if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
     throw new AppError('La Lista de Chequeo aún no está evaluada completamente.', 409);
+  }
+
+  const studentDoc = await findOneScoped(User, institutionId, {
+    _id: new Types.ObjectId(valuation.studentId),
+  })
+    .select('schoolId')
+    .lean();
+
+  if (!studentDoc) {
+    throw new AppError('Estudiante no encontrado o no pertenece a la institución.', 404);
+  }
+
+  if (requestorRole === UserRole.DOCENTE && studentDoc.schoolId.toString() !== requestorSchoolId) {
+    throw new AppError('No tiene permisos para ver el informe de este estudiante.', 403);
+  }
+
+  const institutionDoc = await Institution.findById(institutionId).select('shieldJpgUrl').lean();
+  const key = institutionDoc?.shieldJpgUrl ? keyFromPublicUrl(institutionDoc.shieldJpgUrl) : null;
+  if (!key) {
+    throw new AppError('Imagen no disponible.', 404);
+  }
+
+  const image = await getImage(key);
+  if (!image) {
+    throw new AppError('Imagen no disponible.', 404);
+  }
+
+  return image;
+}
+
+export async function getCommunicativeLetterShield(
+  valuationId: string,
+  institutionId: string,
+  requestorRole: UserRole,
+  requestorSchoolId: string | undefined
+): Promise<{ buffer: Buffer; contentType: string }> {
+  const valuation = await getStudentValuationById(valuationId, institutionId);
+
+  if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
+    throw new AppError('La Carta Comunicativa aún no está disponible.', 409);
   }
 
   const studentDoc = await findOneScoped(User, institutionId, {

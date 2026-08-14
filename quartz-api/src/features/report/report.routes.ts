@@ -3,6 +3,7 @@ import {
   getChecklistReportController,
   getChecklistReportShieldController,
   getCommunicativeLetterReportController,
+  getCommunicativeLetterShieldController,
   getLetterAvailabilityController,
 } from './report.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
@@ -14,6 +15,7 @@ import {
   getChecklistReportSchema,
   getChecklistReportShieldSchema,
   getCommunicativeLetterSchema,
+  getCommunicativeLetterShieldSchema,
   getLetterAvailabilitySchema,
 } from './report.validation';
 import { UserRole } from '../auth/auth.types';
@@ -56,6 +58,15 @@ router.get(
   authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(getCommunicativeLetterSchema),
   asyncHandler(getCommunicativeLetterReportController)
+);
+
+router.get(
+  '/communicative-letter/:valuationId/shield',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  validate(getCommunicativeLetterShieldSchema),
+  asyncHandler(getCommunicativeLetterShieldController)
 );
 
 export default router;

@@ -1,4 +1,5 @@
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { STATUS_ICON_JPG } from "../statusVisuals";
 import type { ICommunicativeLetterTemplate, QualitativeValuation } from "../types";
 
 const VALUATION_COLORS: Record<QualitativeValuation, string> = {
@@ -30,9 +31,10 @@ function formatPrintDate(iso: string): string {
 
 interface CommunicativeLetterDocumentProps {
   report: ICommunicativeLetterTemplate;
+  shieldSrc?: string | null;
 }
 
-export default function CommunicativeLetterDocument({ report }: CommunicativeLetterDocumentProps) {
+export default function CommunicativeLetterDocument({ report, shieldSrc }: CommunicativeLetterDocumentProps) {
   const { institution, period, teacher, student, subjects, observations, generatedAt } = report;
   const hasObservations = !!observations && observations.trim().length > 0;
 
@@ -40,9 +42,11 @@ export default function CommunicativeLetterDocument({ report }: CommunicativeLet
     <Document title={`Carta Comunicativa - ${formatFullName(student)}`}>
       <Page size="LETTER" style={styles.page}>
         <View style={styles.header}>
-          <View style={styles.shieldBox}>
-            <Text style={styles.shieldPlaceholderText}>Escudo</Text>
-          </View>
+          {shieldSrc && (
+            <View style={styles.shieldBox}>
+              <Image src={shieldSrc} style={styles.shieldImage} />
+            </View>
+          )}
           <View style={styles.institutionBlock}>
             <Text style={styles.institutionName}>{institution.name}</Text>
             <Text style={styles.institutionMeta}>
@@ -76,27 +80,29 @@ export default function CommunicativeLetterDocument({ report }: CommunicativeLet
           </View>
         </View>
 
-        <Text style={styles.intro}>
-          A continuación se presenta el desempeño de {formatFullName(student)} durante {period.name} {period.year},
-          según lo valorado por el docente en cada dimensión.
-        </Text>
-
         {subjects.map((subject) => (
-          <View style={styles.subjectBlock} key={subject.subjectId} wrap>
-            <View style={styles.subjectHeaderRow} minPresenceAhead={36}>
-              <Text style={styles.subjectHeaderText}>Dimensión {subject.subjectName}</Text>
-              {subject.valuationType && (
-                <View style={styles.levelBadge}>
+          <View style={styles.subjectRow} key={subject.subjectId} wrap>
+            <View style={styles.subjectMain}>
+              <View style={styles.subjectHeaderRow} minPresenceAhead={36}>
+                <Text style={styles.subjectHeaderText}>Dimensión {subject.subjectName}</Text>
+              </View>
+              <View style={styles.conceptBox}>
+                <Text style={styles.conceptText}>
+                  {subject.conceptText || "Sin descripción registrada."}
+                </Text>
+              </View>
+            </View>
+            {subject.valuationType && (
+              <View style={styles.statusColumn}>
+                <Image src={STATUS_ICON_JPG[subject.valuationType]} style={styles.statusIcon} />
+                <View style={styles.statusBadge}>
                   <View style={[styles.levelDot, { backgroundColor: VALUATION_COLORS[subject.valuationType] }]} />
-                  <Text style={styles.levelBadgeText}>{subject.valuationType}</Text>
+                  <Text style={[styles.statusBadgeText, { color: VALUATION_COLORS[subject.valuationType] }]}>
+                    {subject.valuationType}
+                  </Text>
                 </View>
-              )}
-            </View>
-            <View style={styles.conceptBox}>
-              <Text style={styles.conceptText}>
-                {subject.conceptText || "Sin descripción registrada."}
-              </Text>
-            </View>
+              </View>
+            )}
           </View>
         ))}
 
@@ -146,17 +152,15 @@ const styles = StyleSheet.create({
   shieldBox: {
     width: 56,
     height: 56,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderStyle: "dashed",
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
   },
-  shieldPlaceholderText: {
-    fontSize: 6,
-    color: "#9ca3af",
+  shieldImage: {
+    width: 56,
+    height: 56,
+    objectFit: "contain",
   },
   institutionBlock: {
     flex: 1,
@@ -209,19 +213,17 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     marginTop: 2,
   },
-  intro: {
-    fontSize: 9,
-    color: "#4b5563",
-    lineHeight: 1.5,
-    marginBottom: 16,
-  },
-  subjectBlock: {
+  subjectRow: {
+    flexDirection: "row",
     marginBottom: 14,
+  },
+  subjectMain: {
+    flex: 1,
+    marginRight: 10,
   },
   subjectHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "#581c87",
     padding: 6,
   },
@@ -231,10 +233,26 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
   },
-  levelBadge: {
+  statusColumn: {
+    width: 110,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderStyle: "solid",
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    paddingVertical: 10,
+  },
+  statusIcon: {
+    width: 68,
+    height: 68,
+    marginBottom: 8,
+  },
+  statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#f3f4f6",
     paddingVertical: 2,
     paddingHorizontal: 6,
     borderRadius: 8,
@@ -245,10 +263,9 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginRight: 4,
   },
-  levelBadgeText: {
+  statusBadgeText: {
     fontSize: 7,
     fontFamily: "Helvetica-Bold",
-    color: "#ffffff",
     textTransform: "uppercase",
   },
   conceptBox: {

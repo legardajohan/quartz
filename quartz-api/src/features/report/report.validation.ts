@@ -20,6 +20,12 @@ export const getCommunicativeLetterSchema = z.object({
   }).strict(),
 });
 
+export const getCommunicativeLetterShieldSchema = z.object({
+  params: z.object({
+    valuationId: objectIdSchema,
+  }).strict(),
+});
+
 export const getLetterAvailabilitySchema = z.object({
   query: z.object({
     periodId: objectIdSchema,

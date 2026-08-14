@@ -16,7 +16,7 @@ const REPORT_OPTIONS: { value: ReportKind; label: string; description: string; i
   {
     value: "communicative-letter",
     label: "Carta comunicativa",
-    description: "Informe narrativo para las familias (próximamente).",
+    description: "Informe narrativo para las familias, con edición de conceptos por dimensión.",
     icon: EnvelopeOpenIcon,
   },
 ];

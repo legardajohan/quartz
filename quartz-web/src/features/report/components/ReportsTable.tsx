@@ -1,5 +1,4 @@
-import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
-import { EnvelopeIcon } from "@heroicons/react/24/outline";
+import { ClipboardList, Mail } from "lucide-react";
 import { Avatar, Typography, IconButton, Tooltip } from "@material-tailwind/react";
 import { DataTable, type Column } from "../../../components/common/DataTable";
 import { ITEMS_PER_PAGE } from "../useReportStore";
@@ -136,7 +135,7 @@ export default function ReportsTable({
                     onClick={() => valuation && onViewChecklist(valuation._id)}
                     className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                   >
-                    <ClipboardDocumentListIcon
+                    <ClipboardList
                       className={`h-5 w-5 ${isChecklistReady ? "text-green-600" : "text-gray-400"}`}
                     />
                   </IconButton>
@@ -162,7 +161,7 @@ export default function ReportsTable({
                       onClick={() => valuation && onViewLetter(valuation._id)}
                       className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                     >
-                      <EnvelopeIcon className={`h-5 w-5 ${isLetterReady ? "text-purple-700" : "text-gray-400"}`} />
+                      <Mail className={`h-5 w-5 ${isLetterReady ? "text-purple-700" : "text-gray-400"}`} />
                     </IconButton>
                   </span>
                 </Tooltip>

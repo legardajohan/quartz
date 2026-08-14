@@ -20,6 +20,7 @@ export interface IValuationBySubject {
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: Types.ObjectId;
+  assignedConceptText?: string | null;
 }
 
 // Interface for the StudentValuation document
@@ -49,7 +50,8 @@ const valuationBySubjectSchema = new Schema<IValuationBySubject>({
   totalSubjectScore: { type: Number, default: 0 },
   maxSubjectScore: { type: Number, default: 0 },
   subjectPercentage: { type: Number, default: 0 },
-  assignedConceptId: { type: Schema.Types.ObjectId, ref: 'Concept' }
+  assignedConceptId: { type: Schema.Types.ObjectId, ref: 'Concept' },
+  assignedConceptText: { type: String, default: null }
 }, { _id: false });
 
 const studentValuationSchema = new Schema<IStudentValuationDocument>({

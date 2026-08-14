@@ -21,7 +21,7 @@ export default function ChecklistReportModal({
   onClose,
 }: ChecklistReportModalProps) {
   const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
-  const shield = usePdfShieldImage(valuationId ?? undefined, !!currentReport?.institution.shield);
+  const shield = usePdfShieldImage(valuationId ?? undefined, !!currentReport?.institution.shield, "checklist");
 
   const isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading;
 

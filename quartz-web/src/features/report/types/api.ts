@@ -136,4 +136,5 @@ export interface ILetterAvailability {
 export type ConceptAssignmentUpdate = {
   subjectId: string;
   conceptId: string;
+  conceptText: string;
 };

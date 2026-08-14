@@ -7,32 +7,48 @@ export interface PdfImageResult {
   isLoading: boolean;
 }
 
-export function usePdfShieldImage(valuationId: string | undefined, hasSource: boolean): PdfImageResult {
-  const [result, setResult] = useState<PdfImageResult>({ src: null, isLoading: hasSource });
+export type PdfShieldReportKind = "checklist" | "communicative-letter";
+
+export function usePdfShieldImage(
+  valuationId: string | undefined,
+  hasSource: boolean,
+  reportKind: PdfShieldReportKind
+): PdfImageResult {
+  const [src, setSrc] = useState<string | null>(null);
+  const [resolvedKey, setResolvedKey] = useState<string | null>(null);
+
+  // La clave representa "qué escudo se está pidiendo ahora mismo". isLoading se deriva de
+  // compararla contra la última clave resuelta, en el propio render — así no depende de un
+  // useEffect que corre un ciclo después y evita el parpadeo del PDFViewer (montar sin escudo,
+  // desmontar, volver a montar con el escudo ya cargado).
+  const key = valuationId && hasSource ? `${reportKind}:${valuationId}` : null;
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!valuationId || !hasSource) {
-      setResult({ src: null, isLoading: false });
+    if (!key || !valuationId) {
+      setSrc(null);
+      setResolvedKey(null);
       return;
     }
 
-    setResult({ src: null, isLoading: true });
-
-    apiGet<Blob>(`/reports/checklist/${valuationId}/shield`, { responseType: "blob" })
+    apiGet<Blob>(`/reports/${reportKind}/${valuationId}/shield`, { responseType: "blob" })
       .then(blobToDataUrl)
-      .then((src) => {
-        if (!cancelled) setResult({ src, isLoading: false });
+      .then((dataUrl) => {
+        if (cancelled) return;
+        setSrc(dataUrl);
+        setResolvedKey(key);
       })
       .catch(() => {
-        if (!cancelled) setResult({ src: null, isLoading: false });
+        if (cancelled) return;
+        setSrc(null);
+        setResolvedKey(key);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [valuationId, hasSource]);
+  }, [key, valuationId, reportKind]);
 
-  return result;
+  return { src, isLoading: !!key && resolvedKey !== key };
 }

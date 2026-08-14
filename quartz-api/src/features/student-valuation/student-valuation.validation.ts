@@ -20,6 +20,9 @@ const valuationBySubjectUpdateSchema = z.object({
 const conceptAssignmentSchema = z.object({
   subjectId: objectIdSchema,
   conceptId: objectIdSchema,
+  conceptText: z.string().trim()
+    .min(1, 'El texto del concepto no puede estar vacío')
+    .max(2000, 'El texto del concepto no puede superar los 2000 caracteres'),
 }).strict();
 
 
