@@ -7,6 +7,11 @@ export interface School {
     name: string;
 }
 
+export interface Shift {
+    _id: string;
+    name: string;
+}
+
 export interface ValuationSummary {
     _id: string;
     periodId: string;
@@ -27,6 +32,7 @@ export type UserWithValuations = {
     gradesTaught: string[];
     valuations: ValuationSummary[];
     avatarUrl?: string;
+    shift?: Shift | null;
 };
 
 // Roles que se pueden dar de alta desde /gestion/usuarios. Jefe de Área queda fuera.
@@ -45,7 +51,11 @@ export interface CreateUserDTO {
     gradesTaught: GradeLevel[];
     email?: string;    // requerido si role === Docente
     password?: string; // requerido si role === Docente
+    shiftId?: string;  // solo Estudiante; opcional
 }
 
 // El rol es inmutable tras la creación: no forma parte del payload de actualización.
-export type UpdateUserDTO = Partial<Omit<CreateUserDTO, 'role'>>;
+// shiftId admite `null` explícito para desasignar la jornada del estudiante.
+export type UpdateUserDTO = Partial<Omit<CreateUserDTO, 'role' | 'shiftId'>> & {
+    shiftId?: string | null;
+};

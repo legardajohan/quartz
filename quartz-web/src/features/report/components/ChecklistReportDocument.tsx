@@ -1,5 +1,8 @@
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { IReportTemplate, QualitativeValuation } from "../types";
+import { QUARTZ_LOGO_DATA_URI } from "./quartzLogoDataUri";
+
+const QUARTZ_LOGO_ASPECT_RATIO = 2298 / 270;
 
 const VALUATION_COLORS: Record<QualitativeValuation, string> = {
   Logrado: "#16a34a",
@@ -32,9 +35,10 @@ function formatPrintDate(iso: string): string {
 
 interface ChecklistReportDocumentProps {
   report: IReportTemplate;
+  shieldSrc?: string | null;
 }
 
-export default function ChecklistReportDocument({ report }: ChecklistReportDocumentProps) {
+export default function ChecklistReportDocument({ report, shieldSrc }: ChecklistReportDocumentProps) {
   const { institution, period, teacher, student, valuation, generatedAt } = report;
   const hasObservations = !!valuation.observations && valuation.observations.trim().length > 0;
 
@@ -42,9 +46,11 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
     <Document title={`Lista de Chequeo - ${formatFullName(student)}`}>
       <Page size="LETTER" style={styles.page}>
         <View style={styles.header}>
-          <View style={styles.shieldBox}>
-            <Text style={styles.shieldPlaceholderText}>Escudo</Text>
-          </View>
+          {shieldSrc && (
+            <View style={styles.shieldBox}>
+              <Image src={shieldSrc} style={styles.shieldImage} />
+            </View>
+          )}
           <View style={styles.institutionBlock}>
             <Text style={styles.institutionName}>{institution.name}</Text>
             <Text style={styles.institutionMeta}>
@@ -56,9 +62,6 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
             <Text style={styles.reportTitle}>
               Lista de Chequeo · {period.name} {period.year}
             </Text>
-          </View>
-          <View style={styles.studentPhotoBox}>
-            <Text style={styles.shieldPlaceholderText}>Foto</Text>
           </View>
         </View>
 
@@ -94,8 +97,10 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
         </View>
 
         {valuation.valuationsBySubject.map((subject) => (
-          <View style={styles.subjectBlock} key={subject.subjectId}>
-            <Text style={styles.subjectHeader}>{subject.subjectName}</Text>
+          <View style={styles.subjectBlock} key={subject.subjectId} wrap>
+            <Text style={styles.subjectHeader} minPresenceAhead={36}>
+              Dimensión {subject.subjectName}
+            </Text>
             {subject.evaluationMode === "description" ? (
               <View style={styles.observationsBox}>
                 <Text style={styles.observationsText}>
@@ -104,7 +109,7 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
               </View>
             ) : (
               <>
-                <View style={styles.tableHeaderRow}>
+                <View style={styles.tableHeaderRow} fixed>
                   <Text style={[styles.colLearning, styles.headerCell]}>Aprendizajes</Text>
                   <Text style={[styles.colValuation, styles.headerCell]}>Valoración</Text>
                 </View>
@@ -126,20 +131,30 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
         ))}
 
         {hasObservations && (
-          <View style={styles.observationsBlock} wrap={false}>
-            <Text style={styles.subjectHeader}>Observaciones</Text>
+          <View style={styles.observationsBlock} wrap>
+            <Text style={styles.subjectHeader} minPresenceAhead={36}>
+              Observaciones
+            </Text>
             <View style={styles.observationsBox}>
               <Text style={styles.observationsText}>{valuation.observations}</Text>
             </View>
           </View>
         )}
 
-        <View style={styles.footer}>
+        <View style={styles.footer} wrap={false}>
           <View style={styles.signatureBlock}>
             <View style={styles.signatureLine} />
             <Text style={styles.teacherName}>{formatFullName(teacher)}</Text>
             <Text style={styles.teacherRole}>Docente · {teacher.school}</Text>
           </View>
+        </View>
+
+        <View style={styles.brandFooter} fixed>
+          <Text style={styles.brandPoweredBy}>Powered by</Text>
+          <Image
+            src={QUARTZ_LOGO_DATA_URI}
+            style={[styles.brandLogo, { aspectRatio: QUARTZ_LOGO_ASPECT_RATIO }]}
+          />
         </View>
 
         <Text
@@ -155,6 +170,7 @@ export default function ChecklistReportDocument({ report }: ChecklistReportDocum
 const styles = StyleSheet.create({
   page: {
     padding: 40,
+    paddingBottom: 56,
     fontSize: 9,
     fontFamily: "Helvetica",
     color: "#1f2937",
@@ -171,28 +187,15 @@ const styles = StyleSheet.create({
   shieldBox: {
     width: 56,
     height: 56,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderStyle: "dashed",
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
   },
-  studentPhotoBox: {
-    width: 50,
-    height: 64,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderStyle: "dashed",
-    borderRadius: 4,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 16,
-  },
-  shieldPlaceholderText: {
-    fontSize: 6,
-    color: "#9ca3af",
+  shieldImage: {
+    width: 56,
+    height: 56,
+    objectFit: "contain",
   },
   institutionBlock: {
     flex: 1,
@@ -353,6 +356,20 @@ const styles = StyleSheet.create({
   teacherRole: {
     fontSize: 7,
     color: "#6b7280",
+  },
+  brandFooter: {
+    position: "absolute",
+    bottom: 14,
+    left: 40,
+    alignItems: "flex-start",
+  },
+  brandPoweredBy: {
+    fontSize: 6,
+    color: "#9ca3af",
+    marginBottom: 2,
+  },
+  brandLogo: {
+    height: 11,
   },
   pageNumber: {
     position: "absolute",

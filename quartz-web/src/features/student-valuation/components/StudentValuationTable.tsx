@@ -19,12 +19,9 @@ import toast from "react-hot-toast";
 import { useState } from "react";
 
 import type { UserDto } from "../types/store";
-import {
-    API_STATUS_TO_VALUATION_STATE,
-    ValuationState,
-} from '../types/domain';
+import { getValuationState } from '../types/domain';
 import { ValuationStatusBadge } from './ValuationStatusBadge';
-import userImage from "../../../assets/images/default-user.jpg";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -95,11 +92,6 @@ export default function StudentValuationTable({
         }
     };
 
-    const getValuationState = (status: string | null | undefined): ValuationState => {
-        if (!status) return 'NOT_STARTED';
-        return API_STATUS_TO_VALUATION_STATE[status] || 'NOT_STARTED';
-    }
-
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -164,7 +156,7 @@ export default function StudentValuationTable({
                                     </td>
                                     <td className={classes}>
                                         <div className="flex items-center gap-3">
-                                            <Avatar src={user.avatarUrl || userImage} alt="user_imgage" size="sm" />
+                                            <Avatar src={user.avatarUrl || AVATAR_FALLBACK} alt="user_imgage" size="sm" />
                                             <div className="flex flex-col">
                                                 <Typography variant="small" color="blue-gray" className="font-normal">
                                                     {fullLastName}

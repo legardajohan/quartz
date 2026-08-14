@@ -7,6 +7,7 @@ import { useChecklistTemplateStore } from "../useChecklistTemplateStore";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
+import { Loading } from "../../../components/ui/Loading";
 import ChecklistCard from "../components/ChecklistCard";
 import ChecklistEditor from "../components/ChecklistEditor";
 import { ChecklistCreateForm } from "../components/ChecklistCreateForm";
@@ -155,7 +156,7 @@ export default function ChecklistsPage() {
         {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
 
         {isLoading ? (
-          <p className="text-gray-400 text-sm">Cargando plantillas…</p>
+          <Loading message="Cargando plantillas…" />
         ) : templates.length === 0 ? (
           <div className="text-center py-16 text-gray-300">
             <p className="text-lg">No tienes plantillas aún.</p>

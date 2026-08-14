@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getChecklistReportController,
+  getChecklistReportShieldController,
   getCommunicativeLetterReportController,
   getLetterAvailabilityController,
 } from './report.controller';
@@ -11,6 +12,7 @@ import { validate } from '../../middlewares/validate.middleware';
 import { asyncHandler } from '../../middlewares/async-handler.middleware';
 import {
   getChecklistReportSchema,
+  getChecklistReportShieldSchema,
   getCommunicativeLetterSchema,
   getLetterAvailabilitySchema,
 } from './report.validation';
@@ -25,6 +27,15 @@ router.get(
   authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(getChecklistReportSchema),
   asyncHandler(getChecklistReportController)
+);
+
+router.get(
+  '/checklist/:valuationId/shield',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  validate(getChecklistReportShieldSchema),
+  asyncHandler(getChecklistReportShieldController)
 );
 
 // Registrada antes de "/communicative-letter/:valuationId": de lo contrario Express

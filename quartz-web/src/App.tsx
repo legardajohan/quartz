@@ -1,5 +1,7 @@
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
+import { useAuthStore } from './features/auth/useAuthStore';
+import { WelcomeLoader } from './features/auth/components/WelcomeLoader';
 import { ProtectedRoute } from './components/router/ProtectedRoute';
 import { RoleRoute } from './components/router/RoleRoute';
 import { Dashboard } from './components/layouts/Dashboard';
@@ -29,9 +31,13 @@ const DashboardPage = () => {
 };
 
 const AppRoot = () => {
+  const showWelcomeLoader = useAuthStore((state) => state.showWelcomeLoader);
+  const dismissWelcomeLoader = useAuthStore((state) => state.dismissWelcomeLoader);
+
   return (
     <>
       <Outlet />
+      {showWelcomeLoader && <WelcomeLoader onComplete={dismissWelcomeLoader} />}
       <Toaster
         position="top-right"
         toastOptions={{

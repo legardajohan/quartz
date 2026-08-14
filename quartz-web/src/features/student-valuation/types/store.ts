@@ -31,7 +31,6 @@ export interface StudentValuationState {
   currentValuation: IStudentValuationDTO | null;
   isLoading: boolean;
   error: string | null;
-  currentPage: number; // Para paginación
   fetchUsers: (query: GetUsersQuery) => Promise<void>;
   fetchValuation: (studentId: string, periodId: string) => Promise<void>;
   clearValuation: () => void;
@@ -40,6 +39,4 @@ export interface StudentValuationState {
     payload: StudentValuationUpdateData
   ) => Promise<IStudentValuationDTO>;
   deleteValuation: (valuationId: string, userId: string) => Promise<void>;
-  nextPage: () => void; // Para paginación
-  prevPage: () => void; // Para paginación
 }

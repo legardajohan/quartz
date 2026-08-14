@@ -8,6 +8,12 @@ export const getChecklistReportSchema = z.object({
   }).strict(),
 });
 
+export const getChecklistReportShieldSchema = z.object({
+  params: z.object({
+    valuationId: objectIdSchema,
+  }).strict(),
+});
+
 export const getCommunicativeLetterSchema = z.object({
   params: z.object({
     valuationId: objectIdSchema,

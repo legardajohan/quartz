@@ -1,9 +1,8 @@
 import { Avatar, Typography, IconButton, Tooltip } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { DataTable, type Column } from "@/components/common/DataTable";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 import type { UserDto } from "../types";
-
-const AVATAR_FALLBACK = "/avatar-default.svg";
 
 interface UsersTableProps {
   users: UserDto[];
@@ -13,6 +12,7 @@ interface UsersTableProps {
   onPrevPage: () => void;
   isLoading?: boolean;
   canManage: boolean;
+  multipleShifts?: boolean;
   onEdit: (user: UserDto) => void;
   onDelete: (user: UserDto) => void;
 }
@@ -25,6 +25,7 @@ export function UsersTable({
   onPrevPage,
   isLoading,
   canManage,
+  multipleShifts,
   onEdit,
   onDelete,
 }: UsersTableProps) {
@@ -73,9 +74,16 @@ export function UsersTable({
     {
       header: "Sede",
       accessor: (item) => (
-        <Typography variant="small" color="blue-gray" className="font-normal">
-          {item.school?.name ?? "—"}
-        </Typography>
+        <div className="flex flex-col">
+          <Typography variant="small" color="blue-gray" className="font-normal">
+            {item.school?.name ?? "—"}
+          </Typography>
+          {multipleShifts && item.shift && (
+            <Typography variant="small" color="blue-gray" className="font-normal opacity-70 text-xs">
+              {item.shift.name}
+            </Typography>
+          )}
+        </div>
       ),
     },
     {

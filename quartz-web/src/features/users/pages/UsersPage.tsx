@@ -9,6 +9,7 @@ import { useAuthStore } from "../../auth/useAuthStore";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { FormModal } from "@/components/common/FormModal";
 import { ITEMS_PER_PAGE } from "@/components/common/DataTable";
+import SearchFilterBar, { type FilterGroup } from "@/components/common/SearchFilterBar";
 import {
   useUsersQuery,
   useCreateUserMutation,
@@ -19,7 +20,6 @@ import {
 import { useSchoolsQuery } from "../queries/useSchoolsQuery";
 import type { UserDto, NewUser, UpdateUser, WritableUserRole } from "../types";
 import { UsersTable } from "../components/UsersTable";
-import { UsersToolbar } from "../components/UsersToolbar";
 import { UserForm, type UserFormData } from "../components/UserForm";
 
 const ROLE_TABS = [
@@ -27,9 +27,14 @@ const ROLE_TABS = [
   { value: "Docente" as const, label: "Docentes", icon: BriefcaseIcon },
 ];
 
+// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
+const GRADE_LEVELS: GradeLevel[] = ["Transición"];
+
 export default function UsersPage() {
   const { sessionData } = useAuthStore();
   const canManage = sessionData?.user.role === "Jefe de Área";
+  const multipleShifts = sessionData?.multipleShifts ?? false;
+  const shifts = sessionData?.shifts ?? [];
 
   const [activeRole, setActiveRole] = useState<WritableUserRole>("Estudiante");
   const { data: users = [], isLoading, isError, error } = useUsersQuery({ role: activeRole });
@@ -131,6 +136,23 @@ export default function UsersPage() {
     });
   }, [users, search, selectedSchools, selectedGrades]);
 
+  const filterGroups: FilterGroup[] = [
+    {
+      id: "school",
+      label: "Sede",
+      options: schools.map((school) => ({ value: school._id, label: school.name })),
+      selected: selectedSchools,
+      onToggle: toggleSchoolFilter,
+    },
+    {
+      id: "grade",
+      label: "Grado",
+      options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
+      selected: selectedGrades,
+      onToggle: (value) => toggleGradeFilter(value as GradeLevel),
+    },
+  ];
+
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -189,6 +211,7 @@ export default function UsersPage() {
       };
       if (formData.email.trim()) payload.email = formData.email.trim();
       if (formData.password.trim()) payload.password = formData.password.trim();
+      if (formRole === "Estudiante") payload.shiftId = formData.shiftId || null;
 
       const promise = updateMutation.mutateAsync({ userId: selectedUser._id, data: payload });
       toast.promise(promise, {
@@ -213,7 +236,7 @@ export default function UsersPage() {
       gradesTaught: formData.gradesTaught,
       ...(activeRole === "Docente"
         ? { email: formData.email.trim(), password: formData.password.trim() }
-        : {}),
+        : { shiftId: formData.shiftId || undefined }),
     };
 
     const promise = createMutation.mutateAsync(payload).then(async (created) => {
@@ -274,17 +297,14 @@ export default function UsersPage() {
             </TabsHeader>
           </Tabs>
 
-          <UsersToolbar
+          <SearchFilterBar
             search={search}
             onSearchChange={(value) => {
               setSearch(value);
               setCurrentPage(1);
             }}
-            schools={schools}
-            selectedSchools={selectedSchools}
-            onToggleSchool={toggleSchoolFilter}
-            selectedGrades={selectedGrades}
-            onToggleGrade={toggleGradeFilter}
+            placeholder="Buscar por nombre o identificación"
+            groups={filterGroups}
           />
         </div>
 
@@ -298,6 +318,7 @@ export default function UsersPage() {
           onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
           isLoading={isLoading}
           canManage={canManage}
+          multipleShifts={multipleShifts}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
@@ -326,6 +347,8 @@ export default function UsersPage() {
           role={formRole}
           initialData={selectedUser}
           schools={schools}
+          shifts={shifts}
+          multipleShifts={multipleShifts}
           avatarUrl={selectedUser ? selectedUser.avatarUrl : pendingAvatarPreview ?? undefined}
           onAvatarChange={handleAvatarChange}
           isUploadingAvatar={uploadPhotoMutation.isPending}

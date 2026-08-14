@@ -12,7 +12,6 @@ export interface ReportState {
   users: UserDto[];
   isLoading: boolean;
   error: string | null;
-  currentPage: number;
   currentReport: IReportTemplate | null;
   isReportLoading: boolean;
   reportError: string | null;
@@ -27,6 +26,4 @@ export interface ReportState {
   fetchCommunicativeLetter: (valuationId: string) => Promise<void>;
   saveLetterConcepts: (valuationId: string, assignments: ConceptAssignmentUpdate[]) => Promise<void>;
   clearLetter: () => void;
-  nextPage: () => void;
-  prevPage: () => void;
 }

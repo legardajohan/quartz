@@ -9,7 +9,7 @@ import { ConfirmationModal } from "../../../components/common/ConfirmationModal"
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
 import { ImageCropUploader } from "../../../components/common/ImageCropUploader";
 import toast from "react-hot-toast";
-import userImage from "../../../assets/images/default-user.jpg";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
 import { useUsersQuery, useUploadStudentPhotoMutation } from "../../users/queries/useUsersQuery";
 
@@ -172,7 +172,7 @@ export default function StudentValuationDetail() {
                                 size="lg"
                             />
                         ) : (
-                            <Avatar src={studentAvatarUrl || userImage} alt="user_image" size="lg" />
+                            <Avatar src={studentAvatarUrl || AVATAR_FALLBACK} alt="user_image" size="lg" />
                         )}
                         <div>
                             <h1 className="text-lg font-semibold text-gray-700">

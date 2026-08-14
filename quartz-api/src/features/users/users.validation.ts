@@ -31,6 +31,7 @@ const createStudentSchema = z.object({
   ...baseUserFields,
   role: z.literal(UserRole.ESTUDIANTE),
   gradesTaught: z.array(z.nativeEnum(GradeLevel)).length(1, 'El estudiante debe tener exactamente un grado.'),
+  shiftId: objectId('El ID de la jornada no es un ObjectId válido.').optional(),
 }).strict();
 
 const createTeacherSchema = z.object({
@@ -61,6 +62,7 @@ export const updateUserSchema = z.object({
     gradesTaught: z.array(z.nativeEnum(GradeLevel)).min(1, 'Debe indicar al menos un grado.').optional(),
     email: z.string().email('El correo no es válido.').optional(),
     password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.').optional(),
+    shiftId: objectId('El ID de la jornada no es un ObjectId válido.').nullable().optional(),
   }).strict(),
 });
 

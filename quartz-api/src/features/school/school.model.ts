@@ -15,9 +15,11 @@ export interface ISchoolDocument extends Document {
 }
 
 const schoolSchema = new Schema<ISchoolDocument>({
-    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
+    institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true, index: true },
     schoolNumber: { type: Number, required: true },
-    name: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
 }, { timestamps: true });
+
+schoolSchema.index({ institutionId: 1, schoolNumber: 1 }, { unique: true });
 
 export const SchoolModel = model<ISchoolDocument>('School', schoolSchema);

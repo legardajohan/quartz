@@ -5,6 +5,7 @@ import {
 } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { DataTable, Column } from "../../../components/common/DataTable";
+import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { Learning } from "../types";
 
 interface LearningsTableProps {
@@ -28,6 +29,7 @@ export function LearningsTable({
     onEdit,
     onDelete,
 }: LearningsTableProps) {
+    const axis = useSubjectAxisLabel();
     const columns: Column<Learning>[] = [
         {
             header: "Descripción",
@@ -68,7 +70,7 @@ export function LearningsTable({
             ),
         },
         {
-            header: "Dimensión",
+            header: axis.singular,
             accessor: (item) => (
                 <Typography variant="small" className="font-normal min-w-[50px]">
                     {item.subject.name}
