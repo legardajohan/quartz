@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
 import { useAuthStore } from './features/auth/useAuthStore';
@@ -5,16 +6,20 @@ import { WelcomeLoader } from './features/auth/components/WelcomeLoader';
 import { ProtectedRoute } from './components/router/ProtectedRoute';
 import { RoleRoute } from './components/router/RoleRoute';
 import { Dashboard } from './components/layouts/Dashboard';
+import { Loading } from './components/ui/Loading';
 import LearningsPage from './features/learning/pages/LearningsPage';
 import ConceptsPage from './features/concept/pages/ConceptsPage';
 import ChecklistsPage from './features/checklist-template/pages/ChecklistsPage';
 import StudentValuationsPage from './features/student-valuation/pages/StudentValuationsPage';
-import ReportsPage from './features/report/pages/ReportsPage';
-import CommunicativeLetterEditPage from './features/report/pages/CommunicativeLetterEditPage';
 import UsersPage from './features/users/pages/UsersPage';
 import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
 import ConfigurationPage from './features/configuration/pages/ConfigurationPage';
 import { Toaster } from 'react-hot-toast';
+
+// @react-pdf/renderer y los assets base64 del informe solo se cargan cuando el usuario
+// visita una de estas dos pantallas, no en el bundle inicial.
+const ReportsPage = lazy(() => import('./features/report/pages/ReportsPage'));
+const CommunicativeLetterEditPage = lazy(() => import('./features/report/pages/CommunicativeLetterEditPage'));
 
 // Placeholder para un futuro Dashboard
 const DashboardPage = () => {
@@ -77,8 +82,22 @@ export const router = createBrowserRouter(
 
           <Route path="/evaluacion" element={<StudentValuationsPage />} />
           <Route path="/evaluacion/:studentId" element={<StudentValuationsPage />} />
-          <Route path="/evaluacion/:studentId/carta-comunicativa/:valuationId" element={<CommunicativeLetterEditPage />} />
-          <Route path="/informes" element={<ReportsPage />} />
+          <Route
+            path="/evaluacion/:studentId/carta-comunicativa/:valuationId"
+            element={
+              <Suspense fallback={<Loading fullScreen />}>
+                <CommunicativeLetterEditPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/informes"
+            element={
+              <Suspense fallback={<Loading fullScreen />}>
+                <ReportsPage />
+              </Suspense>
+            }
+          />
           <Route path="/gestion/usuarios" element={<UsersPage />} />
           <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />
 

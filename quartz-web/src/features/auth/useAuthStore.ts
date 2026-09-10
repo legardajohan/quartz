@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/apiClient';
+import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
 import type { AuthState, LoginRequest, LoginResponse, ProfileResponse } from './types';
 
 export const useAuthStore = create<AuthState>()(
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        purgeAllShieldCacheEntries();
         set({
           token: null,
           sessionData: null,

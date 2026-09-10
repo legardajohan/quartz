@@ -8,7 +8,7 @@ import type {
   UpdateInstitutionSettings
 } from './types';
 
-export const useInstitutionStore = create<InstitutionState>((set) => ({
+export const useInstitutionStore = create<InstitutionState>((set, get) => ({
   institution: null,
   branding: null,
   isLoading: false,
@@ -60,11 +60,10 @@ export const useInstitutionStore = create<InstitutionState>((set) => ({
       const updated = await apiPatch<InstitutionDto, FormData>('/institutions/me/shield', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      set({
-        institution: updated,
-        branding: { name: updated.name, shieldUrl: updated.shieldUrl },
-        isSubmitting: false,
-      });
+      // shieldVersion sale de shieldJpgUrl, que no viaja en InstitutionDto: se refresca
+      // branding desde el backend en vez de reconstruirlo a mano.
+      await get().fetchBranding();
+      set({ institution: updated, isSubmitting: false });
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err, 'Falló la subida del escudo.');
       set({ error: errorMessage, isSubmitting: false });

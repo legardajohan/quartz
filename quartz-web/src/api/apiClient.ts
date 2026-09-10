@@ -5,9 +5,9 @@ export { isAxiosError } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Margen ampliado para lecturas de informe (PDF): componen datos de varias colecciones
-// y, hasta RPT-06, incluyen un proxy de imagen a R2. El timeout global del cliente (10s)
-// no cambia; este valor se pasa explicitamente por config en esas llamadas puntuales.
+// Margen ampliado para lecturas de informe (PDF): componen datos de varias colecciones.
+// El timeout global del cliente (10s) no cambia; este valor se pasa explícitamente por
+// config en esas llamadas puntuales.
 export const REPORT_REQUEST_TIMEOUT_MS = 30000;
 
 export const apiClient: AxiosInstance = axios.create({

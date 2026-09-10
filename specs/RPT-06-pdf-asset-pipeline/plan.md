@@ -72,6 +72,7 @@ Ese salto a R2 es lo que agota los 10 s del timeout reportado.
 | crear | `src/features/report/assets/reportAssets.ts` |
 | crear | `src/features/report/components/LetterPageShell.tsx` |
 | crear | `src/features/institution/queries/useInstitutionShieldQuery.ts` |
+| crear | `src/features/institution/shieldCache.ts` — no estaba en el plan original; ver nota abajo |
 | borrar | `src/features/report/usePdfShieldImage.ts` |
 | mover | `src/features/report/components/quartzLogoDataUri.ts` → `src/features/report/assets/` |
 | tocar | `src/features/institution/useInstitutionStore.ts` |
@@ -265,6 +266,13 @@ condición `isPdfReady` conserva su forma; `hasSource` pasa a ser `!!shieldVersi
 dos únicas pantallas que arrastran `@react-pdf/renderer` y los assets base64.
 
 ## Notas
+- **Desviación de implementación (no planeada):** las funciones de lectura/escritura/purga de
+  `localStorage` se aislaron en `src/features/institution/shieldCache.ts` en vez de vivir dentro
+  de `useInstitutionShieldQuery.ts` como sugería el plan original. Razón: `useAuthStore.logout()`
+  necesita purgar la caché, pero `useInstitutionShieldQuery` depende de `useAuthStore` para leer
+  `institutionId` — mantener las funciones de caché dentro del hook habría creado un ciclo de
+  imports (`useAuthStore` → `useInstitutionShieldQuery` → `useAuthStore`). `shieldCache.ts` no
+  importa ni Zustand ni el store de auth, así que ambos lados lo consumen sin ciclo.
 - Orden de implementación: **después** de RPT-05, que introduce la banda de footer y el override
   de timeout. Al terminar RPT-06, `usePdfShieldImage.ts` y su override desaparecen; el
   `REPORT_REQUEST_TIMEOUT_MS` sobre los GET de template se conserva.

@@ -1,10 +1,7 @@
 import achievedSvg from "../../assets/images/achieved-icon.svg";
 import inProcessSvg from "../../assets/images/in-process-icon.svg";
 import withDifficultySvg from "../../assets/images/with-dificulty-icon.svg";
-import achievedJpg from "../../assets/images/achieved-icon.jpg";
-import inProcessJpg from "../../assets/images/in-process-icon.jpg";
-import withDifficultyJpg from "../../assets/images/with-dificulty-icon.jpg";
-import footerBanner from "../../assets/images/footer.jpg";
+import { STATUS_ICON_JPG_DATA_URI, REPORT_FOOTER_BANNER_DATA_URI } from "./assets/reportAssets";
 import type { QualitativeValuation } from "./types";
 
 export const STATUS_ICON_SVG: Record<QualitativeValuation, string> = {
@@ -13,10 +10,6 @@ export const STATUS_ICON_SVG: Record<QualitativeValuation, string> = {
   "Con dificultad": withDifficultySvg,
 };
 
-export const STATUS_ICON_JPG: Record<QualitativeValuation, string> = {
-  "Logrado": achievedJpg,
-  "En proceso": inProcessJpg,
-  "Con dificultad": withDifficultyJpg,
-};
+export const STATUS_ICON_JPG: Record<QualitativeValuation, string> = STATUS_ICON_JPG_DATA_URI;
 
-export const REPORT_FOOTER_BANNER = footerBanner;
+export const REPORT_FOOTER_BANNER = REPORT_FOOTER_BANNER_DATA_URI;

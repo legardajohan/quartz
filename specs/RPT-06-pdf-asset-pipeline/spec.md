@@ -1,7 +1,7 @@
 ---
 id: RPT-06-pdf-asset-pipeline
 feature: pdf-asset-pipeline
-status: draft
+status: implemented
 created: 2026-09-08
 ---
 
@@ -56,38 +56,43 @@ masivo de informes.
 - Los 9 assets sin trackear `{achieved,in-process,with-dificulty}-icon-0{1,2,3}.jpg`.
 
 ## Criterios de aceptación (EARS)
-- [ ] Cuando se abre un informe y el escudo del inquilino ya está en caché para el
+- [x] Cuando se abre un informe y el escudo del inquilino ya está en caché para el
       `shieldVersion` vigente, el sistema no emite ninguna petición de imagen.
-- [ ] Cuando se abre un informe por primera vez en la sesión, el sistema descarga el escudo una
+- [x] Cuando se abre un informe por primera vez en la sesión, el sistema descarga el escudo una
       sola vez y lo reutiliza para todos los informes siguientes del mismo inquilino.
-- [ ] Cuando el usuario recarga la página, el sistema recupera el escudo desde `localStorage`
+- [x] Cuando el usuario recarga la página, el sistema recupera el escudo desde `localStorage`
       sin volver a pedirlo, mientras `shieldVersion` no cambie.
-- [ ] Cuando el Jefe de Área sube un escudo nuevo, `shieldVersion` cambia y la siguiente
+- [x] Cuando el Jefe de Área sube un escudo nuevo, `shieldVersion` cambia y la siguiente
       apertura de informe descarga el escudo nuevo sin acción del usuario.
-- [ ] Cuando el navegador revalida con `If-None-Match` y la versión coincide, el backend
+- [x] Cuando el navegador revalida con `If-None-Match` y la versión coincide, el backend
       responde `304` sin leer R2.
-- [ ] Cuando el usuario cierra sesión, el sistema purga del `localStorage` las entradas de
+- [x] Cuando el usuario cierra sesión, el sistema purga del `localStorage` las entradas de
       escudo cacheadas.
-- [ ] Si el inquilino no tiene escudo (`shieldVersion` nulo), el sistema genera el PDF sin
+- [x] Si el inquilino no tiene escudo (`shieldVersion` nulo), el sistema genera el PDF sin
       escudo, sin error y sin emitir petición alguna.
-- [ ] Cuando el PDF renderiza iconos de estado o la banda de footer, el sistema no emite ninguna
+- [x] Cuando el PDF renderiza iconos de estado o la banda de footer, el sistema no emite ninguna
       petición de red por esas imágenes.
-- [ ] Cuando se carga la aplicación por primera vez, `@react-pdf/renderer` y los assets base64
+- [x] Cuando se carga la aplicación por primera vez, `@react-pdf/renderer` y los assets base64
       no forman parte del bundle inicial (chunk separado, verificable en `npm run build`).
-- [ ] Cuando se renderiza la Carta Comunicativa, la cabecera, los metadatos, la banda de footer
+- [x] Cuando se renderiza la Carta Comunicativa, la cabecera, los metadatos, la banda de footer
       y la paginación provienen de `LetterPageShell` y no están duplicados en el cuerpo del
       documento; el PDF resultante es visualmente idéntico al de RPT-05, salvo la posición del
       número de página (ver siguiente criterio).
-- [ ] Cuando se renderiza la Carta Comunicativa, el número de página aparece superpuesto a la
+- [x] Cuando se renderiza la Carta Comunicativa, el número de página aparece superpuesto a la
       banda de footer (esquina inferior derecha), no en una fila separada por encima de ella.
-- [ ] Si un Docente solicita `GET /institutions/me/shield.jpg`, el sistema responde el escudo de
+- [x] Si un Docente solicita `GET /institutions/me/shield.jpg`, el sistema responde el escudo de
       **su** inquilino; si el rol no es `Jefe de Área` ni `Docente`, responde 403.
-- [ ] Cuando se invoca cualquiera de las rutas eliminadas `/reports/*/:valuationId/shield`, el
+- [x] Cuando se invoca cualquiera de las rutas eliminadas `/reports/*/:valuationId/shield`, el
       sistema responde 404 y ningún componente del frontend las referencia.
-- [ ] **Aislamiento:** `GET /institutions/me/shield.jpg` resuelve `institutionId` desde el
+- [x] **Aislamiento:** `GET /institutions/me/shield.jpg` resuelve `institutionId` desde el
       token; ninguna operación del feature lo acepta de `body`, `params` ni `query`.
-- [ ] `npx tsc --noEmit` en verde en `quartz-api` · `npm run build && npm run lint` en verde en
+- [x] `npx tsc --noEmit` en verde en `quartz-api` · `npm run build && npm run lint` en verde en
       `quartz-web`.
+
+> Verificación de código y build automatizada completa (detalle en `tasks.md`). La confirmación
+> visual/manual en navegador (posición del número de página, ausencia de peticiones de red en
+> DevTools, flujo de subida de escudo, etc.) queda pendiente del usuario, por convención de este
+> paquete (`quartz-web/CLAUDE.md`: prohibido usar Claude in Chrome para verificar UI/UX).
 
 ## Dependencias
 - RPT-05-communicative-letter-fixes: aporta la banda de footer y el override de timeout que este

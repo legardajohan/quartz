@@ -28,6 +28,7 @@ export interface IInstitutionSettings {
 export interface IInstitutionBrandingDTO {
   name: string;
   shieldUrl?: string;
+  shieldVersion: string | null;
 }
 
 export interface IInstitutionDTO {

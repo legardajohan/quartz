@@ -1,6 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { IReportTemplate, QualitativeValuation } from "../types";
-import { QUARTZ_LOGO_DATA_URI } from "./quartzLogoDataUri";
+import { QUARTZ_LOGO_DATA_URI } from "../assets/quartzLogoDataUri";
 
 const QUARTZ_LOGO_ASPECT_RATIO = 2298 / 270;
 

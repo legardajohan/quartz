@@ -5,7 +5,7 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import CommunicativeLetterDocument from "./CommunicativeLetterDocument";
 import { Loading } from "../../../components/ui/Loading";
 import { useReportStore } from "../useReportStore";
-import { usePdfShieldImage } from "../usePdfShieldImage";
+import { useInstitutionShieldQuery } from "@/features/institution/queries/useInstitutionShieldQuery";
 
 interface CommunicativeLetterModalProps {
   open: boolean;
@@ -21,7 +21,7 @@ export default function CommunicativeLetterModal({
   onClose,
 }: CommunicativeLetterModalProps) {
   const { currentLetter, isLetterLoading, letterError, fetchCommunicativeLetter, clearLetter } = useReportStore();
-  const shield = usePdfShieldImage(valuationId ?? undefined, !!currentLetter?.institution.shield, "communicative-letter");
+  const shield = useInstitutionShieldQuery();
 
   const isPdfReady = !!currentLetter && !isLetterLoading && !letterError && !shield.isLoading;
   const isCoverageError = !!letterError && letterError.toLowerCase().includes("faltan conceptos");

@@ -3,6 +3,7 @@ import type { ReportKind } from '@/types/domain';
 export interface InstitutionBrandingDto {
   name: string;
   shieldUrl?: string;
+  shieldVersion: string | null;
 }
 
 // Entrada sin `_id` = jornada nueva (el backend le asigna un identificador propio).

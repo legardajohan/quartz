@@ -5,7 +5,7 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import ChecklistReportDocument from "./ChecklistReportDocument";
 import { Loading } from "../../../components/ui/Loading";
 import { useReportStore } from "../useReportStore";
-import { usePdfShieldImage } from "../usePdfShieldImage";
+import { useInstitutionShieldQuery } from "@/features/institution/queries/useInstitutionShieldQuery";
 
 interface ChecklistReportModalProps {
   open: boolean;
@@ -21,7 +21,7 @@ export default function ChecklistReportModal({
   onClose,
 }: ChecklistReportModalProps) {
   const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
-  const shield = usePdfShieldImage(valuationId ?? undefined, !!currentReport?.institution.shield, "checklist");
+  const shield = useInstitutionShieldQuery();
 
   const isPdfReady = !!currentReport && !isReportLoading && !reportError && !shield.isLoading;
 

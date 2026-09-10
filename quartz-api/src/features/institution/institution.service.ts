@@ -12,9 +12,15 @@ import {
 import AppError from '../../utils/AppError';
 import { assertWebp } from '../../utils/assertWebp';
 import { webpToJpeg } from '../../utils/webpToJpeg';
-import { uploadImage, deleteImage, keyFromPublicUrl } from '../../services/r2.service';
+import { uploadImage, deleteImage, getImage, keyFromPublicUrl } from '../../services/r2.service';
 
 const DEFAULT_ENABLED_REPORTS: ReportKind[] = [ReportKind.CHECKLIST, ReportKind.COMMUNICATIVE_LETTER];
+
+const SHIELD_VERSION_RE = /shield-(\d+)\.jpg$/;
+
+function resolveShieldVersion(shieldJpgUrl?: string): string | null {
+  return shieldJpgUrl?.match(SHIELD_VERSION_RE)?.[1] ?? null;
+}
 
 type PersistedShift = { _id: unknown; name: string };
 
@@ -71,13 +77,36 @@ export const getShiftSettings = async (institutionId: string): Promise<IShiftSet
 // Versión mínima de `getInstitutionById` para consumo transversal (p. ej. el sidebar):
 // solo nombre + escudo, expuesta a cualquier rol del inquilino (no solo Jefe de Área).
 export const getInstitutionBranding = async (institutionId: string): Promise<IInstitutionBrandingDTO> => {
-  const institution = await Institution.findById(institutionId).select('name shieldUrl').lean();
+  const institution = await Institution.findById(institutionId).select('name shieldUrl shieldJpgUrl').lean();
 
   if (!institution) {
     throw new AppError('Institución no encontrada.', 404);
   }
 
-  return { name: institution.name, shieldUrl: institution.shieldUrl };
+  return {
+    name: institution.name,
+    shieldUrl: institution.shieldUrl,
+    shieldVersion: resolveShieldVersion(institution.shieldJpgUrl),
+  };
+};
+
+export const getInstitutionShieldJpg = async (
+  institutionId: string
+): Promise<{ buffer: Buffer; contentType: string; version: string }> => {
+  const institution = await Institution.findById(institutionId).select('shieldJpgUrl').lean();
+
+  const key = institution?.shieldJpgUrl ? keyFromPublicUrl(institution.shieldJpgUrl) : null;
+  const version = institution?.shieldJpgUrl ? resolveShieldVersion(institution.shieldJpgUrl) : null;
+  if (!key || !version) {
+    throw new AppError('Imagen no disponible.', 404);
+  }
+
+  const image = await getImage(key);
+  if (!image) {
+    throw new AppError('Imagen no disponible.', 404);
+  }
+
+  return { ...image, version };
 };
 
 export const getInstitutionById = async (institutionId: string): Promise<IInstitutionDTO> => {
