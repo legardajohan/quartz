@@ -80,18 +80,31 @@ export default function LetterConceptPicker({
               {hasMultipleCandidates && (
                 <div className="mt-3">
                   <Select
-                    label="Concepto"
+                    key={`${subject.subjectId}|${subject.availableConcepts.length}|${selectedId}`}
+                    label="Concepto asignado"
                     color={levelStyle.select}
                     value={selectedId}
                     disabled={disabled}
                     onChange={(value) => value && onSelect(subject.subjectId, value)}
+                    selected={(_, index) =>
+                      `Opción ${(index ?? 0) + 1} de ${subject.availableConcepts.length}`
+                    }
+                    menuProps={{ className: "max-h-72 overflow-y-auto" }}
                   >
-                    {subject.availableConcepts.map((concept) => (
-                      <Option key={concept._id} value={concept._id}>
-                        {concept.description}
+                    {subject.availableConcepts.map((concept, index) => (
+                      <Option key={concept._id} value={concept._id} className="flex-col items-start gap-1 py-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wide text-blue-gray-400">
+                          Opción {index + 1}
+                        </span>
+                        <span className="line-clamp-2 text-xs leading-relaxed text-blue-gray-700">
+                          {concept.description}
+                        </span>
                       </Option>
                     ))}
                   </Select>
+                  <Typography variant="small" className="mt-1 text-[11px] text-gray-400">
+                    {subject.availableConcepts.length} opciones para este periodo, dimensión y estado
+                  </Typography>
                 </div>
               )}
 
@@ -111,7 +124,11 @@ export default function LetterConceptPicker({
                     </Typography>
                   </>
                 ) : (
-                  <Typography variant="small" className="leading-relaxed text-gray-600">
+                  <Typography
+                    key={text}
+                    variant="small"
+                    className="animate-fade-in leading-relaxed text-gray-600"
+                  >
                     {text || "Sin descripción registrada."}
                   </Typography>
                 )}

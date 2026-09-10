@@ -28,6 +28,7 @@ import starryBackground from '../../assets/images/starry-background.svg';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import { PoweredByBrand } from '../common/PoweredByBrand';
 import { InstitutionBrand } from '../common/InstitutionBrand';
+import { TOPBAR_HEIGHT_CLASS } from './topbar.constants';
 import type { UserRole } from '@/types/domain';
 
 interface SidebarMenuProps {
@@ -125,20 +126,38 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
 
   return (
     <div
-      className={`fixed top-0 left-0 h-screen z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+28px)]"}`}
+      // `will-change-transform` promueve este panel a su propia capa de composición desde el
+      // montaje inicial. Sin esto, el navegador solo crea la capa cuando ve la PRIMERA animación
+      // de `transform`, y ese primer clic paga el costo de esa promoción como un frame de salto
+      // (jank) antes de animar — exactamente el "brinca y no colapsa en el primer clic, luego
+      // funciona bien" reportado. Con la capa ya promovida de antemano, el primer toggle anima
+      // igual de liso que los siguientes.
+      className={`fixed top-0 left-0 h-screen z-40 will-change-transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+28px)]"}`}
     >
       <Card
         shadow={false}
-        className="h-screen w-full max-w-[20rem] py-1 text-white shadow-xl shadow-purple-700/50 rounded-none flex flex-col"
+        className="h-screen w-full max-w-[20rem] text-white shadow-xl shadow-purple-700/50 rounded-none flex flex-col"
         style={{ background: `${bgPattern}, ${gradient}` }}
       >
-        <div className="relative mb-2 flex items-center gap-2 pl-4 pr-3 py-4">
+        {/* TOPBAR_HEIGHT_CLASS: misma altura fija que <ProfileNavbar> (el header, a la
+            derecha del sidebar). Ambas filas parten de y=0 del viewport (este contenedor
+            es `fixed top-0`, el header es el primer hijo de flujo de la página), así que
+            fijar aquí la misma altura explícita garantiza que el logo del inquilino quede
+            centrado en la misma línea que el avatar del usuario cuando el sidebar está
+            abierto, sin depender de que los paddings de ambos coincidan por casualidad. */}
+        <div className={`relative mb-2 flex items-center gap-2 pl-4 pr-3 ${TOPBAR_HEIGHT_CLASS} shrink-0`}>
           <div className="flex-1 min-w-0">
             <InstitutionBrand />
           </div>
+          {/* ripple={false}: ver el comentario equivalente en el botón "Abrir menú" de
+              Dashboard.tsx — el ripple de material-tailwind fija `position: relative` inline
+              en el primer clic y nunca lo revierte, rompiendo el `absolute` del que depende
+              este botón para flotar sobre el borde del sidebar (si no, tras el primer clic pasa
+              a ocupar espacio real dentro de la fila flex, ensanchándola). */}
           <IconButton
             variant="text"
             size="sm"
+            ripple={false}
             className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-[calc(50%+6px)] shrink-0 bg-purple-800 text-purple-200 outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300/60 hover:bg-purple-700 hover:text-white"
             onClick={toggleSidebar}
           >

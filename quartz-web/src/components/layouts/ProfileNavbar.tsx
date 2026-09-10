@@ -1,31 +1,36 @@
-import { IconButton, Navbar } from "@material-tailwind/react";
-import { PanelLeftOpen } from "lucide-react";
+import { Navbar } from "@material-tailwind/react";
 
 import { UserMenu } from "../common/UserMenu";
 import { InstitutionBrand } from "../common/InstitutionBrand";
+import { TOPBAR_HEIGHT_CLASS } from "./topbar.constants";
 
 interface ProfileNavbarProps {
-    toggleSidebar: () => void;
     isSidebarOpen: boolean;
 }
 
-export function ProfileNavbar({ toggleSidebar, isSidebarOpen }: ProfileNavbarProps) {
+export function ProfileNavbar({ isSidebarOpen }: ProfileNavbarProps) {
     return (
-        <Navbar color="transparent" className="sticky top-0 z-10 h-max max-w-full rounded-none px-4 py-2 lg:px-8 lg:py-4">
-            <div className="relative mx-auto flex items-center justify-between text-blue-gray-900">
-                {!isSidebarOpen && (
-                    <div className="flex items-center gap-3">
-                        <IconButton
-                            variant="text"
-                            color="blue-gray"
-                            onClick={toggleSidebar}
-                        >
-                            <PanelLeftOpen className="h-7 w-7" strokeWidth={1.75} />
-                        </IconButton>
-
-                        <InstitutionBrand tone="light" />
-                    </div>
-                )}
+        <Navbar color="transparent" className={`${TOPBAR_HEIGHT_CLASS} max-w-full rounded-none px-4 lg:px-8`}>
+            {/* InstitutionBrand queda SIEMPRE montado (solo se alterna su visibilidad) para que
+                la fila nunca cambie de estructura al abrir/cerrar el sidebar. La fila usa
+                TOPBAR_HEIGHT_CLASS (misma altura fija que la cabecera del sidebar en
+                SidebarMenu) + `h-full` en lugar de un alto derivado del padding/contenido:
+                así su centro vertical es siempre `altura/2`, sin depender de si el padding
+                de <Navbar> o el breakpoint activo coinciden con los del sidebar — la causa
+                real de que el avatar y el logo del inquilino quedaran desalineados al
+                abrir/cerrar el sidebar en intentos previos. */}
+            <div
+                className={`relative mx-auto flex h-full items-center justify-between text-blue-gray-900 ${
+                    !isSidebarOpen ? "pl-14" : ""
+                }`}
+            >
+                <div
+                    className={`flex items-center gap-3 transition-opacity duration-150 ${
+                        isSidebarOpen ? "invisible opacity-0" : "visible opacity-100"
+                    }`}
+                >
+                    <InstitutionBrand tone="light" />
+                </div>
                 <div className="flex-grow" />
                 <UserMenu />
             </div>

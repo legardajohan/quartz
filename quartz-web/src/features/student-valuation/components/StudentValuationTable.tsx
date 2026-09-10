@@ -1,5 +1,5 @@
 import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
-import { ClipboardList, Mail, Plus, Trash2 } from "lucide-react";
+import { ClipboardCheck, Mail, Plus, Trash2 } from "lucide-react";
 import {
     Avatar,
     Card,
@@ -211,7 +211,7 @@ export default function StudentValuationTable({
                                                         <Plus className="h-5 w-5 text-gray-500" />
                                                     ) : (
 
-                                                        <ClipboardList
+                                                        <ClipboardCheck
                                                             className={`h-5 w-5 ${valuationState === 'COMPLETED'
                                                                 ? 'text-green-500'
                                                                 : valuationState === 'IN_PROGRESS'
@@ -241,7 +241,7 @@ export default function StudentValuationTable({
                                                                 color="white"
                                                                 className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                                                             >
-                                                                <Mail className={`h-5 w-5 ${isLetterReady ? 'text-purple-700' : 'text-gray-400'}`} />
+                                                                <Mail className={`h-5 w-5 ${isLetterReady ? 'text-green-500' : 'text-gray-400'}`} />
                                                             </IconButton>
                                                         </span>
                                                     </Tooltip>

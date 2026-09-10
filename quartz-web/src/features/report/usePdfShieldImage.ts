@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiGet } from "@/api/apiClient";
+import { apiGet, REPORT_REQUEST_TIMEOUT_MS } from "@/api/apiClient";
 import { blobToDataUrl } from "@/utils/blobToDataUrl";
 
 export interface PdfImageResult {
@@ -32,7 +32,10 @@ export function usePdfShieldImage(
       return;
     }
 
-    apiGet<Blob>(`/reports/${reportKind}/${valuationId}/shield`, { responseType: "blob" })
+    apiGet<Blob>(`/reports/${reportKind}/${valuationId}/shield`, {
+      responseType: "blob",
+      timeout: REPORT_REQUEST_TIMEOUT_MS,
+    })
       .then(blobToDataUrl)
       .then((dataUrl) => {
         if (cancelled) return;

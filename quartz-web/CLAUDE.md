@@ -69,5 +69,16 @@ Toda tarea que toque `quartz-web` (UI, componentes, páginas, estilos) invoca, a
 
 > El slice completo back + front lo andamia la skill `quartz-feature-scaffold`; el orden del backend vive en `quartz-api/CLAUDE.md`.
 
+## Incidentes conocidos
+Bugs no obvios ya diagnosticados, para no repetirlos: [`docs/known-issues.md`](docs/known-issues.md).
+Antes de usar `ripple`/efectos por defecto de un `Button` o `IconButton` de Material
+Tailwind en un elemento con `fixed`/`absolute`/`sticky` propio, revisar esa entrada.
+
 ## Verificación
 `npm run build && npm run lint`
+
+**Prohibido usar Claude in Chrome (`mcp__claude-in-chrome__*`) para verificar UI/UX.** El
+usuario hace esa verificación manual él mismo — gasta tokens y no aporta. `npx tsc --noEmit` /
+`npm run build && npm run lint` / arranque limpio del servidor son la verificación automática
+disponible; para el resto (visual, interacción, flujo en navegador), entregar el cambio y
+dejar la prueba manual al usuario.

@@ -1,5 +1,5 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
-import { STATUS_ICON_JPG } from "../statusVisuals";
+import { STATUS_ICON_JPG, REPORT_FOOTER_BANNER } from "../statusVisuals";
 import type { ICommunicativeLetterTemplate, QualitativeValuation } from "../types";
 
 const VALUATION_COLORS: Record<QualitativeValuation, string> = {
@@ -128,14 +128,32 @@ export default function CommunicativeLetterDocument({ report, shieldSrc }: Commu
           render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
           fixed
         />
+
+        <Image src={REPORT_FOOTER_BANNER} style={styles.footerBanner} fixed />
       </Page>
     </Document>
   );
 }
 
+// 1cm exacto (72pt/in ÷ 2.54cm/in). Márgenes izq./der./sup./inf. del documento impreso —
+// el footer vive DENTRO de estos márgenes (no a sangre), igual que el resto del contenido.
+const ONE_CM = 28.35;
+// Ancho útil entre los márgenes izquierdo y derecho (tamaño LETTER = 612pt de ancho).
+const CONTENT_WIDTH = 612 - 2 * ONE_CM;
+// Alto del footer manteniendo el aspect ratio real de footer.jpg (1400×192) al ancho útil,
+// sin recortar la imagen (incluye el logo "Powered by" en su esquina).
+const FOOTER_HEIGHT = CONTENT_WIDTH * (192 / 1400);
+// Espacio entre el número de página y el borde superior del footer (quedan pegados), y entre
+// el número de página y el contenido normal (dimensiones/observaciones/firma) por encima.
+const FOOTER_GAP = 6;
+const PAGE_NUMBER_ROW = 14;
+
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    paddingTop: ONE_CM,
+    paddingLeft: ONE_CM,
+    paddingRight: ONE_CM,
+    paddingBottom: ONE_CM + FOOTER_HEIGHT + FOOTER_GAP + PAGE_NUMBER_ROW,
     fontSize: 9,
     fontFamily: "Helvetica",
     color: "#1f2937",
@@ -310,10 +328,21 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   pageNumber: {
+    // Pegado justo encima del footer (FOOTER_GAP), alineado a la derecha con el margen de 1cm.
     position: "absolute",
-    bottom: 20,
-    right: 40,
+    bottom: ONE_CM + FOOTER_HEIGHT + FOOTER_GAP,
+    right: ONE_CM,
     fontSize: 7,
     color: "#9ca3af",
+  },
+  footerBanner: {
+    // Dentro del margen de 1cm (izq./der./inf.), no a sangre. left/right fijos → Yoga calcula
+    // el ancho como CONTENT_WIDTH automáticamente; height ya respeta ese mismo aspect ratio.
+    position: "absolute",
+    bottom: ONE_CM,
+    left: ONE_CM,
+    right: ONE_CM,
+    height: FOOTER_HEIGHT,
+    objectFit: "contain",
   },
 });

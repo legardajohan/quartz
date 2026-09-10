@@ -5,6 +5,11 @@ export { isAxiosError } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Margen ampliado para lecturas de informe (PDF): componen datos de varias colecciones
+// y, hasta RPT-06, incluyen un proxy de imagen a R2. El timeout global del cliente (10s)
+// no cambia; este valor se pasa explicitamente por config en esas llamadas puntuales.
+export const REPORT_REQUEST_TIMEOUT_MS = 30000;
+
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -81,6 +86,9 @@ apiClient.interceptors.response.use(
 
 export function extractErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
+    if (err.code === 'ECONNABORTED') {
+      return 'La generación del informe tardó más de lo esperado. Inténtalo de nuevo.';
+    }
     return (err.response?.data as { message?: string })?.message ?? err.message;
   }
   if (err instanceof Error) return err.message;

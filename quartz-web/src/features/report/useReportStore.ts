@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { apiGet, apiPatch, extractErrorMessage } from '../../api/apiClient';
+import { apiGet, apiPatch, extractErrorMessage, REPORT_REQUEST_TIMEOUT_MS } from '../../api/apiClient';
 import type {
   ReportState,
   GetUsersQuery,
@@ -37,7 +37,9 @@ export const useReportStore = create<ReportState>((set) => ({
   fetchChecklistReport: async (valuationId: string) => {
     set({ isReportLoading: true, reportError: null, currentReport: null });
     try {
-      const data = await apiGet<IReportTemplate>(`/reports/checklist/${valuationId}`);
+      const data = await apiGet<IReportTemplate>(`/reports/checklist/${valuationId}`, {
+        timeout: REPORT_REQUEST_TIMEOUT_MS,
+      });
       set({ currentReport: data, isReportLoading: false });
     } catch (err: unknown) {
       set({ reportError: extractErrorMessage(err, 'Falló la carga del informe.'), isReportLoading: false });
@@ -60,7 +62,9 @@ export const useReportStore = create<ReportState>((set) => ({
   fetchCommunicativeLetter: async (valuationId: string) => {
     set({ isLetterLoading: true, letterError: null, currentLetter: null });
     try {
-      const data = await apiGet<ICommunicativeLetterTemplate>(`/reports/communicative-letter/${valuationId}`);
+      const data = await apiGet<ICommunicativeLetterTemplate>(`/reports/communicative-letter/${valuationId}`, {
+        timeout: REPORT_REQUEST_TIMEOUT_MS,
+      });
       set({ currentLetter: data, isLetterLoading: false });
     } catch (err: unknown) {
       set({ letterError: extractErrorMessage(err, 'Falló la carga de la Carta Comunicativa.'), isLetterLoading: false });
@@ -70,7 +74,9 @@ export const useReportStore = create<ReportState>((set) => ({
   saveLetterConcepts: async (valuationId: string, assignments: ConceptAssignmentUpdate[]) => {
     try {
       await apiPatch(`/student-valuations/${valuationId}/concepts`, { assignments });
-      const data = await apiGet<ICommunicativeLetterTemplate>(`/reports/communicative-letter/${valuationId}`);
+      const data = await apiGet<ICommunicativeLetterTemplate>(`/reports/communicative-letter/${valuationId}`, {
+        timeout: REPORT_REQUEST_TIMEOUT_MS,
+      });
       set({ currentLetter: data });
     } catch (err: unknown) {
       const message = extractErrorMessage(err, 'Falló guardar la selección de conceptos.');
