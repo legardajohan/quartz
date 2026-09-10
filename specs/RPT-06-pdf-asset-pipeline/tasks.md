@@ -67,7 +67,12 @@
       con sus estilos. Props `{ institution, period, student, shieldSrc, children }`.
 - [ ] `components/CommunicativeLetterDocument.tsx` — queda con `<Document>`, mapeo de
       dimensiones, observaciones y firma, envolviendo su contenido en `LetterPageShell`.
-- [ ] Comparar el PDF generado contra el de RPT-05: debe ser visualmente idéntico.
+- [ ] `LetterPageShell.tsx` — mover el número de página a superposición sobre la esquina
+      inferior derecha del footer banner (orden Image→Text en JSX, footer primero); quitar
+      `PAGE_NUMBER_ROW` de `paddingBottom` y de las constantes si queda sin otro uso. Verificar
+      manualmente que no choca con el arte del footer en "N / M" de 1 y 2 dígitos.
+- [ ] Comparar el PDF generado contra el de RPT-05: debe ser visualmente idéntico salvo la
+      posición del número de página (cambio intencional de esta tarea).
 
 ### 6. Aislamiento del peso
 - [ ] `src/App.tsx` — `React.lazy` para `ReportsPage` y `CommunicativeLetterEditPage`, envueltos

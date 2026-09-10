@@ -41,7 +41,9 @@ masivo de informes.
 - **Frontend — shell reutilizable.** `CommunicativeLetterDocument` se separa en un shell
   invariante (`LetterPageShell`: cabecera de institución con escudo, fila de metadatos, banda de
   footer, paginación) y el cuerpo por estudiante. Una sola definición del formato para el camino
-  masivo, sin cambio visual en el PDF.
+  masivo. De paso, `LetterPageShell` corrige la posición de la numeración de página: pasa de una
+  fila propia por encima de la banda de footer a superponerse a ella, en su esquina inferior
+  derecha (única zona sin arte del banner) — único cambio visual intencional de este spec.
 
 **Fuera:**
 - Generación masiva de informes: es el consumidor futuro de este trabajo, no parte de él.
@@ -74,7 +76,10 @@ masivo de informes.
       no forman parte del bundle inicial (chunk separado, verificable en `npm run build`).
 - [ ] Cuando se renderiza la Carta Comunicativa, la cabecera, los metadatos, la banda de footer
       y la paginación provienen de `LetterPageShell` y no están duplicados en el cuerpo del
-      documento; el PDF resultante es visualmente idéntico al de RPT-05.
+      documento; el PDF resultante es visualmente idéntico al de RPT-05, salvo la posición del
+      número de página (ver siguiente criterio).
+- [ ] Cuando se renderiza la Carta Comunicativa, el número de página aparece superpuesto a la
+      banda de footer (esquina inferior derecha), no en una fila separada por encima de ella.
 - [ ] Si un Docente solicita `GET /institutions/me/shield.jpg`, el sistema responde el escudo de
       **su** inquilino; si el rol no es `Jefe de Área` ni `Docente`, responde 403.
 - [ ] Cuando se invoca cualquiera de las rutas eliminadas `/reports/*/:valuationId/shield`, el

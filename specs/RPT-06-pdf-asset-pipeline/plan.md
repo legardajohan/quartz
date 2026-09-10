@@ -232,7 +232,29 @@ modales de informe necesitan que `fetchBranding()` se haya ejecutado; hoy solo l
 contiene el `<Page>`, la cabecera con escudo, la fila de metadatos, la banda de footer `fixed` y
 la paginación. `CommunicativeLetterDocument` queda con el `<Document>`, el mapeo de dimensiones,
 las observaciones y la firma. Los `StyleSheet.create` del shell se mueven con él. **Sin cambio
-visual**: el PDF debe salir idéntico al de RPT-05.
+visual** en escudo/metadatos/firma: el PDF debe salir idéntico al de RPT-05. La única excepción
+deliberada es la numeración de página, que se reubica:
+
+- Hoy (`CommunicativeLetterDocument.tsx` actual): `<Text pageNumber>` se pinta *antes* que
+  `<Image footerBanner>` en el JSX, con `pageNumber.bottom: ONE_CM + FOOTER_HEIGHT + FOOTER_GAP`
+  (fila propia encima del footer) y `footerBanner.bottom: ONE_CM`. `page.paddingBottom` reserva
+  `ONE_CM + FOOTER_HEIGHT + FOOTER_GAP + PAGE_NUMBER_ROW`.
+- En `LetterPageShell`: se invierte el orden de pintado — `<Image footerBanner>` va *antes* que
+  `<Text pageNumber>` (react-pdf/pdfkit pintan en orden de documento; lo último queda encima).
+  `footerBanner.bottom` no cambia (`ONE_CM`). `pageNumber` pasa a superponerse sobre la esquina
+  inferior derecha del banner, en su zona blanca sin arte (aprox. `bottom: ONE_CM + 8`,
+  `right: ONE_CM + 12`; el valor exacto se ajusta en implementación contra el PDF renderizado,
+  la esquina útil solo se valida visualmente). Sin fondo/chip: la zona ya es blanca, mismo
+  `fontSize: 7` / color gris de siempre.
+- `page.paddingBottom` se simplifica a `ONE_CM + FOOTER_HEIGHT + FOOTER_GAP` — ya no reserva una
+  fila aparte para el número de página. La constante `PAGE_NUMBER_ROW` se elimina si queda sin
+  otro uso. Esto libera ~14pt adicionales de alto útil por página para el contenido variable
+  (dimensiones/observaciones), sin tocar el resto del layout ni los saltos de página existentes.
+- Verificación manual (usuario, no Claude in Chrome — ver `quartz-web/CLAUDE.md`): el número no
+  debe chocar con el texto rosado ni con el logo "Powered by" del banner, en "N / M" de 1 y 2
+  dígitos.
+- Fuera de alcance: `ChecklistReportDocument.tsx` no tiene este problema (su "Powered by" es un
+  logo pequeño en una esquina, sin banda ilustrada de por medio) — no se toca.
 
 **Modales** (`CommunicativeLetterModal.tsx:24`, `ChecklistReportModal.tsx`) — sustituyen
 `usePdfShieldImage(valuationId, hasSource, reportKind)` por `useInstitutionShieldQuery()`. La
