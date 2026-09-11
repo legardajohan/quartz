@@ -87,6 +87,7 @@ export default function ConsolidatedReportsPanel() {
           value={isDocente ? sessionData?.user.schoolId ?? "" : schoolId}
           onChange={(val) => setSchoolId(val ?? "")}
           disabled={isDocente}
+          key={isDocente ? "docente" : schools.length}
         >
           {isDocente ? (
             <Option value={sessionData?.user.schoolId ?? ""}>{ownSchoolName}</Option>
