@@ -87,7 +87,7 @@ export default function ConsolidatedReportsPanel() {
           value={isDocente ? sessionData?.user.schoolId ?? "" : schoolId}
           onChange={(val) => setSchoolId(val ?? "")}
           disabled={isDocente}
-          menuProps={{ placement: "bottom" }}
+          menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
           key={isDocente ? "docente" : schools.length}
         >
           {isDocente ? (
@@ -124,7 +124,7 @@ export default function ConsolidatedReportsPanel() {
             label="Jornada"
             value={shiftId}
             onChange={(val) => setShiftId(val ?? "")}
-            menuProps={{ placement: "bottom" }}
+            menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
           >
             <Option value="">Todas las jornadas</Option>
             {(sessionData?.shifts ?? []).map((shift) => (
@@ -140,7 +140,7 @@ export default function ConsolidatedReportsPanel() {
           label="Período"
           value={periodId}
           onChange={(val) => setPeriodId(val ?? "")}
-          menuProps={{ placement: "bottom" }}
+          menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
           key={sessionData?.periods.length}
         >
           {(sessionData?.periods ?? []).map((period) => (

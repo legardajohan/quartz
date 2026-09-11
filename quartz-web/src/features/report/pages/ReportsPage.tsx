@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Tabs, TabsHeader, TabsBody, Tab, TabPanel } from "@material-tailwind/react";
+import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
 import { UserIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IndividualReportsPanel from "../components/IndividualReportsPanel";
 import ConsolidatedReportsPanel from "../components/ConsolidatedReportsPanel";
@@ -104,14 +104,16 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <TabsBody>
-          <TabPanel value="individual" className="px-0 pt-6">
+        {/* Contenido plano (sin TabsBody/TabPanel): ambos envuelven su hijo en un contenedor
+            `overflow-hidden` para el crossfade, que recorta cualquier popover no portalado
+            (Select de Material Tailwind incluido) más allá de su propio alto. */}
+        <div className="pt-6">
+          {isIndividual ? (
             <IndividualReportsPanel search={search} selectedGrades={selectedGrades} selectedSchools={selectedSchools} />
-          </TabPanel>
-          <TabPanel value="consolidado" className="px-0 pt-6">
+          ) : (
             <ConsolidatedReportsPanel />
-          </TabPanel>
-        </TabsBody>
+          )}
+        </div>
       </Tabs>
     </div>
   );
