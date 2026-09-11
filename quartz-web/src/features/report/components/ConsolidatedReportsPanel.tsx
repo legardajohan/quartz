@@ -87,6 +87,7 @@ export default function ConsolidatedReportsPanel() {
           value={isDocente ? sessionData?.user.schoolId ?? "" : schoolId}
           onChange={(val) => setSchoolId(val ?? "")}
           disabled={isDocente}
+          menuProps={{ placement: "bottom" }}
           key={isDocente ? "docente" : schools.length}
         >
           {isDocente ? (
@@ -103,7 +104,13 @@ export default function ConsolidatedReportsPanel() {
           )}
         </Select>
 
-        <Select color="purple" label="Grado" value={grade} onChange={(val) => setGrade((val as GradeLevel) ?? "")}>
+        <Select
+          color="purple"
+          label="Grado"
+          value={grade}
+          onChange={(val) => setGrade((val as GradeLevel) ?? "")}
+          menuProps={{ placement: "bottom" }}
+        >
           {GRADE_LEVELS.map((level) => (
             <Option key={level} value={level}>
               {level}
@@ -112,7 +119,13 @@ export default function ConsolidatedReportsPanel() {
         </Select>
 
         {multipleShifts && (
-          <Select color="purple" label="Jornada" value={shiftId} onChange={(val) => setShiftId(val ?? "")}>
+          <Select
+            color="purple"
+            label="Jornada"
+            value={shiftId}
+            onChange={(val) => setShiftId(val ?? "")}
+            menuProps={{ placement: "bottom" }}
+          >
             <Option value="">Todas las jornadas</Option>
             {(sessionData?.shifts ?? []).map((shift) => (
               <Option key={shift._id} value={shift._id}>
@@ -127,6 +140,7 @@ export default function ConsolidatedReportsPanel() {
           label="Período"
           value={periodId}
           onChange={(val) => setPeriodId(val ?? "")}
+          menuProps={{ placement: "bottom" }}
           key={sessionData?.periods.length}
         >
           {(sessionData?.periods ?? []).map((period) => (
