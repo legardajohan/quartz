@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { apiGet, apiPatch, extractErrorMessage, REPORT_REQUEST_TIMEOUT_MS } from '../../api/apiClient';
+import { apiGet, apiPatch, apiPost, extractErrorMessage, REPORT_REQUEST_TIMEOUT_MS } from '../../api/apiClient';
 import type {
   ReportState,
   GetUsersQuery,
@@ -8,7 +8,18 @@ import type {
   ICommunicativeLetterTemplate,
   ILetterAvailability,
   ConceptAssignmentUpdate,
+  IBulkChecklistReportResponse,
+  IBulkCommunicativeLetterResponse,
+  IConsolidatedReportFilters,
 } from './types';
+
+async function postBulkReport<T>(url: string, payload: unknown, fallbackMessage: string): Promise<T> {
+  try {
+    return await apiPost<T>(url, payload, { timeout: REPORT_REQUEST_TIMEOUT_MS });
+  } catch (err: unknown) {
+    throw new Error(extractErrorMessage(err, fallbackMessage));
+  }
+}
 
 export const ITEMS_PER_PAGE = 10;
 
@@ -86,4 +97,18 @@ export const useReportStore = create<ReportState>((set) => ({
   },
 
   clearLetter: () => set({ currentLetter: null, letterError: null, isLetterLoading: false }),
+
+  fetchConsolidatedChecklistReports: (filters: IConsolidatedReportFilters) =>
+    postBulkReport<IBulkChecklistReportResponse>(
+      '/reports/checklist/consolidated',
+      filters,
+      'Falló la generación del consolidado.'
+    ),
+
+  fetchConsolidatedCommunicativeLetters: (filters: IConsolidatedReportFilters) =>
+    postBulkReport<IBulkCommunicativeLetterResponse>(
+      '/reports/communicative-letter/consolidated',
+      filters,
+      'Falló la generación del consolidado.'
+    ),
 }));

@@ -17,6 +17,7 @@ interface ReportsTableProps {
   onViewLetter: (valuationId: string) => void;
   enabledReports: ReportKind[];
   isLetterAvailable: boolean;
+  activePeriodId?: string;
 }
 
 export default function ReportsTable({
@@ -30,9 +31,11 @@ export default function ReportsTable({
   onViewLetter,
   enabledReports,
   isLetterAvailable,
+  activePeriodId,
 }: ReportsTableProps) {
   const isChecklistEnabled = enabledReports.includes("checklist");
   const isCommunicativeLetterEnabled = enabledReports.includes("communicative-letter");
+
   const columns: Column<UserDto>[] = [
     {
       header: "ID",
@@ -107,7 +110,9 @@ export default function ReportsTable({
     {
       header: "Informes",
       accessor: (item) => {
-        const valuation = item.valuations[0];
+        const valuation = activePeriodId
+          ? item.valuations.find((v) => v.periodId === activePeriodId)
+          : undefined;
         const isChecklistReady = valuation?.status === "Evaluado";
 
         if (!isChecklistEnabled && !isCommunicativeLetterEnabled) {

@@ -1,66 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
-import ReportsTable from "../components/ReportsTable";
-import ChecklistReportModal from "../components/ChecklistReportModal";
-import CommunicativeLetterModal from "../components/CommunicativeLetterModal";
-import { useReportStore, ITEMS_PER_PAGE } from "../useReportStore";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { useMemo, useState } from "react";
+import { Tabs, TabsHeader, TabsBody, Tab, TabPanel } from "@material-tailwind/react";
+import { UserIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import IndividualReportsPanel from "../components/IndividualReportsPanel";
+import ConsolidatedReportsPanel from "../components/ConsolidatedReportsPanel";
+import { useReportStore } from "../useReportStore";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
-import { normalizeText } from "../../../utils/normalizeText";
 import type { SchoolDto } from "../../student-valuation/types";
 import type { GradeLevel } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 
-export default function ReportsPage() {
-  const { users, isLoading, fetchUsers, fetchLetterAvailability, letterAvailability } = useReportStore();
-  const { sessionData } = useAuthStore();
+const TABS = [
+  { value: "individual", label: "Individual", icon: UserIcon },
+  { value: "consolidado", label: "Consolidado", icon: UserGroupIcon },
+] as const;
 
-  const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
-  const [selectedStudentName, setSelectedStudentName] = useState("");
-  const [selectedLetterValuationId, setSelectedLetterValuationId] = useState<string | null>(null);
-  const [selectedLetterStudentName, setSelectedLetterStudentName] = useState("");
+type ReportsTab = (typeof TABS)[number]["value"];
+
+export default function ReportsPage() {
+  const [activeTab, setActiveTab] = useState<ReportsTab>("individual");
+  const { users } = useReportStore();
 
   const [search, setSearch] = useState("");
   const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    if (sessionData?.user) {
-      fetchUsers({ role: "Estudiante" });
-    }
-  }, [sessionData?.user, fetchUsers]);
-
-  useEffect(() => {
-    const activePeriod = sessionData?.periods?.find((p) => p.isActive);
-    if (activePeriod) {
-      fetchLetterAvailability(activePeriod._id);
-    }
-  }, [sessionData?.periods, fetchLetterAvailability]);
+  const isIndividual = activeTab === "individual";
 
   const schools = useMemo(() => {
     const bySchoolId = new Map<string, SchoolDto>();
     users.forEach((user) => bySchoolId.set(user.school._id, user.school));
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
-
-  const filteredUsers = useMemo(() => {
-    const term = normalizeText(search);
-    return users.filter((user) => {
-      const fullName = [user.firstName, user.middleName, user.lastName, user.secondLastName]
-        .filter(Boolean)
-        .join(" ");
-      const matchesSearch =
-        term === "" ||
-        normalizeText(fullName).includes(term) ||
-        String(user.identificationNumber).includes(term);
-      const matchesGrade =
-        selectedGrades.length === 0 || user.gradesTaught.some((g) => selectedGrades.includes(g as GradeLevel));
-      const matchesSchool = selectedSchools.length === 0 || selectedSchools.includes(user.school._id);
-      return matchesSearch && matchesGrade && matchesSchool;
-    });
-  }, [users, search, selectedGrades, selectedSchools]);
 
   const filterGroups: FilterGroup[] = [
     {
@@ -83,30 +55,6 @@ export default function ReportsPage() {
     },
   ];
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-  const handleViewChecklist = (valuationId: string) => {
-    const owner = users.find((user) => user.valuations.some((v) => v._id === valuationId));
-    const name = owner
-      ? [owner.firstName, owner.lastName, owner.secondLastName].filter(Boolean).join(" ")
-      : "Estudiante";
-
-    setSelectedStudentName(name);
-    setSelectedValuationId(valuationId);
-  };
-
-  const handleViewLetter = (valuationId: string) => {
-    const owner = users.find((user) => user.valuations.some((v) => v._id === valuationId));
-    const name = owner
-      ? [owner.firstName, owner.lastName, owner.secondLastName].filter(Boolean).join(" ")
-      : "Estudiante";
-
-    setSelectedLetterStudentName(name);
-    setSelectedLetterValuationId(valuationId);
-  };
-
   return (
     <div className="w-full relative">
       <h1 className="text-2xl font-semibold text-purple-900">Informes</h1>
@@ -114,42 +62,57 @@ export default function ReportsPage() {
         Consulta y descarga la Lista de Chequeo y la Carta Comunicativa de tus estudiantes.
       </p>
 
-      <div className="mb-2 mt-4 flex">
-        <SearchFilterBar
-          search={search}
-          onSearchChange={(value) => {
-            setSearch(value);
-            setCurrentPage(1);
-          }}
-          placeholder="Buscar por nombre o identificación"
-          groups={filterGroups}
-        />
-      </div>
+      <Tabs value={activeTab}>
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <TabsHeader className="bg-purple-50/60 p-1.5 w-fit shrink-0">
+            {TABS.map(({ value, label, icon: Icon }) => {
+              const isActive = activeTab === value;
+              return (
+                <Tab
+                  key={value}
+                  value={value}
+                  onClick={() => setActiveTab(value)}
+                  className="px-8 py-2 transition-transform duration-150 active:scale-[0.98]"
+                >
+                  <div
+                    className={`flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors duration-150 ${
+                      isActive ? "text-purple-900" : "text-gray-600"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </div>
+                </Tab>
+              );
+            })}
+          </TabsHeader>
 
-      <ReportsTable
-        users={paginatedUsers}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
-        isLoading={isLoading}
-        onViewChecklist={handleViewChecklist}
-        onViewLetter={handleViewLetter}
-        enabledReports={sessionData?.enabledReports ?? ['checklist', 'communicative-letter']}
-        isLetterAvailable={letterAvailability?.isAvailable ?? false}
-      />
-      <ChecklistReportModal
-        open={!!selectedValuationId}
-        valuationId={selectedValuationId}
-        studentName={selectedStudentName}
-        onClose={() => setSelectedValuationId(null)}
-      />
-      <CommunicativeLetterModal
-        open={!!selectedLetterValuationId}
-        valuationId={selectedLetterValuationId}
-        studentName={selectedLetterStudentName}
-        onClose={() => setSelectedLetterValuationId(null)}
-      />
+          <div
+            className={`min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-out ${
+              isIndividual ? "max-w-full opacity-100" : "max-w-0 opacity-0"
+            }`}
+            aria-hidden={!isIndividual}
+          >
+            <div className="min-w-[280px]">
+              <SearchFilterBar
+                search={search}
+                onSearchChange={setSearch}
+                placeholder="Buscar por nombre o identificación"
+                groups={filterGroups}
+              />
+            </div>
+          </div>
+        </div>
+
+        <TabsBody>
+          <TabPanel value="individual" className="px-0 pt-6">
+            <IndividualReportsPanel search={search} selectedGrades={selectedGrades} selectedSchools={selectedSchools} />
+          </TabPanel>
+          <TabPanel value="consolidado" className="px-0 pt-6">
+            <ConsolidatedReportsPanel />
+          </TabPanel>
+        </TabsBody>
+      </Tabs>
     </div>
   );
 }

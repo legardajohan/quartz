@@ -51,7 +51,7 @@ export type IValuationBySubjectDTO =
       performanceDescription: string | null;
     });
 
-type StudentName = {
+export type StudentNameFields = {
   firstName: string;
   middleName?: string;
   lastName: string;
@@ -62,7 +62,7 @@ export interface IStudentValuationDTO {
   _id: string;
   institutionId: string;
   studentId: string;
-  studentName: StudentName;
+  studentName: StudentNameFields;
   teacherId: string;
   checklistTemplateId: string;
   periodId: string;
@@ -72,6 +72,15 @@ export interface IStudentValuationDTO {
   observations: string | null;
 }
 
+
+/**
+ * Forma sin poblar de una StudentValuation (p. ej. de `findScoped(...).lean()`), consumida por
+ * `mapValuationToDTO` para armar el DTO sin `populate()` (RPT-07: resolución por lote).
+ */
+export type IStudentValuationLean = Pick<
+  IStudentValuationDocument,
+  '_id' | 'institutionId' | 'studentId' | 'teacherId' | 'checklistTemplateId' | 'periodId' | 'globalStatus' | 'valuationsBySubject' | 'observations'
+>;
 
 // -----------------------------------------------------------------------------
 // II. POPULATED DOCUMENT TYPES (for service-layer transformations)

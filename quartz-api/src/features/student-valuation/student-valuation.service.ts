@@ -14,7 +14,9 @@ import {
   StudentValuationUpdateData,
   StudentValuationConceptsUpdateData,
   IStudentValuationDTO,
+  IStudentValuationLean,
   IValuationBySubjectDTO,
+  StudentNameFields,
   GlobalValuationStatus,
   QualitativeValuation,
 } from './student-valuation.types';
@@ -88,39 +90,30 @@ interface PopulatedValuationDoc extends Document {
 }
 
 /**
- * Centralized function to enrich a StudentValuation document with related data.
- * It takes a Mongoose document, populates it, and maps it to the final DTO.
- * This function is the single source of truth for data enrichment.
- * @param valuationDoc A Mongoose document instance of a student valuation.
- * @returns {Promise<IStudentValuationDTO>} A promise that resolves to the enriched DTO.
+ * Mapeo en memoria de una StudentValuation (poblada o no) a su DTO, resolviendo nombres de
+ * estudiante/período/asignatura contra los `Map` provistos en vez de `populate()`. Único lugar
+ * que produce `IStudentValuationDTO`: lo reutilizan tanto el camino poblado (`populateAndMapValuation`,
+ * un solo documento) como el de lote (`buildReportContexts` en `report.service.ts`, N documentos
+ * con ~6 consultas totales en vez de ~10·N).
  */
-async function populateAndMapValuation(valuationDoc: IStudentValuationDocument): Promise<IStudentValuationDTO> {
-  // 1. Populate all required fields in a single database query.
-  // Note: learningValuations are NOT populated because they are now embedded snapshots.
-  const populatedDoc = (await valuationDoc.populate([
-    { path: 'studentId', select: 'firstName middleName lastName secondLastName' },
-    { path: 'periodId', select: 'name' },
-    { path: 'valuationsBySubject.subjectId', select: 'name', model: Subject },
-  ])) as PopulatedValuationDoc; // Explicitly cast to our clean, populated type.
-
-  // 2. Map the populated document to the target DTO, handling potential nulls.
-  if (!populatedDoc.studentId) {
-    // This is a critical data integrity issue. A valuation must always have a student.
+export function mapValuationToDTO(
+  valuation: IStudentValuationLean,
+  students: Map<string, StudentNameFields>,
+  periods: Map<string, { name: string }>,
+  subjects: Map<string, { name: string }>
+): IStudentValuationDTO {
+  const studentName = students.get(valuation.studentId.toString());
+  if (!studentName) {
+    // Fallo de integridad de datos real: una valoración siempre debe tener un estudiante.
     throw new AppError('Error de integridad de datos: El estudiante asociado a esta valoración no fue encontrado.', 500);
   }
 
-  const studentName = {
-    firstName: populatedDoc.studentId.firstName,
-    middleName: populatedDoc.studentId.middleName,
-    lastName: populatedDoc.studentId.lastName,
-    secondLastName: populatedDoc.studentId.secondLastName,
-  };
-
-  const valuationsBySubject: IValuationBySubjectDTO[] = populatedDoc.valuationsBySubject.map(vs => {
+  const valuationsBySubject: IValuationBySubjectDTO[] = valuation.valuationsBySubject.map(vs => {
+    const subject = subjects.get(vs.subjectId.toString());
     const base = {
-      subjectId: vs.subjectId ? vs.subjectId._id.toString() : '',
-      // Null safety: Provide a default value if the referenced subject is deleted.
-      subjectName: vs.subjectId ? vs.subjectId.name : 'Asignatura no disponible',
+      subjectId: vs.subjectId.toString(),
+      // Null safety: valor por defecto si la asignatura referenciada fue eliminada.
+      subjectName: subject ? subject.name : 'Asignatura no disponible',
       totalSubjectScore: vs.totalSubjectScore,
       maxSubjectScore: vs.maxSubjectScore,
       subjectPercentage: vs.subjectPercentage,
@@ -139,7 +132,7 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
 
     const learningValuations = vs.learningValuations.map(lv => ({
       // learningId in DTO now refers to the Valuation Item ID (subdocument ID) to allow targeting updates
-      learningId: lv._id.toString(),
+      learningId: lv._id!.toString(),
       learningDescription: lv.learningDescription,
       qualitativeValuation: lv.qualitativeValuation,
       pointsObtained: lv.pointsObtained,
@@ -153,21 +146,92 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
     };
   });
 
-  // 3. Construct and return the final DTO.
+  const period = periods.get(valuation.periodId.toString());
+
   return {
-    _id: populatedDoc._id.toString(),
-    institutionId: populatedDoc.institutionId.toString(),
-    studentId: populatedDoc.studentId._id.toString(),
+    _id: valuation._id.toString(),
+    institutionId: valuation.institutionId.toString(),
+    studentId: valuation.studentId.toString(),
     studentName,
-    teacherId: populatedDoc.teacherId.toString(),
-    checklistTemplateId: populatedDoc.checklistTemplateId.toString(),
-    periodId: populatedDoc.periodId ? populatedDoc.periodId._id.toString() : '',
-    // Null safety: Provide a default value if the referenced period is deleted.
-    periodName: populatedDoc.periodId ? populatedDoc.periodId.name : 'Periodo no disponible',
-    globalStatus: populatedDoc.globalStatus,
+    teacherId: valuation.teacherId.toString(),
+    checklistTemplateId: valuation.checklistTemplateId.toString(),
+    periodId: valuation.periodId.toString(),
+    // Null safety: valor por defecto si el período referenciado fue eliminado.
+    periodName: period ? period.name : 'Periodo no disponible',
+    globalStatus: valuation.globalStatus,
     valuationsBySubject,
-    observations: populatedDoc.observations,
+    observations: valuation.observations,
   };
+}
+
+/**
+ * Centralized function to enrich a StudentValuation document with related data.
+ * It takes a Mongoose document, populates it, and maps it to the final DTO.
+ * This function is the single source of truth for data enrichment.
+ * @param valuationDoc A Mongoose document instance of a student valuation.
+ * @returns {Promise<IStudentValuationDTO>} A promise that resolves to the enriched DTO.
+ */
+async function populateAndMapValuation(valuationDoc: IStudentValuationDocument): Promise<IStudentValuationDTO> {
+  // Capturar los ObjectId originales antes de populate(): Mongoose reemplaza el campo en el
+  // propio documento con el subdocumento poblado (o null si la referencia es inválida), y
+  // mapValuationToDTO necesita el id crudo para indexar los Map.
+  const rawStudentId = valuationDoc.studentId;
+  const rawPeriodId = valuationDoc.periodId;
+  const rawSubjectIds = valuationDoc.valuationsBySubject.map(vs => vs.subjectId);
+
+  // Populate all required fields in a single database query.
+  // Note: learningValuations are NOT populated because they are now embedded snapshots.
+  const populatedDoc = (await valuationDoc.populate([
+    { path: 'studentId', select: 'firstName middleName lastName secondLastName' },
+    { path: 'periodId', select: 'name' },
+    { path: 'valuationsBySubject.subjectId', select: 'name', model: Subject },
+  ])) as PopulatedValuationDoc; // Explicitly cast to our clean, populated type.
+
+  const students = new Map<string, StudentNameFields>();
+  if (populatedDoc.studentId) {
+    students.set(rawStudentId.toString(), {
+      firstName: populatedDoc.studentId.firstName,
+      middleName: populatedDoc.studentId.middleName,
+      lastName: populatedDoc.studentId.lastName,
+      secondLastName: populatedDoc.studentId.secondLastName,
+    });
+  }
+
+  const periods = new Map<string, { name: string }>();
+  if (populatedDoc.periodId) {
+    periods.set(rawPeriodId.toString(), { name: populatedDoc.periodId.name });
+  }
+
+  const subjects = new Map<string, { name: string }>();
+  populatedDoc.valuationsBySubject.forEach((vs, index) => {
+    if (vs.subjectId) {
+      subjects.set(rawSubjectIds[index].toString(), { name: vs.subjectId.name });
+    }
+  });
+
+  const rawValuation: IStudentValuationLean = {
+    _id: populatedDoc._id,
+    institutionId: populatedDoc.institutionId,
+    studentId: rawStudentId,
+    teacherId: populatedDoc.teacherId,
+    checklistTemplateId: populatedDoc.checklistTemplateId,
+    periodId: rawPeriodId,
+    globalStatus: populatedDoc.globalStatus,
+    observations: populatedDoc.observations,
+    valuationsBySubject: populatedDoc.valuationsBySubject.map((vs, index) => ({
+      subjectId: rawSubjectIds[index],
+      evaluationMode: vs.evaluationMode,
+      learningValuations: vs.learningValuations,
+      performanceDescription: vs.performanceDescription,
+      totalSubjectScore: vs.totalSubjectScore,
+      maxSubjectScore: vs.maxSubjectScore,
+      subjectPercentage: vs.subjectPercentage,
+      assignedConceptId: vs.assignedConceptId,
+      assignedConceptText: vs.assignedConceptText,
+    })),
+  };
+
+  return mapValuationToDTO(rawValuation, students, periods, subjects);
 }
 
 

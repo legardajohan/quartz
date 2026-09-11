@@ -1,4 +1,4 @@
-import type { SubjectEvaluationMode } from "@/types/domain";
+import type { SubjectEvaluationMode, GradeLevel } from "@/types/domain";
 
 export type GlobalValuationStatus = 'Evaluado' | 'Evaluando' | 'Por diligenciar';
 
@@ -138,3 +138,33 @@ export type ConceptAssignmentUpdate = {
   conceptId: string;
   conceptText: string;
 };
+
+// --- Descarga masiva (RPT-07) ---
+
+export type BulkReportSkipReason =
+  | 'not-found'
+  | 'not-completed'
+  | 'forbidden-school'
+  | 'missing-concepts';
+
+export interface IBulkReportSkip {
+  valuationId: string;
+  reason: BulkReportSkipReason;
+}
+
+export interface IBulkChecklistReportResponse {
+  reports: IReportTemplate[];
+  skipped: IBulkReportSkip[];
+}
+
+export interface IBulkCommunicativeLetterResponse {
+  reports: ICommunicativeLetterTemplate[];
+  skipped: IBulkReportSkip[];
+}
+
+export interface IConsolidatedReportFilters {
+  schoolId?: string;
+  grade: GradeLevel;
+  shiftId?: string;
+  periodId: string;
+}

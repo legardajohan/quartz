@@ -1,5 +1,6 @@
 import { GlobalValuationStatus, IValuationBySubjectDTO, QualitativeValuation } from "../student-valuation/student-valuation.types";
 import { SubjectEvaluationMode } from "../subject/subject.types";
+import { GradeLevel } from "../auth/auth.types";
 
 // Definicion de interfaces de evaluacion de estudiante
 
@@ -104,4 +105,34 @@ export interface ILetterAvailability {
     periodId: string;
     isAvailable: boolean;
     missing: IMissingConceptCoverage[];
+}
+
+// Interfaces de lote (RPT-07)
+
+export type BulkReportSkipReason =
+    | 'not-found'         // no existe, o no pertenece al inquilino del token
+    | 'not-completed'     // globalStatus !== Evaluado
+    | 'forbidden-school'  // Docente pidiendo estudiante de otra sede
+    | 'missing-concepts'; // solo carta: findMissingConceptCoverage encontró faltantes
+
+export interface IBulkReportSkip {
+    valuationId: string;
+    reason: BulkReportSkipReason;
+}
+
+export interface IBulkChecklistReportResponse {
+    reports: IReportTemplate[];
+    skipped: IBulkReportSkip[];
+}
+
+export interface IBulkCommunicativeLetterResponse {
+    reports: ICommunicativeLetterTemplate[];
+    skipped: IBulkReportSkip[];
+}
+
+export interface IConsolidatedReportFilters {
+    schoolId?: string;   // ignorado y sobrescrito por el service si requestorRole === DOCENTE
+    grade: GradeLevel;
+    shiftId?: string;    // ausente/omitido = todas las jornadas
+    periodId: string;
 }

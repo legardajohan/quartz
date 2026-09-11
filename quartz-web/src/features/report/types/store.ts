@@ -4,6 +4,9 @@ import type {
   ICommunicativeLetterTemplate,
   ILetterAvailability,
   ConceptAssignmentUpdate,
+  IBulkChecklistReportResponse,
+  IBulkCommunicativeLetterResponse,
+  IConsolidatedReportFilters,
 } from './api';
 
 export type { UserDto, GetUsersQuery };
@@ -26,4 +29,6 @@ export interface ReportState {
   fetchCommunicativeLetter: (valuationId: string) => Promise<void>;
   saveLetterConcepts: (valuationId: string, assignments: ConceptAssignmentUpdate[]) => Promise<void>;
   clearLetter: () => void;
+  fetchConsolidatedChecklistReports: (filters: IConsolidatedReportFilters) => Promise<IBulkChecklistReportResponse>;
+  fetchConsolidatedCommunicativeLetters: (filters: IConsolidatedReportFilters) => Promise<IBulkCommunicativeLetterResponse>;
 }
