@@ -62,6 +62,11 @@ export default function ReportsPage() {
         Consulta y descarga la Lista de Chequeo y la Carta Comunicativa de tus estudiantes.
       </p>
 
+      {/* <Tabs> envuelve SOLO la cabecera: su propio div raíz trae `overflow-hidden` fijo en el
+          tema (no solo TabsBody/TabPanel), así que cualquier contenido con popovers no
+          portalados (Select de Material Tailwind incluido) debe vivir FUERA de él, como
+          hermano, o queda recortado sin importar el alto que se le dé. Mismo patrón que
+          UsersPage.tsx, que tampoco usa TabsBody/TabPanel. */}
       <Tabs value={activeTab}>
         <div className="mt-6 flex flex-wrap items-center gap-4">
           <TabsHeader className="bg-purple-50/60 p-1.5 w-fit shrink-0">
@@ -103,18 +108,15 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
-
-        {/* Contenido plano (sin TabsBody/TabPanel): ambos envuelven su hijo en un contenedor
-            `overflow-hidden` para el crossfade, que recorta cualquier popover no portalado
-            (Select de Material Tailwind incluido) más allá de su propio alto. */}
-        <div className="pt-6">
-          {isIndividual ? (
-            <IndividualReportsPanel search={search} selectedGrades={selectedGrades} selectedSchools={selectedSchools} />
-          ) : (
-            <ConsolidatedReportsPanel />
-          )}
-        </div>
       </Tabs>
+
+      <div className="pt-6">
+        {isIndividual ? (
+          <IndividualReportsPanel search={search} selectedGrades={selectedGrades} selectedSchools={selectedSchools} />
+        ) : (
+          <ConsolidatedReportsPanel />
+        )}
+      </div>
     </div>
   );
 }
