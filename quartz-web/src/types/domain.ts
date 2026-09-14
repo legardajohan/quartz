@@ -35,7 +35,14 @@ export function resolveSubjectAxisLabel(subjects: Pick<Subject, 'type'>[]): Subj
 
 export type SubjectEvaluationMode = 'checklist' | 'description';
 
-export type ReportKind = 'checklist' | 'communicative-letter';
+export const REPORT_KIND_VALUES = ['checklist', 'communicative-letter'] as const;
+
+export type ReportKind = (typeof REPORT_KIND_VALUES)[number];
+
+export const REPORT_KIND_LABELS: Record<ReportKind, string> = {
+  checklist: 'Lista de Chequeo',
+  'communicative-letter': 'Carta Comunicativa',
+};
 
 export interface Subject {
   _id: string;

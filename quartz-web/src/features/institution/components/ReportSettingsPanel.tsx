@@ -4,18 +4,16 @@ import { DocumentCheckIcon, EnvelopeOpenIcon } from "@heroicons/react/24/outline
 import toast from "react-hot-toast";
 
 import { useInstitutionStore } from "../useInstitutionStore";
-import type { ReportKind } from "@/types/domain";
+import { REPORT_KIND_LABELS, type ReportKind } from "@/types/domain";
 
-const REPORT_OPTIONS: { value: ReportKind; label: string; description: string; icon: React.ElementType }[] = [
+const REPORT_OPTIONS: { value: ReportKind; description: string; icon: React.ElementType }[] = [
   {
     value: "checklist",
-    label: "Lista de chequeo",
     description: "PDF con la valoración por dimensión de cada estudiante.",
     icon: DocumentCheckIcon,
   },
   {
     value: "communicative-letter",
-    label: "Carta comunicativa",
     description: "Informe narrativo para las familias, con edición de conceptos por dimensión.",
     icon: EnvelopeOpenIcon,
   },
@@ -89,7 +87,7 @@ export function ReportSettingsPanel() {
           Informes habilitados
         </Typography>
         <div className="space-y-2">
-          {REPORT_OPTIONS.map(({ value, label, description, icon: Icon }) => {
+          {REPORT_OPTIONS.map(({ value, description, icon: Icon }) => {
             const checked = enabledReports.includes(value);
             return (
               <label
@@ -102,7 +100,7 @@ export function ReportSettingsPanel() {
                 <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${checked ? "text-purple-600" : "text-gray-400"}`} />
                 <div className="flex-1">
                   <Typography variant="small" color="blue-gray" className="font-medium">
-                    {label}
+                    {REPORT_KIND_LABELS[value]}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 text-xs">
                     {description}

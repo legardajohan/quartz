@@ -36,7 +36,11 @@ const consolidatedReportBody = z.object({
   periodId: objectIdSchema,
 }).strict();
 
-export const getBulkChecklistReportSchema = z.object({ body: bulkReportBody }).strict();
-export const getBulkCommunicativeLetterSchema = z.object({ body: bulkReportBody }).strict();
-export const getConsolidatedChecklistReportSchema = z.object({ body: consolidatedReportBody }).strict();
-export const getConsolidatedCommunicativeLetterSchema = z.object({ body: consolidatedReportBody }).strict();
+// Sin `.strict()` en el envoltorio: `validate()` siempre parsea `{ body, query, params }`, así que
+// un wrapper estricto rechazaría `query` y `params` como llaves no reconocidas y devolvería 400 en
+// TODAS las peticiones. El `.strict()` de `bulkReportBody` / `consolidatedReportBody` ya protege el
+// body, que es lo que se busca. Ver `quartz-api/docs/known-issues.md`.
+export const getBulkChecklistReportSchema = z.object({ body: bulkReportBody });
+export const getBulkCommunicativeLetterSchema = z.object({ body: bulkReportBody });
+export const getConsolidatedChecklistReportSchema = z.object({ body: consolidatedReportBody });
+export const getConsolidatedCommunicativeLetterSchema = z.object({ body: consolidatedReportBody });

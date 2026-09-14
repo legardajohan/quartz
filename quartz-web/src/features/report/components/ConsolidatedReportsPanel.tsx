@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Select, Option, Typography } from "@material-tailwind/react";
-import { ClipboardCheck, Mail } from "lucide-react";
+import { Select, Option, Radio, Typography } from "@material-tailwind/react";
+import { ClipboardCheck, Mail, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { SpinnerIcon } from "@/components/icons/SpinnerIcon";
 import { extractErrorMessage } from "@/api/apiClient";
@@ -8,11 +8,24 @@ import { useAuthStore } from "../../auth/useAuthStore";
 import { useSchoolsQuery } from "../../users/queries/useSchoolsQuery";
 import { useBulkReportDownload } from "../useBulkReportDownload";
 import type { IConsolidatedReportFilters } from "../types";
-import type { GradeLevel } from "@/types/domain";
+import { REPORT_KIND_LABELS, type GradeLevel, type ReportKind } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 const ALL_SCHOOLS_LABEL = "Todas las sedes";
+
+const REPORT_OPTIONS: { value: ReportKind; description: string; icon: React.ElementType }[] = [
+  {
+    value: "checklist",
+    description: "Un PDF con la valoración por dimensión de cada estudiante de la cohorte.",
+    icon: ClipboardCheck,
+  },
+  {
+    value: "communicative-letter",
+    description: "Un PDF con el informe narrativo para las familias de cada estudiante.",
+    icon: Mail,
+  },
+];
 
 export default function ConsolidatedReportsPanel() {
   const { sessionData } = useAuthStore();
@@ -20,14 +33,25 @@ export default function ConsolidatedReportsPanel() {
   const { download, isDownloading } = useBulkReportDownload();
 
   const isDocente = sessionData?.user.role === "Docente";
-  const isChecklistEnabled = sessionData?.enabledReports.includes("checklist") ?? false;
-  const isLetterEnabled = sessionData?.enabledReports.includes("communicative-letter") ?? false;
   const multipleShifts = sessionData?.multipleShifts ?? false;
 
   const [schoolId, setSchoolId] = useState(isDocente ? sessionData?.user.schoolId ?? "" : "");
   const [grade, setGrade] = useState<GradeLevel | "">(GRADE_LEVELS.length === 1 ? GRADE_LEVELS[0] : "");
   const [shiftId, setShiftId] = useState("");
   const [periodId, setPeriodId] = useState("");
+  const [pickedKind, setPickedKind] = useState<ReportKind | null>(null);
+
+  const reportOptions = useMemo(
+    () => REPORT_OPTIONS.filter((option) => sessionData?.enabledReports.includes(option.value)),
+    [sessionData?.enabledReports]
+  );
+
+  // Derivado en vez de guardado en estado: `enabledReports` llega con la sesión, así que la
+  // primera opción disponible queda preseleccionada sin un `useEffect` de sincronización.
+  const reportKind =
+    pickedKind && reportOptions.some((option) => option.value === pickedKind)
+      ? pickedKind
+      : reportOptions[0]?.value ?? null;
 
   const ownSchoolName = useMemo(
     () => schools.find((s) => s._id === sessionData?.user.schoolId)?.name ?? "",
@@ -38,10 +62,10 @@ export default function ConsolidatedReportsPanel() {
     : schools.find((s) => s._id === schoolId)?.name ?? ALL_SCHOOLS_LABEL;
   const selectedPeriodLabel = sessionData?.periods.find((p) => p._id === periodId)?.name ?? "";
 
-  const isReady = !!grade && !!periodId;
+  const isReady = !!grade && !!periodId && !!reportKind;
 
-  const handleDownload = async (reportKind: "checklist" | "communicative-letter") => {
-    if (!grade || !periodId) return;
+  const handleDownload = async () => {
+    if (!grade || !periodId || !reportKind) return;
 
     const filters: IConsolidatedReportFilters = {
       grade,
@@ -66,7 +90,9 @@ export default function ConsolidatedReportsPanel() {
           icon: "⚠️",
         });
       } else {
-        toast.success(`Consolidado descargado con ${result.includedCount} estudiantes.`);
+        toast.success(
+          `${REPORT_KIND_LABELS[reportKind]} descargada con ${result.includedCount} estudiantes.`
+        );
       }
     } catch (err) {
       toast.error(extractErrorMessage(err, "No se pudo generar el consolidado."));
@@ -76,8 +102,8 @@ export default function ConsolidatedReportsPanel() {
   return (
     <div className="max-w-2xl">
       <Typography variant="small" color="gray" className="mb-6 font-normal">
-        Define una cohorte por sede, grado, jornada y período, y descarga un solo PDF con los
-        informes de todos los estudiantes evaluados que la componen.
+        Define una cohorte por sede, grado, jornada y período, elige qué informe necesitas y
+        descarga un solo PDF con los estudiantes evaluados que la componen.
       </Typography>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -151,28 +177,69 @@ export default function ConsolidatedReportsPanel() {
         </Select>
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-3">
-        {isChecklistEnabled && (
-          <button
-            type="button"
-            disabled={!isReady || isDownloading}
-            onClick={() => handleDownload("checklist")}
-            className="flex items-center gap-2 rounded-full border border-purple-600 bg-white px-4 py-2.5 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
-          >
-            {isDownloading ? <SpinnerIcon color="#9333ea" /> : <ClipboardCheck className="h-4 w-4" />}
-            {isDownloading ? "Generando…" : "Descargar Lista de Chequeo"}
-          </button>
-        )}
-        {isLetterEnabled && (
-          <button
-            type="button"
-            disabled={!isReady || isDownloading}
-            onClick={() => handleDownload("communicative-letter")}
-            className="flex items-center gap-2 rounded-full bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-purple-600"
-          >
-            {isDownloading ? <SpinnerIcon /> : <Mail className="h-4 w-4" />}
-            {isDownloading ? "Generando…" : "Descargar Carta Comunicativa"}
-          </button>
+      <div className="mt-8">
+        <Typography
+          variant="small"
+          color="blue-gray"
+          className="mb-3 font-bold"
+          id="consolidated-report-kind"
+        >
+          Tipo de informe
+        </Typography>
+        <div className="space-y-2" role="radiogroup" aria-labelledby="consolidated-report-kind">
+          {reportOptions.map(({ value, description, icon: Icon }) => {
+            const checked = reportKind === value;
+            return (
+              <label
+                key={value}
+                htmlFor={`consolidated-${value}`}
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition duration-150 active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100 ${
+                  checked ? "border-purple-200 bg-purple-50/60" : "border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                <Icon
+                  className={`mt-0.5 h-5 w-5 shrink-0 transition-colors duration-150 ${
+                    checked ? "text-purple-600" : "text-gray-400"
+                  }`}
+                />
+                <div className="flex-1">
+                  <Typography variant="small" color="blue-gray" className="font-medium">
+                    {REPORT_KIND_LABELS[value]}
+                  </Typography>
+                  <Typography variant="small" className="text-xs text-gray-500">
+                    {description}
+                  </Typography>
+                </div>
+                <Radio
+                  id={`consolidated-${value}`}
+                  name="consolidated-report-kind"
+                  crossOrigin={undefined}
+                  ripple={false}
+                  color="purple"
+                  checked={checked}
+                  onChange={() => setPickedKind(value)}
+                  containerProps={{ className: "p-0 shrink-0" }}
+                />
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-8 flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          disabled={!isReady || isDownloading}
+          onClick={handleDownload}
+          className="flex min-w-[11rem] items-center justify-center gap-2 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-medium text-white transition duration-150 hover:bg-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-purple-600 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100"
+        >
+          {isDownloading ? <SpinnerIcon /> : <Download className="h-4 w-4" />}
+          {isDownloading ? "Generando…" : "Descargar"}
+        </button>
+        {!isReady && (
+          <Typography variant="small" className="text-xs font-normal text-gray-500">
+            Elige grado y período para habilitar la descarga.
+          </Typography>
         )}
       </div>
     </div>

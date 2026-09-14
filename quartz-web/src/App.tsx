@@ -21,6 +21,14 @@ import { Toaster } from 'react-hot-toast';
 const ReportsPage = lazy(() => import('./features/report/pages/ReportsPage'));
 const CommunicativeLetterEditPage = lazy(() => import('./features/report/pages/CommunicativeLetterEditPage'));
 
+// El spinner vive sobre el fondo del Dashboard, sin velo ni tarjeta: mismo envoltorio que usa
+// `DataTable` mientras carga, para que la espera del chunk y la de los datos se vean idénticas.
+const routeFallback = (
+  <div className="flex h-64 w-full items-center justify-center">
+    <Loading />
+  </div>
+);
+
 // Placeholder para un futuro Dashboard
 const DashboardPage = () => {
   return (
@@ -85,7 +93,7 @@ export const router = createBrowserRouter(
           <Route
             path="/evaluacion/:studentId/carta-comunicativa/:valuationId"
             element={
-              <Suspense fallback={<Loading fullScreen />}>
+              <Suspense fallback={routeFallback}>
                 <CommunicativeLetterEditPage />
               </Suspense>
             }
@@ -93,7 +101,7 @@ export const router = createBrowserRouter(
           <Route
             path="/informes"
             element={
-              <Suspense fallback={<Loading fullScreen />}>
+              <Suspense fallback={routeFallback}>
                 <ReportsPage />
               </Suspense>
             }

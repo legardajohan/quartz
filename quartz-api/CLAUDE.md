@@ -58,5 +58,9 @@ Nunca aceptar `institutionId` del body/params.
 - Routers: `export default router`.
 - Controllers/Services: *named exports* (`export async function`).
 
+## Incidentes conocidos
+Bugs no obvios ya diagnosticados, para no repetirlos: [`docs/known-issues.md`](docs/known-issues.md).
+Antes de escribir un schema Zod nuevo, revisar la entrada sobre dónde va `.strict()`.
+
 ## Verificación
 `npx tsc --noEmit`
