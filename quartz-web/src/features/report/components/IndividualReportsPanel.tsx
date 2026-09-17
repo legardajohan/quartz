@@ -4,6 +4,7 @@ import ChecklistReportModal from "./ChecklistReportModal";
 import CommunicativeLetterModal from "./CommunicativeLetterModal";
 import { useReportStore, ITEMS_PER_PAGE } from "../useReportStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { useActivePeriod } from "../../period/useActivePeriod";
 import { normalizeText } from "../../../utils/normalizeText";
 import type { GradeLevel } from "@/types/domain";
 
@@ -23,7 +24,7 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
   const [selectedLetterStudentName, setSelectedLetterStudentName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const activePeriodId = sessionData?.periods?.find((p) => p.isActive)?._id;
+  const activePeriodId = useActivePeriod()?._id;
 
   useEffect(() => {
     if (sessionData?.user) {

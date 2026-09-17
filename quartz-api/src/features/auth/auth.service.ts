@@ -21,7 +21,7 @@ export function toSessionUser(user: SafeUser): ISessionData['user'] {
     };
 }
 
-async function getSessionData(user: SafeUser): Promise<ISessionData> {
+export async function getSessionData(user: SafeUser): Promise<ISessionData> {
     const institutionId = user.institutionId.toString();
     const userId = user._id.toString();
 

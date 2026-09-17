@@ -10,7 +10,7 @@ export interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
-  refreshUser: () => Promise<void>;
+  refreshSession: () => Promise<void>;
   setSubjects: (subjects: Subject[]) => void;
   setPeriods: (periods: Period[]) => void;
   setEnabledReports: (enabledReports: ReportKind[]) => void;

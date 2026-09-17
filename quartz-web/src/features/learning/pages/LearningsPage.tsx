@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useLearningStore } from "../useLearningStore";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
 import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
@@ -24,6 +25,7 @@ export default function LearningsPage() {
 
   const subjects = sessionData?.subjects ?? [];
   const periods = sessionData?.periods ?? [];
+  const activePeriod = useActivePeriod();
   const axis = useSubjectAxisLabel();
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -49,13 +51,12 @@ export default function LearningsPage() {
   // Set default active period filter
   useEffect(() => {
     if (!hasInitializedFilter.current && periods.length > 0) {
-      const activePeriod = periods.find(p => p.isActive);
       if (activePeriod) {
         setSelectedPeriods([activePeriod._id]);
       }
       hasInitializedFilter.current = true;
     }
-  }, [periods]);
+  }, [periods, activePeriod]);
 
   const handleOpenCreateModal = () => {
     setSelectedLearning(null);

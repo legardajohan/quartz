@@ -177,6 +177,7 @@ export default function ChecklistsPage() {
         submitText="Crear Plantilla"
         isSubmitting={isSubmitting}
         isSubmitDisabled={!isCreateReady}
+        scrollable={false}
       >
         <ChecklistCreateForm periods={periods} onFormChange={handleCreateFormChange} />
       </FormModal>

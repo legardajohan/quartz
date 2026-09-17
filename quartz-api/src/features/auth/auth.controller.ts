@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { login, toSessionUser } from './auth.service';
+import { login, toSessionUser, getSessionData } from './auth.service';
 
 export async function loginController(req: Request, res: Response) {
   const { email, password } = req.body;
@@ -15,4 +15,9 @@ export async function loginController(req: Request, res: Response) {
 
 export async function getProfileController(req: Request, res: Response) {
   res.json({ user: toSessionUser(req.user!) });
+}
+
+export async function getSessionController(req: Request, res: Response) {
+  const sessionData = await getSessionData(req.user!);
+  res.json({ sessionData });
 }

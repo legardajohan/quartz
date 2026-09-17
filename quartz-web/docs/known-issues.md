@@ -6,6 +6,35 @@ se deduce mirando el código a simple vista.
 
 ---
 
+## `FormModal` scrollable recorta el listbox del `Select` de Material Tailwind
+
+**Fecha:** 2026-09 · **Componentes afectados:** `ChecklistCreateForm.tsx` (modal «Nueva Plantilla»)
+**Síntoma:** al abrir el `Select` de «Período académico» dentro del modal «Nueva Plantilla»
+(`/academico/lista-chequeo`), la primera o la última opción quedaban ocultas — recortadas por
+el borde del modal, no fuera de la ventana del navegador.
+
+**Causa raíz:** `FormModal` envuelve su contenido en un `DialogBody` con
+`max-h-[70vh] overflow-y-auto` cuando `scrollable` (su valor por defecto es `true`) está
+activo (`FormModal.tsx:41`). El listbox que `Select` de Material Tailwind despliega no se
+porta a un overlay independiente: se monta dentro de ese mismo `DialogBody`, así que cualquier
+parte que sobresalga de los `70vh` la recorta el `overflow-y-auto` del contenedor padre, exista
+o no espacio libre en la pantalla.
+
+**Fix aplicado:** `scrollable={false}` en el `FormModal` de crear (`ChecklistsPage.tsx`) —el
+formulario son tres campos, no necesita scroll propio— más `menuProps={{ placement: "bottom" }}`
+en los `Select` de `ChecklistCreateForm.tsx`, con `className: "max-h-[60vh] overflow-y-auto"`
+en el de Período académico para que el propio menú tenga scroll si la institución acumula
+muchos periodos.
+
+**Regla general para el resto del proyecto:** cualquier `FormModal` que contenga un `Select`
+debe llevar `scrollable={false}` (si el formulario cabe sin scroll) o darle al `Select` su
+propio `menuProps={{ className: "max-h-[Nvh] overflow-y-auto" }}` — nunca depender del scroll
+del `DialogBody` para contener el menú de un hijo. Ya resuelto así en `SubjectsPanel.tsx` y
+`SchoolsPanel.tsx` (commit `dbe601d`) y en el `Select` de jornada de `UserForm.tsx`
+(`specs/ACAD-04-schools-and-shifts/plan.md`, nota 5).
+
+---
+
 ## Material Tailwind: el ripple de `Button`/`IconButton` rompe `position` con estilos inline
 
 **Fecha:** 2026-09 · **Componentes afectados:** `Dashboard.tsx`, `SidebarMenu.tsx`

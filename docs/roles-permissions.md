@@ -44,7 +44,9 @@
 | Consultar valoración por id | ✅ | ✅ |
 | Editar valoración | ✅ | ✅ |
 | Actualizar conceptos de la valoración | ✅ | ✅ |
-| Eliminar valoración | ✅ | ❌ |
+| Eliminar valoración | ✅ | ✅ solo de estudiantes de su sede |
+
+> El Docente queda **restringido a su sede**: `assertStudentInScope` fuerza `schoolId` propio (`req.user`, nunca el `body`) en las 6 operaciones y responde `404` (no `403`) fuera de ella o si el objetivo no es un Estudiante. El Jefe de Área abarca toda la institución.
 
 ### Informes (`report`)
 | Operación | Jefe de Área | Docente |
@@ -79,4 +81,4 @@
 ## Notas
 - **Multi-tenancy:** todas las rutas filtran/forcean `institutionId` desde el token (`requireTenant`); ningún rol accede a datos de otras instituciones.
 - **Coherencia:** la matriz implementada concuerda con la regla de dominio: *Docente* valora y modifica su Lista de Chequeo y previsualiza/descarga informes de sus grupos; el resto es del *Jefe de Área*.
-- **Hueco conocido:** las *Evaluaciones* (`student-valuation`) no tienen restricción a nivel de servicio — un docente puede inicializar/editar valoraciones de **cualquier estudiante de la institución** (solo hay scoping por `institutionId`). El filtro de sede del Docente está aplicado únicamente en informes (`report.service.ts`) y usuarios (`users.service.ts`).
+- **Alcance por sede cerrado en todos los features:** *Evaluaciones* (`student-valuation.service.ts`, `assertStudentInScope`), *Informes* (`report.service.ts`) y *Usuarios* (`users.service.ts`) aplican el mismo criterio — el Docente solo opera sobre estudiantes de su `schoolId`, tomado de `req.user`; `404` (no `403`) fuera de sede, para no revelar la existencia del recurso.

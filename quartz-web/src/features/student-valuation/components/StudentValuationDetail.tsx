@@ -3,6 +3,8 @@ import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
 import { useStudentValuationStore } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
 import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
 import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
@@ -26,6 +28,8 @@ export default function StudentValuationDetail() {
         error
     } = useStudentValuationStore();
     const { sessionData } = useAuthStore();
+    const { isAreaLead } = usePermissions();
+    const activePeriod = useActivePeriod();
 
     const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
     const [localValuation, setLocalValuation] = useState(currentValuation);
@@ -35,14 +39,13 @@ export default function StudentValuationDetail() {
     const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
 
     useEffect(() => {
-        const activePeriod = sessionData?.periods?.find((p) => p.isActive);
         if (studentId && activePeriod) {
             fetchValuation(studentId, activePeriod._id);
         }
         return () => {
             clearValuation();
         };
-    }, [studentId, sessionData, fetchValuation, clearValuation]);
+    }, [studentId, activePeriod?._id, fetchValuation, clearValuation]);
 
     useEffect(() => {
         setLocalValuation(currentValuation);
@@ -126,6 +129,31 @@ export default function StudentValuationDetail() {
                 </Button>
             </div>
         )
+    }
+
+    if (!activePeriod) {
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center gap-2 text-center">
+                <Typography variant="h6" color="blue-gray">
+                    No hay un periodo académico activo
+                </Typography>
+                <Typography variant="small" className="text-gray-500">
+                    {isAreaLead
+                        ? "Activa un periodo en Configuración para poder valorar estudiantes."
+                        : "Pide al Jefe de Área que active el periodo académico."}
+                </Typography>
+                <div className="flex gap-2 mt-2">
+                    {isAreaLead && (
+                        <Button color="purple" size="sm" onClick={() => navigate('/gestion/configuracion')}>
+                            Ir a Configuración
+                        </Button>
+                    )}
+                    <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
+                        Volver
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     if (!localValuation) {

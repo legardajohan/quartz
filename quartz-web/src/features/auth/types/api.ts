@@ -12,8 +12,6 @@ export interface LoginResponse {
   message?: string;
 }
 
-export interface ProfileResponse {
-  success?: boolean;
-  user: ISessionData['user'];
-  message?: string;
+export interface SessionResponse {
+  sessionData: ISessionData;
 }

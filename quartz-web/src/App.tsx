@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
 import { useAuthStore } from './features/auth/useAuthStore';
@@ -46,6 +46,16 @@ const DashboardPage = () => {
 const AppRoot = () => {
   const showWelcomeLoader = useAuthStore((state) => state.showWelcomeLoader);
   const dismissWelcomeLoader = useAuthStore((state) => state.dismissWelcomeLoader);
+  const didRefreshSession = useRef(false);
+
+  // Revalida la sessionData persistida contra el backend una sola vez por carga de página,
+  // sin pantalla de carga: la copia de `localStorage` cubre el intervalo. `getState()` para
+  // no suscribir `AppRoot` a `refreshSession` ni a sus cambios de `sessionData`.
+  useEffect(() => {
+    if (didRefreshSession.current) return;
+    didRefreshSession.current = true;
+    void useAuthStore.getState().refreshSession();
+  }, []);
 
   return (
     <>

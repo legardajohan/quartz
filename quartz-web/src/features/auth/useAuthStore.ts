@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/apiClient';
 import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
-import type { AuthState, LoginRequest, LoginResponse, ProfileResponse } from './types';
+import type { AuthState, LoginRequest, LoginResponse, SessionResponse } from './types';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -57,36 +57,21 @@ export const useAuthStore = create<AuthState>()(
         set({ error: null });
       },
 
-      refreshUser: async () => {
+      refreshSession: async () => {
         const { token } = get();
         if (!token) return;
 
-        set({ isLoading: true, error: null });
-
         try {
-          const profile = await apiGet<ProfileResponse>('/auth/profile');
-          const refreshedUser = profile.user;
-
-          set((state) => ({
-            sessionData: state.sessionData
-              ? { ...state.sessionData, user: refreshedUser }
-              : null,
-            isLoading: false,
-            error: null
-          }));
-
+          const { sessionData } = await apiGet<SessionResponse>('/auth/session');
+          set({ sessionData });
         } catch (error: unknown) {
           if (isAxiosError(error) && error.response?.status === 401) {
             get().logout();
             return;
           }
 
-          const errorMessage = extractErrorMessage(error, 'Error al actualizar datos del usuario');
-
-          set({
-            isLoading: false,
-            error: errorMessage
-          });
+          // Red o 5xx: se conserva la sessionData persistida, sin tocar `isLoading` ni
+          // `error` — esta revalidación es silenciosa, no debe parpadear la UI.
         }
       },
 

@@ -38,6 +38,7 @@ export function ChecklistCreateForm({ periods, onFormChange }: ChecklistCreateFo
         value={periodId}
         onChange={(val) => setPeriodId(val ?? '')}
         key={periods.length}
+        menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
       >
         {periods.map((p) => (
           <Option key={p._id} value={p._id}>
@@ -51,6 +52,7 @@ export function ChecklistCreateForm({ periods, onFormChange }: ChecklistCreateFo
         label="Grado"
         value={grade}
         onChange={(val) => setGrade(val ?? '')}
+        menuProps={{ placement: "bottom" }}
       >
         {GRADES.map((g) => (
           <Option key={g} value={g}>

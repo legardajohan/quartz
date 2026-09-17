@@ -43,24 +43,27 @@ export function resolveQualitativeValuation(subjectPercentage: number): Qualitat
 }
 
 /**
- * Cierra el acceso directo por id: un Docente solo puede operar sobre valoraciones de
- * estudiantes de su propia sede. 404 y no 403 — un 403 confirmaría que ese estudiante/valoración
- * existe en otra sede (mismo criterio que `uploadUserPhoto`, `users.service.ts:379-384`).
+ * Cierra el acceso directo por id: el objetivo debe existir en el inquilino y ser un
+ * Estudiante (para cualquier rol), y si el solicitante es Docente, debe pertenecer a su
+ * propia sede. 404 y no 403 — un 403 confirmaría que ese estudiante/valoración existe en
+ * otra sede (mismo criterio que `uploadUserPhoto`, `users.service.ts:379-384`).
  */
 async function assertStudentInScope(
   studentId: Types.ObjectId | string,
   institutionId: string,
   scope: RequestorScope
 ): Promise<void> {
-  if (scope.role !== UserRole.DOCENTE) return;
+  const student = await findByIdScoped(User, institutionId, studentId)
+    .select('role schoolId')
+    .lean();
 
-  if (!scope.schoolId) {
+  if (!student || student.role !== UserRole.ESTUDIANTE) {
     throw new AppError('Valoración no encontrada.', 404);
   }
 
-  const student = await findByIdScoped(User, institutionId, studentId).lean();
+  if (scope.role !== UserRole.DOCENTE) return;
 
-  if (!student || student.schoolId.toString() !== scope.schoolId) {
+  if (!scope.schoolId || student.schoolId.toString() !== scope.schoolId) {
     throw new AppError('Valoración no encontrada.', 404);
   }
 }
@@ -318,9 +321,10 @@ export async function initializeStudentValuation(
     return populateAndMapValuation(existingValuation);
   }
 
-  // Validate that related documents exist before creation.
+  // Validate that related documents exist before creation. El estudiante ya lo valida
+  // `assertStudentInScope` (existencia + rol) más arriba.
   try {
-    await validateAllExist([[Period, periodId, 'Periodo'], [User, studentId, 'Estudiante']]);
+    await validateAllExist([[Period, periodId, 'Periodo']]);
   } catch (error: unknown) {
     throw new AppError(error instanceof Error ? error.message : 'Error desconocido', 404);
   }

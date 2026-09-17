@@ -4,6 +4,7 @@ import StudentValuationTable from "../components/StudentValuationTable";
 import { useStudentValuationStore, ITEMS_PER_PAGE } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
 import { useReportStore } from "../../report/useReportStore";
 import StudentValuationDetail from "../components/StudentValuationDetail";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
@@ -27,6 +28,7 @@ export default function StudentValuationsPage() {
   const { sessionData } = useAuthStore();
   const { isAreaLead, schoolId } = usePermissions();
   const { fetchLetterAvailability, letterAvailability } = useReportStore();
+  const activePeriod = useActivePeriod();
 
   const [search, setSearch] = useState("");
   const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
@@ -48,11 +50,10 @@ export default function StudentValuationsPage() {
   }, [sessionData?.user, fetchUsers, studentId]);
 
   useEffect(() => {
-    const activePeriod = sessionData?.periods?.find((p) => p.isActive);
     if (activePeriod) {
       fetchLetterAvailability(activePeriod._id);
     }
-  }, [sessionData?.periods, fetchLetterAvailability]);
+  }, [activePeriod, fetchLetterAvailability]);
 
   const schools = useMemo(() => {
     const bySchoolId = new Map<string, SchoolDto>();
