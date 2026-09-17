@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ILearningResponse } from "./learning.types";
+import { ILearningResponse, ILearningFilter } from "./learning.types";
 import { ILearningDocument } from "./learning.model";
 import {
     getAllLearnings,
@@ -34,7 +34,8 @@ function mapLearningToResponse(learning: ILearningDocument): ILearningResponse {
 
 export async function getAllLearningsController(req: Request, res: Response) {
     const institutionId = req.user!.institutionId.toString();
-    const learnings = await getAllLearnings(institutionId, req.query);
+    const { subjectId, periodId, userId, grade } = req.query as ILearningFilter;
+    const learnings = await getAllLearnings(institutionId, { subjectId, periodId, userId, grade });
     res.status(200).json(learnings.map(mapLearningToResponse));
 }
 

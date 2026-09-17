@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 
 import { useChecklistTemplateStore } from "../useChecklistTemplateStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { usePermissions } from "../../auth/usePermissions";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
 import { Loading } from "../../../components/ui/Loading";
@@ -32,8 +33,8 @@ export default function ChecklistsPage() {
   } = useChecklistTemplateStore();
 
   const { sessionData } = useAuthStore();
+  const { canManageOwned } = usePermissions();
   const periods = sessionData?.periods ?? [];
-  const currentUser = sessionData?.user;
 
   // — Create modal state —
   const [isCreateOpen, setCreateOpen] = useState(false);
@@ -52,17 +53,6 @@ export default function ChecklistsPage() {
   useEffect(() => {
     useChecklistTemplateStore.getState().fetchTemplates();
   }, []);
-
-  const canManage = useCallback(
-    (template: ChecklistTemplateDto): boolean => {
-      if (!currentUser) return false;
-      return (
-        currentUser.role === "Jefe de Área" ||
-        template.author._id === currentUser._id
-      );
-    },
-    [currentUser]
-  );
 
   // Handlers — create
   const handleOpenCreate = () => {
@@ -168,7 +158,7 @@ export default function ChecklistsPage() {
               <ChecklistCard
                 key={t._id}
                 template={t}
-                canManage={canManage(t)}
+                canManage={canManageOwned(t.author._id)}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />

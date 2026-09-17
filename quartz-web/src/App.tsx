@@ -12,7 +12,6 @@ import ConceptsPage from './features/concept/pages/ConceptsPage';
 import ChecklistsPage from './features/checklist-template/pages/ChecklistsPage';
 import StudentValuationsPage from './features/student-valuation/pages/StudentValuationsPage';
 import UsersPage from './features/users/pages/UsersPage';
-import ConsolidatedPage from './features/consolidated/pages/ConsolidatedPage';
 import ConfigurationPage from './features/configuration/pages/ConfigurationPage';
 import { Toaster } from 'react-hot-toast';
 
@@ -107,7 +106,6 @@ export const router = createBrowserRouter(
             }
           />
           <Route path="/gestion/usuarios" element={<UsersPage />} />
-          <Route path="/gestion/consolidados" element={<ConsolidatedPage />} />
 
           <Route element={<RoleRoute allowedRoles={['Jefe de Área']} />}>
             <Route path="/gestion/configuracion" element={<ConfigurationPage />} />

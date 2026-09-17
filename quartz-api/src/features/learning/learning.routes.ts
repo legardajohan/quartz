@@ -6,6 +6,7 @@ import { requireTenant } from '../../middlewares/require-tenant.middleware';
 import { asyncHandler } from '../../middlewares/async-handler.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { getAllLearningsSchema, createLearningSchema, updateLearningSchema, deleteLearningSchema } from './learning.validation';
+import { UserRole } from '../auth/auth.types';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get(
   '/',
   authenticateJWT,
   requireTenant,
-  authorize(['Jefe de Área', 'Docente']),
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(getAllLearningsSchema),
   asyncHandler(getAllLearningsController)
 );
@@ -22,7 +23,7 @@ router.post(
   '/',
   authenticateJWT,
   requireTenant,
-  authorize(['Jefe de Área']),
+  authorize([UserRole.JEFE_DE_AREA]),
   validate(createLearningSchema),
   asyncHandler(createLearningController)
 );
@@ -31,7 +32,7 @@ router.patch(
   '/:learningId',
   authenticateJWT,
   requireTenant,
-  authorize(['Jefe de Área']),
+  authorize([UserRole.JEFE_DE_AREA]),
   validate(updateLearningSchema),
   asyncHandler(updateLearningController)
 );
@@ -40,7 +41,7 @@ router.delete(
   '/:learningId',
   authenticateJWT,
   requireTenant,
-  authorize(['Jefe de Área']),
+  authorize([UserRole.JEFE_DE_AREA]),
   validate(deleteLearningSchema),
   asyncHandler(deleteLearningController)
 );

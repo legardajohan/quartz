@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 
 import { useConceptStore } from "../useConceptStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { usePermissions } from "../../auth/usePermissions";
 import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
@@ -20,10 +21,10 @@ export default function ConceptsPage() {
   const { concepts, isLoading, isSubmitting, error, createConcept, updateConcept, deleteConcept } =
     useConceptStore();
   const { sessionData } = useAuthStore();
+  const { canManageOwned } = usePermissions();
 
   const subjects = sessionData?.subjects ?? [];
   const periods = sessionData?.periods ?? [];
-  const currentUser = sessionData?.user;
   const axis = useSubjectAxisLabel();
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -57,11 +58,6 @@ export default function ConceptsPage() {
       hasInitializedFilter.current = true;
     }
   }, [periods]);
-
-  const canManage = useCallback((concept: ConceptDto): boolean => {
-    if (!currentUser) return false;
-    return currentUser.role === 'Jefe de Área' || concept.author._id === currentUser._id;
-  }, [currentUser]);
 
   const handleOpenCreateModal = () => {
     setSelectedConcept(null);
@@ -243,7 +239,7 @@ export default function ConceptsPage() {
           onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
           onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
           isLoading={isLoading}
-          canManage={canManage}
+          canManage={(concept) => canManageOwned(concept.author._id)}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />

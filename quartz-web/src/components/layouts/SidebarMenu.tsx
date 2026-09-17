@@ -90,7 +90,6 @@ const menuItems: SidebarMenuItem[] = [
     basePath: "/gestion",
     subItems: [
       { id: 51, label: "Usuarios", path: "/gestion/usuarios" },
-      { id: 52, label: "Consolidados", path: "/gestion/consolidados" },
       { id: 53, label: "Configuración", path: "/gestion/configuracion", roles: ["Jefe de Área"] },
     ],
   },

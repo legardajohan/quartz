@@ -1,4 +1,4 @@
-import { FilterQuery, Types, Query } from 'mongoose';
+import { Types, Query } from 'mongoose';
 import {
     findScoped,
     findByIdScoped,
@@ -10,7 +10,7 @@ import { LearningModel, ILearningDocument } from "./learning.model";
 import { Subject } from '../subject/subject.model';
 import { Period } from '../period/period.model';
 import { User } from '../auth/auth.model';
-import type { LearningData, UpdateLearningData } from './learning.types';
+import type { LearningData, UpdateLearningData, ILearningFilter } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
 import AppError from '../../utils/AppError';
 
@@ -36,9 +36,12 @@ function populateLearningDetails<T>(query: Query<T, ILearningDocument>) {
 
 export async function getAllLearnings(
     institutionId: string,
-    filter: FilterQuery<ILearningDocument>
+    filter: ILearningFilter
 ): Promise<ILearningDocument[]> {
-    const query = findScoped(LearningModel, institutionId, filter);
+    const cleanFilter = Object.fromEntries(
+        Object.entries(filter).filter(([, value]) => value !== undefined)
+    );
+    const query = findScoped(LearningModel, institutionId, cleanFilter);
     const learnings = await populateLearningDetails(query).exec();
     return learnings;
 }
