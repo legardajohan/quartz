@@ -5,6 +5,12 @@ import { IPeriodDocument } from '../period/period.model';
 import { ISubjectDocument } from '../subject/subject.model';
 import { SubjectEvaluationMode } from '../subject/subject.types';
 import { ILearningDocument } from '../learning/learning.model';
+import { UserRole } from '../auth/auth.types';
+
+export interface RequestorScope {
+  role: UserRole;
+  schoolId?: string;
+}
 
 // -----------------------------------------------------------------------------
 // I. DATA TRANSFER OBJECTS (DTOs) for enriched data

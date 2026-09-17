@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import StudentValuationTable from "../components/StudentValuationTable";
 import { useStudentValuationStore, ITEMS_PER_PAGE } from "../useStudentValuationStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { usePermissions } from "../../auth/usePermissions";
 import { useReportStore } from "../../report/useReportStore";
 import StudentValuationDetail from "../components/StudentValuationDetail";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
@@ -24,6 +25,7 @@ export default function StudentValuationsPage() {
   const navigate = useNavigate();
   const { fetchUsers, users } = useStudentValuationStore();
   const { sessionData } = useAuthStore();
+  const { isAreaLead, schoolId } = usePermissions();
   const { fetchLetterAvailability, letterAvailability } = useReportStore();
 
   const [search, setSearch] = useState("");
@@ -31,6 +33,7 @@ export default function StudentValuationsPage() {
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
   const [selectedStates, setSelectedStates] = useState<ValuationState[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const hasInitializedSchoolFilter = useRef(false);
 
   // Fetch users when component mounts or when navigating back to list
   useEffect(() => {
@@ -56,6 +59,12 @@ export default function StudentValuationsPage() {
     users.forEach((user) => bySchoolId.set(user.school._id, user.school));
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
+
+  useEffect(() => {
+    if (hasInitializedSchoolFilter.current || !isAreaLead || !schoolId || schools.length === 0) return;
+    if (schools.some((s) => s._id === schoolId)) setSelectedSchools([schoolId]);
+    hasInitializedSchoolFilter.current = true;
+  }, [isAreaLead, schoolId, schools]);
 
   const filteredUsers = useMemo(() => {
     const term = normalizeText(search);
@@ -97,14 +106,20 @@ export default function StudentValuationsPage() {
           prev.includes(value as ValuationState) ? prev.filter((s) => s !== value) : [...prev, value as ValuationState]
         ),
     },
-    {
-      id: "school",
-      label: "Sede",
-      options: schools.map((school) => ({ value: school._id, label: school.name })),
-      selected: selectedSchools,
-      onToggle: (value) =>
-        setSelectedSchools((prev) => (prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value])),
-    },
+    ...(isAreaLead
+      ? [
+          {
+            id: "school",
+            label: "Sede",
+            options: schools.map((school) => ({ value: school._id, label: school.name })),
+            selected: selectedSchools,
+            onToggle: (value) =>
+              setSelectedSchools((prev) =>
+                prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value]
+              ),
+          } satisfies FilterGroup,
+        ]
+      : []),
   ];
 
   // Render detail view if a student is selected via URL

@@ -5,6 +5,7 @@ import { Period } from '../period/period.model';
 import {
     findOneScoped,
     findScoped,
+    findByIdScoped,
     createScoped,
     deleteOneScoped,
 } from '../../repositories/base.repository';
@@ -19,9 +20,11 @@ import {
   StudentNameFields,
   GlobalValuationStatus,
   QualitativeValuation,
+  RequestorScope,
 } from './student-valuation.types';
 import AppError from '../../utils/AppError';
 import { User } from '../auth/auth.model';
+import { UserRole } from '../auth/auth.types';
 import { Subject } from '../subject/subject.model';
 import { SubjectEvaluationMode } from '../subject/subject.types';
 import { ConceptModel } from '../concept/concept.model';
@@ -37,6 +40,29 @@ export function resolveQualitativeValuation(subjectPercentage: number): Qualitat
   if (subjectPercentage >= 80) return QualitativeValuation.ACHIEVED;
   if (subjectPercentage >= 46) return QualitativeValuation.IN_PROCESS;
   return QualitativeValuation.WITH_DIFICULTY;
+}
+
+/**
+ * Cierra el acceso directo por id: un Docente solo puede operar sobre valoraciones de
+ * estudiantes de su propia sede. 404 y no 403 — un 403 confirmaría que ese estudiante/valoración
+ * existe en otra sede (mismo criterio que `uploadUserPhoto`, `users.service.ts:379-384`).
+ */
+async function assertStudentInScope(
+  studentId: Types.ObjectId | string,
+  institutionId: string,
+  scope: RequestorScope
+): Promise<void> {
+  if (scope.role !== UserRole.DOCENTE) return;
+
+  if (!scope.schoolId) {
+    throw new AppError('Valoración no encontrada.', 404);
+  }
+
+  const student = await findByIdScoped(User, institutionId, studentId).lean();
+
+  if (!student || student.schoolId.toString() !== scope.schoolId) {
+    throw new AppError('Valoración no encontrada.', 404);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -241,7 +267,8 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
 
 export async function getStudentValuationById(
   valuationId: string,
-  institutionId: string
+  institutionId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -251,13 +278,18 @@ export async function getStudentValuationById(
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
 
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
   return populateAndMapValuation(valuation);
 }
 
 export async function getStudentValuations(
   studentId: string,
-  institutionId: string
+  institutionId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO[]> {
+  await assertStudentInScope(studentId, institutionId, scope);
+
   const valuations = await findScoped(StudentValuationModel, institutionId, {
     studentId: new Types.ObjectId(studentId),
   });
@@ -270,8 +302,11 @@ export async function initializeStudentValuation(
   studentId: string,
   teacherId: string,
   institutionId: string,
-  periodId: string
+  periodId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
+  await assertStudentInScope(studentId, institutionId, scope);
+
   // Check if a valuation already exists to avoid duplication.
   const existingValuation = await findOneScoped(StudentValuationModel, institutionId, {
     studentId: new Types.ObjectId(studentId),
@@ -351,14 +386,15 @@ export async function initializeStudentValuation(
   }
 
   // Return the fresh, fully populated document from the database
-  return getStudentValuationById(valuationId, institutionId);
+  return getStudentValuationById(valuationId, institutionId, scope);
 }
 
 
 export async function updateStudentValuation(
   valuationId: string,
   institutionId: string,
-  updateData: StudentValuationUpdateData
+  updateData: StudentValuationUpdateData,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -367,6 +403,8 @@ export async function updateStudentValuation(
   if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
 
   // Use a Map for efficient lookups of the updates.
   const updateMap = new Map(
@@ -515,7 +553,8 @@ export async function updateStudentValuation(
 export async function updateValuationConcepts(
   valuationId: string,
   institutionId: string,
-  data: StudentValuationConceptsUpdateData
+  data: StudentValuationConceptsUpdateData,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -524,6 +563,8 @@ export async function updateValuationConcepts(
   if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
 
   if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
     throw new AppError('La Lista de Chequeo aún no está evaluada completamente.', 409);
@@ -578,12 +619,22 @@ export async function updateValuationConcepts(
   return populateAndMapValuation(valuation);
 }
 
-export async function deleteStudentValuation(valuationId: string, institutionId: string): Promise<void> {
-  const { deletedCount } = await deleteOneScoped(StudentValuationModel, institutionId, {
+export async function deleteStudentValuation(
+  valuationId: string,
+  institutionId: string,
+  scope: RequestorScope
+): Promise<void> {
+  const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
   });
 
-  if (deletedCount === 0) {
+  if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
+  await deleteOneScoped(StudentValuationModel, institutionId, {
+    _id: new Types.ObjectId(valuationId),
+  });
 }
