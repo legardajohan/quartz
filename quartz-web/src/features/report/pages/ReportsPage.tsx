@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
 import { UserIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IndividualReportsPanel from "../components/IndividualReportsPanel";
 import ConsolidatedReportsPanel from "../components/ConsolidatedReportsPanel";
 import { useReportStore } from "../useReportStore";
+import { usePermissions } from "../../auth/usePermissions";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import type { SchoolDto } from "../../student-valuation/types";
 import type { GradeLevel } from "@/types/domain";
@@ -21,10 +22,12 @@ type ReportsTab = (typeof TABS)[number]["value"];
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<ReportsTab>("individual");
   const { users } = useReportStore();
+  const { isAreaLead, schoolId } = usePermissions();
 
   const [search, setSearch] = useState("");
   const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
+  const hasInitializedSchoolFilter = useRef(false);
 
   const isIndividual = activeTab === "individual";
 
@@ -33,6 +36,12 @@ export default function ReportsPage() {
     users.forEach((user) => bySchoolId.set(user.school._id, user.school));
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
+
+  useEffect(() => {
+    if (hasInitializedSchoolFilter.current || !isAreaLead || !schoolId || schools.length === 0) return;
+    if (schools.some((s) => s._id === schoolId)) setSelectedSchools([schoolId]);
+    hasInitializedSchoolFilter.current = true;
+  }, [isAreaLead, schoolId, schools]);
 
   const filterGroups: FilterGroup[] = [
     {
@@ -45,14 +54,20 @@ export default function ReportsPage() {
           prev.includes(value as GradeLevel) ? prev.filter((g) => g !== value) : [...prev, value as GradeLevel]
         ),
     },
-    {
-      id: "school",
-      label: "Sede",
-      options: schools.map((school) => ({ value: school._id, label: school.name })),
-      selected: selectedSchools,
-      onToggle: (value) =>
-        setSelectedSchools((prev) => (prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value])),
-    },
+    ...(isAreaLead
+      ? [
+          {
+            id: "school",
+            label: "Sede",
+            options: schools.map((school) => ({ value: school._id, label: school.name })),
+            selected: selectedSchools,
+            onToggle: (value) =>
+              setSelectedSchools((prev) =>
+                prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value]
+              ),
+          } satisfies FilterGroup,
+        ]
+      : []),
   ];
 
   return (

@@ -63,6 +63,7 @@ interface UserFormProps {
   schools: UserSchool[];
   shifts: Shift[];
   multipleShifts: boolean;
+  isAreaLead: boolean;
   avatarUrl?: string;
   onAvatarChange: (blob: Blob) => Promise<void>;
   isUploadingAvatar?: boolean;
@@ -75,6 +76,7 @@ export function UserForm({
   schools,
   shifts,
   multipleShifts,
+  isAreaLead,
   avatarUrl,
   onAvatarChange,
   isUploadingAvatar,
@@ -200,6 +202,7 @@ export function UserForm({
             label="Sede"
             value={formData.schoolId}
             onChange={(val) => update("schoolId", val || "")}
+            disabled={!isAreaLead}
             key={initialData?._id ? `school-${initialData._id}` : schools.length}
           >
             {schools.map((school) => (
@@ -249,6 +252,7 @@ export function UserForm({
               label="Sede"
               value={formData.schoolId}
               onChange={(val) => update("schoolId", val || "")}
+              disabled={!isAreaLead}
               key={initialData?._id ? `school-${initialData._id}` : schools.length}
             >
               {schools.map((school) => (
@@ -281,6 +285,7 @@ export function UserForm({
               value={formData.shiftId}
               onChange={(val) => update("shiftId", val || "")}
               menuProps={{ placement: "bottom" }}
+              disabled={!isAreaLead}
               key={initialData?._id ? `shift-${initialData._id}` : shifts.length}
             >
               <Option value="">Sin jornada</Option>

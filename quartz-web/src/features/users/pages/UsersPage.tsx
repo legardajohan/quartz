@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { extractErrorMessage } from "@/api/apiClient";
 import type { GradeLevel, IdentificationType } from "@/types/domain";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { usePermissions } from "../../auth/usePermissions";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { FormModal } from "@/components/common/FormModal";
 import { ITEMS_PER_PAGE } from "@/components/common/DataTable";
@@ -32,11 +33,15 @@ const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 
 export default function UsersPage() {
   const { sessionData } = useAuthStore();
-  const canManage = sessionData?.user.role === "Jefe de Área";
+  const { isAreaLead } = usePermissions();
+  const canCreate = isAreaLead;
+  const canDelete = isAreaLead;
+  const canEdit = true; // ambos roles; el backend acota al Docente a su sede
   const multipleShifts = sessionData?.multipleShifts ?? false;
   const shifts = sessionData?.shifts ?? [];
 
   const [activeRole, setActiveRole] = useState<WritableUserRole>("Estudiante");
+  const visibleRoleTabs = isAreaLead ? ROLE_TABS : ROLE_TABS.filter((tab) => tab.value === "Estudiante");
   const { data: users = [], isLoading, isError, error } = useUsersQuery({ role: activeRole });
   const { data: schools = [] } = useSchoolsQuery();
 
@@ -137,13 +142,17 @@ export default function UsersPage() {
   }, [users, search, selectedSchools, selectedGrades]);
 
   const filterGroups: FilterGroup[] = [
-    {
-      id: "school",
-      label: "Sede",
-      options: schools.map((school) => ({ value: school._id, label: school.name })),
-      selected: selectedSchools,
-      onToggle: toggleSchoolFilter,
-    },
+    ...(isAreaLead
+      ? [
+          {
+            id: "school",
+            label: "Sede",
+            options: schools.map((school) => ({ value: school._id, label: school.name })),
+            selected: selectedSchools,
+            onToggle: toggleSchoolFilter,
+          } satisfies FilterGroup,
+        ]
+      : []),
     {
       id: "grade",
       label: "Grado",
@@ -206,9 +215,12 @@ export default function UsersPage() {
         identificationType: formData.identificationType as IdentificationType,
         identificationNumber,
         phoneNumber: formData.phoneNumber.trim() || undefined,
-        schoolId: formData.schoolId,
         gradesTaught: formData.gradesTaught,
       };
+      // El Select de sede queda deshabilitado para el Docente (UserForm): no se envía el campo,
+      // porque el backend rechaza con 403 cualquier intento de un Docente de cambiar la sede,
+      // incluso a su mismo valor actual.
+      if (isAreaLead) payload.schoolId = formData.schoolId;
       if (formData.email.trim()) payload.email = formData.email.trim();
       if (formData.password.trim()) payload.password = formData.password.trim();
       if (formRole === "Estudiante") payload.shiftId = formData.shiftId || null;
@@ -259,7 +271,7 @@ export default function UsersPage() {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-semibold text-purple-900">Gestión de Usuarios</h1>
 
-          {canManage && (
+          {canCreate && (
             <button
               onClick={handleOpenCreateModal}
               aria-label="Crear nuevo usuario"
@@ -274,7 +286,7 @@ export default function UsersPage() {
         <div className="flex items-center gap-4 mb-6">
           <Tabs value={activeRole} className="w-auto shrink-0">
             <TabsHeader className="bg-purple-50/60 p-1.5">
-              {ROLE_TABS.map(({ value, label, icon: Icon }) => {
+              {visibleRoleTabs.map(({ value, label, icon: Icon }) => {
                 const isActive = activeRole === value;
                 return (
                   <Tab
@@ -317,7 +329,8 @@ export default function UsersPage() {
           onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
           isLoading={isLoading}
-          canManage={canManage}
+          canEdit={canEdit}
+          canDelete={canDelete}
           multipleShifts={multipleShifts}
           onEdit={handleEdit}
           onDelete={handleDelete}
@@ -349,6 +362,7 @@ export default function UsersPage() {
           schools={schools}
           shifts={shifts}
           multipleShifts={multipleShifts}
+          isAreaLead={isAreaLead}
           avatarUrl={selectedUser ? selectedUser.avatarUrl : pendingAvatarPreview ?? undefined}
           onAvatarChange={handleAvatarChange}
           isUploadingAvatar={uploadPhotoMutation.isPending}

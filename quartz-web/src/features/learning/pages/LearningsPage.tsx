@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 
 import { useLearningStore } from "../useLearningStore";
 import { useAuthStore } from "../../auth/useAuthStore";
+import { usePermissions } from "../../auth/usePermissions";
 import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
@@ -19,6 +20,7 @@ export default function LearningsPage() {
   const { learnings, isLoading, isSubmitting, error, createLearning, updateLearning, deleteLearning } =
     useLearningStore();
   const { sessionData } = useAuthStore();
+  const { isAreaLead } = usePermissions();
 
   const subjects = sessionData?.subjects ?? [];
   const periods = sessionData?.periods ?? [];
@@ -202,7 +204,7 @@ export default function LearningsPage() {
             Gestión de Aprendizajes Esperados
           </h1>
 
-          {!isDescriptionModeSelected && (
+          {isAreaLead && !isDescriptionModeSelected && (
             <button
               onClick={handleOpenCreateModal}
               aria-label="Crear nuevo aprendizaje"
@@ -245,6 +247,7 @@ export default function LearningsPage() {
             onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
             isLoading={isLoading}
+            canManage={isAreaLead}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />

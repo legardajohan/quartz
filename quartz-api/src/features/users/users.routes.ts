@@ -54,13 +54,15 @@ router.post(
 
 /**
  * PATCH /api/users/:userId
- * Actualiza datos de un usuario (rol inmutable). Solo Jefe de Área.
+ * Actualiza datos de un usuario (rol inmutable).
+ * Jefe de Área: cualquier usuario del tenant.
+ * Docente: solo estudiantes de su propia sede; no puede cambiar la sede.
  */
 router.patch(
   '/:userId',
   authenticateJWT,
   requireTenant,
-  authorize([UserRole.JEFE_DE_AREA]),
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(updateUserSchema),
   asyncHandler(updateUserController)
 );

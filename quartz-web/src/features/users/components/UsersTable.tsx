@@ -1,5 +1,6 @@
 import { Avatar, Typography, IconButton, Tooltip } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { LockClosedIcon } from "@heroicons/react/24/outline";
 import { DataTable, type Column } from "@/components/common/DataTable";
 import { AVATAR_FALLBACK } from "@/constants/assets";
 import type { UserDto } from "../types";
@@ -11,7 +12,8 @@ interface UsersTableProps {
   onNextPage: () => void;
   onPrevPage: () => void;
   isLoading?: boolean;
-  canManage: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
   multipleShifts?: boolean;
   onEdit: (user: UserDto) => void;
   onDelete: (user: UserDto) => void;
@@ -24,7 +26,8 @@ export function UsersTable({
   onNextPage,
   onPrevPage,
   isLoading,
-  canManage,
+  canEdit,
+  canDelete,
   multipleShifts,
   onEdit,
   onDelete,
@@ -89,33 +92,43 @@ export function UsersTable({
     {
       header: "Acciones",
       accessor: (item) =>
-        canManage ? (
+        canEdit || canDelete ? (
           <div className="flex items-center gap-2 min-w-[50px]">
-            <Tooltip content="Ver / Editar" size="sm">
-              <IconButton
-                size="sm"
-                color="white"
-                className="text-gray-600 shadow-none hover:shadow-md hover:text-green-500 transition-all border border-gray-200"
-                onClick={() => onEdit(item)}
-              >
-                <PencilIcon className="h-4 w-4" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Eliminar" size="sm">
-              <IconButton
-                size="sm"
-                color="white"
-                className="text-gray-600 shadow-none hover:shadow-md hover:text-pink-500 transition-all border border-gray-200"
-                onClick={() => onDelete(item)}
-              >
-                <TrashIcon className="h-4 w-4" />
-              </IconButton>
-            </Tooltip>
+            {canEdit && (
+              <Tooltip content="Ver / Editar" size="sm">
+                <IconButton
+                  size="sm"
+                  color="white"
+                  className="text-gray-600 shadow-none hover:shadow-md hover:text-green-500 transition-all border border-gray-200"
+                  onClick={() => onEdit(item)}
+                >
+                  <PencilIcon className="h-4 w-4" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip content="Eliminar" size="sm">
+                <IconButton
+                  size="sm"
+                  color="white"
+                  className="text-gray-600 shadow-none hover:shadow-md hover:text-pink-500 transition-all border border-gray-200"
+                  onClick={() => onDelete(item)}
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </IconButton>
+              </Tooltip>
+            )}
           </div>
         ) : (
-          <Typography variant="small" className="font-normal text-gray-400 min-w-[50px]">
-            —
-          </Typography>
+          <Tooltip content="Sin acciones disponibles" size="sm">
+            <span
+              role="img"
+              aria-label="Solo lectura"
+              className="flex h-8 w-8 items-center justify-center min-w-[50px] text-blue-gray-300"
+            >
+              <LockClosedIcon className="h-4 w-4" />
+            </span>
+          </Tooltip>
         ),
     },
   ];

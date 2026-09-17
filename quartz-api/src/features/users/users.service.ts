@@ -241,14 +241,30 @@ export const createUser = async (
   return mapUserToDTO(created.toObject() as unknown as IUser & { _id: Types.ObjectId }, school, shift);
 };
 
+export interface UpdateUserRequestor {
+  role: UserRole;
+  schoolId?: string;
+}
+
 export const updateUser = async (
   institutionId: string,
   userId: string,
-  data: UpdateUserDTO
+  data: UpdateUserDTO,
+  requestor: UpdateUserRequestor
 ): Promise<UserWithValuations> => {
   const existing = await findByIdScoped(User, institutionId, userId).lean();
   if (!existing) {
     throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  if (requestor.role === UserRole.DOCENTE) {
+    const isOwnStudent = existing.role === UserRole.ESTUDIANTE && existing.schoolId.toString() === requestor.schoolId;
+    if (!isOwnStudent) {
+      throw new AppError('Usuario no encontrado.', 404);
+    }
+    if (data.schoolId !== undefined) {
+      throw new AppError('No puedes cambiar la sede de un usuario.', 403);
+    }
   }
 
   if (

@@ -35,7 +35,10 @@ export const createUserController = async (req: Request, res: Response): Promise
 export const updateUserController = async (req: Request, res: Response): Promise<void> => {
   const institutionId = req.user!.institutionId.toString();
   const { userId } = req.params;
-  const updated = await updateUser(institutionId, userId, req.body as UpdateUserDTO);
+  const updated = await updateUser(institutionId, userId, req.body as UpdateUserDTO, {
+    role: req.user!.role,
+    schoolId: req.user!.schoolId?.toString(),
+  });
   res.status(200).json(updated);
 };
 
