@@ -37,6 +37,7 @@ export interface ISessionData {
     lastName: string;
     secondLastName?: string;
     schoolId?: string;
+    avatarUrl?: string;
   };
   periods: {
     _id: string;

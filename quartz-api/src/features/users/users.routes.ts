@@ -5,6 +5,10 @@ import {
   updateUserController,
   deleteUserController,
   uploadUserPhotoController,
+  getOwnProfileController,
+  updateOwnProfileController,
+  changeOwnPasswordController,
+  uploadOwnPhotoController,
 } from './users.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { requireTenant } from '../../middlewares/require-tenant.middleware';
@@ -18,10 +22,54 @@ import {
   updateUserSchema,
   deleteUserSchema,
   uploadUserPhotoSchema,
+  updateOwnProfileSchema,
+  changeOwnPasswordSchema,
 } from './users.validation';
 import { UserRole } from '../auth/auth.types';
 
 const router = Router();
+
+/**
+ * Mi cuenta (USR-03). Declaradas antes de `/:userId` para que "me" nunca se lea como id.
+ * El usuario objetivo es siempre el del token (`req.user._id`).
+ * Docente: no puede cambiar su correo ni su sede (403 en el service).
+ */
+const OWN_ACCOUNT_ROLES = [UserRole.JEFE_DE_AREA, UserRole.DOCENTE];
+
+router.get(
+  '/me',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  asyncHandler(getOwnProfileController)
+);
+
+router.patch(
+  '/me',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  validate(updateOwnProfileSchema),
+  asyncHandler(updateOwnProfileController)
+);
+
+router.patch(
+  '/me/password',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  validate(changeOwnPasswordSchema),
+  asyncHandler(changeOwnPasswordController)
+);
+
+router.patch(
+  '/me/photo',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  uploadImageSingle,
+  asyncHandler(uploadOwnPhotoController)
+);
 
 /**
  * GET /api/users

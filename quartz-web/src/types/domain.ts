@@ -1,6 +1,7 @@
 export type UserRole = 'Jefe de Área' | 'Docente' | 'Estudiante';
 
-export type IdentificationType = 'CC' | 'TI' | 'RC';
+export const IDENTIFICATION_TYPES = ['CC', 'TI', 'RC'] as const;
+export type IdentificationType = typeof IDENTIFICATION_TYPES[number];
 
 export type GradeLevel = 'Transición' | '1ro' | '2do' | '3ro' | '4to' | '5to' | '6to' | '7mo' | '8vo' | '9no' | '10mo' | '11mo';
 

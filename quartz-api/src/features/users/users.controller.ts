@@ -5,8 +5,12 @@ import {
   updateUser,
   deleteUser,
   uploadUserPhoto,
+  getOwnProfile,
+  updateOwnProfile,
+  changeOwnPassword,
+  uploadOwnPhoto,
 } from './users.service';
-import { CreateUserDTO, UpdateUserDTO } from './users.types';
+import { CreateUserDTO, UpdateUserDTO, UpdateOwnProfileDTO, ChangeOwnPasswordDTO } from './users.types';
 import AppError from '../../utils/AppError';
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
@@ -64,4 +68,37 @@ export const uploadUserPhotoController = async (req: Request, res: Response): Pr
   });
 
   res.status(200).json(user);
+};
+
+// ─── Mi cuenta (USR-03): el usuario objetivo es siempre el del token ─────────
+
+export const getOwnProfileController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const profile = await getOwnProfile(institutionId, req.user!._id.toString());
+  res.status(200).json(profile);
+};
+
+export const updateOwnProfileController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const profile = await updateOwnProfile(institutionId, req.body as UpdateOwnProfileDTO, {
+    userId: req.user!._id.toString(),
+    role: req.user!.role,
+  });
+  res.status(200).json(profile);
+};
+
+export const changeOwnPasswordController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  await changeOwnPassword(institutionId, req.user!._id.toString(), req.body as ChangeOwnPasswordDTO);
+  res.status(204).send();
+};
+
+export const uploadOwnPhotoController = async (req: Request, res: Response): Promise<void> => {
+  if (!req.file) {
+    throw new AppError('Debe adjuntar una imagen.', 422);
+  }
+
+  const institutionId = req.user!.institutionId.toString();
+  const profile = await uploadOwnPhoto(institutionId, req.user!._id.toString(), req.file);
+  res.status(200).json(profile);
 };

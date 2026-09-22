@@ -3,7 +3,18 @@ import bcrypt from 'bcryptjs';
 import { IUser, IUserDocument, User, SafeUser } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
-import { UserWithValuations, School, Shift, ValuationSummary, CreateUserDTO, UpdateUserDTO } from './users.types';
+import {
+  UserWithValuations,
+  School,
+  Shift,
+  ValuationSummary,
+  CreateUserDTO,
+  UpdateUserDTO,
+  OwnProfile,
+  UpdateOwnProfileDTO,
+  ChangeOwnPasswordDTO,
+  ProfileRequestor,
+} from './users.types';
 import { SchoolModel, ISchoolDocument } from '../school/school.model';
 import { getShiftSettings } from '../institution/institution.service';
 import {
@@ -63,6 +74,41 @@ function mapUserToDTO(
 async function resolveShiftMap(institutionId: string): Promise<Map<string, Shift>> {
   const { shifts } = await getShiftSettings(institutionId);
   return new Map(shifts.map((s) => [s._id, s]));
+}
+
+type SchoolSummary = Pick<ISchoolDocument, '_id' | 'schoolNumber' | 'name'>;
+
+async function assertUniqueIdentification(
+  institutionId: string,
+  userId: string,
+  identificationNumber: number
+): Promise<void> {
+  const duplicate = await findOneScoped(User, institutionId, {
+    identificationNumber,
+    _id: { $ne: new Types.ObjectId(userId) },
+  }).lean();
+  if (duplicate) {
+    throw new AppError('Ya existe un usuario con esa identificación en la institución.', 409);
+  }
+}
+
+// El correo es la llave de login (pre-tenant), por eso su unicidad es global y no scoped.
+async function assertUniqueEmail(userId: string, email: string): Promise<void> {
+  const existingEmail = await User.findOne({
+    email,
+    _id: { $ne: new Types.ObjectId(userId) },
+  }).lean();
+  if (existingEmail) {
+    throw new AppError('Ya existe un usuario registrado con ese correo.', 409);
+  }
+}
+
+async function assertSchoolInTenant(institutionId: string, schoolId: string): Promise<SchoolSummary> {
+  const school = await findByIdScoped(SchoolModel, institutionId, schoolId).lean();
+  if (!school) {
+    throw new AppError('La sede no existe o no pertenece a la institución.', 422);
+  }
+  return school;
 }
 
 async function assertAssignableShift(institutionId: string, shiftId: string): Promise<Shift> {
@@ -271,31 +317,16 @@ export const updateUser = async (
     data.identificationNumber !== undefined &&
     data.identificationNumber !== existing.identificationNumber
   ) {
-    const duplicate = await findOneScoped(User, institutionId, {
-      identificationNumber: data.identificationNumber,
-      _id: { $ne: new Types.ObjectId(userId) },
-    }).lean();
-    if (duplicate) {
-      throw new AppError('Ya existe un usuario con esa identificación en la institución.', 409);
-    }
+    await assertUniqueIdentification(institutionId, userId, data.identificationNumber);
   }
 
-  let school: Pick<ISchoolDocument, '_id' | 'schoolNumber' | 'name'> | null = null;
+  let school: SchoolSummary | null = null;
   if (data.schoolId !== undefined) {
-    school = await findByIdScoped(SchoolModel, institutionId, data.schoolId).lean();
-    if (!school) {
-      throw new AppError('La sede no existe o no pertenece a la institución.', 422);
-    }
+    school = await assertSchoolInTenant(institutionId, data.schoolId);
   }
 
   if (data.email !== undefined) {
-    const existingEmail = await User.findOne({
-      email: data.email,
-      _id: { $ne: new Types.ObjectId(userId) },
-    }).lean();
-    if (existingEmail) {
-      throw new AppError('Ya existe un usuario registrado con ese correo.', 409);
-    }
+    await assertUniqueEmail(userId, data.email);
   }
 
   const updatePayload: Record<string, unknown> = { ...data };
@@ -399,8 +430,19 @@ export const uploadUserPhoto = async (
     }
   }
 
+  return replaceUserPhoto(institutionId, userId, file.buffer, target.avatarUrl);
+};
+
+// Sube la nueva foto, apunta `avatarUrl` a ella y borra la anterior del almacenamiento.
+// El llamador ya validó el WebP, que el usuario existe en el tenant y que puede tocarlo.
+async function replaceUserPhoto(
+  institutionId: string,
+  userId: string,
+  buffer: Buffer,
+  previousAvatarUrl: string | undefined
+): Promise<SafeUser> {
   const key = `institutions/${institutionId}/users/${userId}/photo-${Date.now()}.webp`;
-  const avatarUrl = await uploadImage(key, file.buffer, 'image/webp');
+  const avatarUrl = await uploadImage(key, buffer, 'image/webp');
 
   const updated = await findOneAndUpdateScoped(
     User,
@@ -414,8 +456,8 @@ export const uploadUserPhoto = async (
     throw new AppError('Usuario no encontrado.', 404);
   }
 
-  if (target.avatarUrl) {
-    const previousKey = keyFromPublicUrl(target.avatarUrl);
+  if (previousAvatarUrl) {
+    const previousKey = keyFromPublicUrl(previousAvatarUrl);
     if (previousKey) {
       await deleteImage(previousKey);
     }
@@ -423,4 +465,132 @@ export const uploadUserPhoto = async (
 
   // passwordHash tiene `select: false`; el documento .lean() ya lo excluye.
   return updated as unknown as SafeUser;
+}
+
+// ─── Mi cuenta (USR-03) ──────────────────────────────────────────────────────
+// `userId` llega siempre de `req.user._id`: estas funciones nunca operan sobre un id del cliente.
+
+function mapOwnProfile(user: SafeUser, school: SchoolSummary): OwnProfile {
+  return {
+    _id: user._id.toString(),
+    role: user.role,
+    firstName: user.firstName,
+    middleName: user.middleName,
+    lastName: user.lastName,
+    secondLastName: user.secondLastName,
+    identificationType: user.identificationType,
+    identificationNumber: user.identificationNumber,
+    phoneNumber: user.phoneNumber,
+    email: user.email,
+    school: mapSchoolToDTO(school),
+    avatarUrl: user.avatarUrl,
+  };
+}
+
+async function findOwnUser(institutionId: string, userId: string): Promise<SafeUser> {
+  // passwordHash tiene `select: false`; el documento .lean() ya lo excluye.
+  const user = await findByIdScoped(User, institutionId, userId).lean();
+  if (!user) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+  return user as unknown as SafeUser;
+}
+
+async function toOwnProfile(institutionId: string, user: SafeUser): Promise<OwnProfile> {
+  const school = await assertSchoolInTenant(institutionId, user.schoolId.toString());
+  return mapOwnProfile(user, school);
+}
+
+export const getOwnProfile = async (institutionId: string, userId: string): Promise<OwnProfile> => {
+  const user = await findOwnUser(institutionId, userId);
+  return toOwnProfile(institutionId, user);
+};
+
+export const updateOwnProfile = async (
+  institutionId: string,
+  data: UpdateOwnProfileDTO,
+  requestor: ProfileRequestor
+): Promise<OwnProfile> => {
+  const { userId, role } = requestor;
+
+  if (role !== UserRole.JEFE_DE_AREA && (data.email !== undefined || data.schoolId !== undefined)) {
+    throw new AppError('Solo el Jefe de Área puede cambiar su correo o su sede.', 403);
+  }
+
+  const existing = await findOwnUser(institutionId, userId);
+
+  if (
+    data.identificationNumber !== undefined &&
+    data.identificationNumber !== existing.identificationNumber
+  ) {
+    await assertUniqueIdentification(institutionId, userId, data.identificationNumber);
+  }
+
+  // El login busca el correo en minúsculas (`useAuthStore.login`): se guarda igual o el usuario queda fuera.
+  const email = data.email?.trim().toLowerCase();
+  if (email !== undefined && email !== existing.email) {
+    await assertUniqueEmail(userId, email);
+  }
+
+  const updatePayload: Record<string, unknown> = { ...data, updatedAt: new Date() };
+  if (email !== undefined) {
+    updatePayload.email = email;
+  }
+  if (data.schoolId !== undefined) {
+    await assertSchoolInTenant(institutionId, data.schoolId);
+    updatePayload.schoolId = new Types.ObjectId(data.schoolId);
+  }
+
+  const updated = await findOneAndUpdateScoped(
+    User,
+    institutionId,
+    { _id: new Types.ObjectId(userId) },
+    { $set: updatePayload },
+    { new: true, runValidators: true }
+  ).lean();
+
+  if (!updated) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  return toOwnProfile(institutionId, updated as unknown as SafeUser);
+};
+
+export const changeOwnPassword = async (
+  institutionId: string,
+  userId: string,
+  data: ChangeOwnPasswordDTO
+): Promise<void> => {
+  const user = await findByIdScoped(User, institutionId, userId)
+    .select('+passwordHash')
+    .lean();
+
+  if (!user) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  // 422 y no 401: el cliente cierra la sesión ante cualquier 401.
+  const isValid = user.passwordHash ? await bcrypt.compare(data.currentPassword, user.passwordHash) : false;
+  if (!isValid) {
+    throw new AppError('La contraseña actual es incorrecta.', 422);
+  }
+
+  const passwordHash = await bcrypt.hash(data.newPassword, 10);
+  await findOneAndUpdateScoped(
+    User,
+    institutionId,
+    { _id: new Types.ObjectId(userId) },
+    { $set: { passwordHash, updatedAt: new Date() } }
+  );
+};
+
+export const uploadOwnPhoto = async (
+  institutionId: string,
+  userId: string,
+  file: Express.Multer.File
+): Promise<OwnProfile> => {
+  assertWebp(file.buffer);
+  const existing = await findOwnUser(institutionId, userId);
+  const updated = await replaceUserPhoto(institutionId, userId, file.buffer, existing.avatarUrl);
+  return toOwnProfile(institutionId, updated);
 };

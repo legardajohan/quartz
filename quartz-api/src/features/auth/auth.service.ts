@@ -18,6 +18,7 @@ export function toSessionUser(user: SafeUser): ISessionData['user'] {
         lastName: user.lastName,
         secondLastName: user.secondLastName,
         schoolId: user.schoolId.toString(),
+        avatarUrl: user.avatarUrl,
     };
 }
 

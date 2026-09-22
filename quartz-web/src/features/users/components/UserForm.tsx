@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Input, Select, Option, Checkbox, Typography } from "@material-tailwind/react";
 import { ImageCropUploader } from "@/components/common/ImageCropUploader";
+import { IDENTIFICATION_TYPES } from "@/types/domain";
 import type { IdentificationType, GradeLevel, Shift } from "@/types/domain";
 import type { UserDto, UserSchool, WritableUserRole } from "../types";
-
-const IDENTIFICATION_TYPES: IdentificationType[] = ["CC", "TI", "RC"];
 
 const GRADE_LEVELS: GradeLevel[] = [
   "Transición"

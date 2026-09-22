@@ -66,6 +66,36 @@ export const updateUserSchema = z.object({
   }).strict(),
 });
 
+export const updateOwnProfileSchema = z.object({
+  body: z.object({
+    firstName: z.string().min(1, 'El nombre no puede estar vacío.').optional(),
+    middleName: z.string().optional(),
+    lastName: z.string().min(1, 'El apellido no puede estar vacío.').optional(),
+    secondLastName: z.string().optional(),
+    identificationType: z.nativeEnum(IdentificationType).optional(),
+    identificationNumber: z.number().int('La identificación debe ser un número entero.').positive('La identificación debe ser un número positivo.').optional(),
+    phoneNumber: z.string().optional(),
+    email: z.string().email('El correo no es válido.').optional(),
+    schoolId: objectId('El ID de la sede no es un ObjectId válido.').optional(),
+  }).strict(),
+});
+
+export const changeOwnPasswordSchema = z.object({
+  body: z.object({
+    currentPassword: z.string().min(1, 'La contraseña actual es obligatoria.'),
+    newPassword: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres.'),
+    confirmPassword: z.string().min(1, 'Debe confirmar la nueva contraseña.'),
+  }).strict()
+    .refine((b) => b.newPassword === b.confirmPassword, {
+      message: 'Las contraseñas nuevas no coinciden.',
+      path: ['confirmPassword'],
+    })
+    .refine((b) => b.newPassword !== b.currentPassword, {
+      message: 'La nueva contraseña debe ser distinta de la actual.',
+      path: ['newPassword'],
+    }),
+});
+
 export const deleteUserSchema = z.object({
   params: z.object({
     userId: objectId('El ID del usuario no es un ObjectId válido.'),

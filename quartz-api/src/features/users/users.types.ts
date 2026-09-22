@@ -59,3 +59,44 @@ export interface CreateUserDTO {
 export type UpdateUserDTO = Partial<Omit<CreateUserDTO, 'role' | 'shiftId'>> & {
     shiftId?: string | null;
 };
+
+// ─── Mi cuenta (USR-03): el usuario objetivo siempre es el del token ─────────
+
+export interface OwnProfile {
+    _id: string;
+    role: UserRole;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    secondLastName?: string;
+    identificationType: IdentificationType;
+    identificationNumber: number;
+    phoneNumber?: string;
+    email?: string;
+    school: School;
+    avatarUrl?: string;
+}
+
+// `email` y `schoolId` solo los puede cambiar el Jefe de Área sobre sí mismo.
+export interface UpdateOwnProfileDTO {
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    secondLastName?: string;
+    identificationType?: IdentificationType;
+    identificationNumber?: number;
+    phoneNumber?: string;
+    email?: string;
+    schoolId?: string;
+}
+
+export interface ChangeOwnPasswordDTO {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+}
+
+export interface ProfileRequestor {
+    userId: string;
+    role: UserRole;
+}
