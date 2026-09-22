@@ -12,6 +12,7 @@ import { Period } from '../period/period.model';
 import { User } from '../auth/auth.model';
 import type { LearningData, UpdateLearningData, ILearningFilter } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
+import { invalidatePrefix } from '../../services/memory-cache.service';
 import AppError from '../../utils/AppError';
 
 // --- Helper Function ---
@@ -72,6 +73,7 @@ export async function createLearning(
     };
 
     const newLearning = await createScoped(LearningModel, institutionId, payload);
+    invalidatePrefix(`dashboard:${institutionId}`);
 
     const populatedLearning = await populateLearningDetails(
         findByIdScoped(LearningModel, institutionId, newLearning._id as Types.ObjectId)
@@ -117,6 +119,8 @@ export async function updateLearning(
         return null;
     }
 
+    invalidatePrefix(`dashboard:${institutionId}`);
+
     const populatedLearning = await populateLearningDetails(
         findByIdScoped(LearningModel, institutionId, updatedLearning._id as Types.ObjectId)
     ).exec();
@@ -128,7 +132,13 @@ export async function deleteLearning(
     learningId: string,
     institutionId: string
 ): Promise<ILearningDocument | null> {
-    return findOneAndDeleteScoped(LearningModel, institutionId, {
+    const deleted = await findOneAndDeleteScoped(LearningModel, institutionId, {
         _id: new Types.ObjectId(learningId)
     });
+
+    if (deleted) {
+        invalidatePrefix(`dashboard:${institutionId}`);
+    }
+
+    return deleted;
 }

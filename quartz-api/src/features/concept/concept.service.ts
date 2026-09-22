@@ -12,6 +12,7 @@ import { Period } from '../period/period.model';
 import { User } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import type { ConceptData, UpdateConceptData, IConceptFilter } from './concept.types';
+import { invalidatePrefix } from '../../services/memory-cache.service';
 import AppError from '../../utils/AppError';
 
 function populateConceptDetails<T>(query: Query<T, IConceptDocument>) {
@@ -79,6 +80,7 @@ export async function createConcept(
     periodId: new Types.ObjectId(data.periodId),
     authorId: new Types.ObjectId(authorId),
   });
+  invalidatePrefix(`dashboard:${institutionId}`);
 
   const populatedConcept = await populateConceptDetails(
     findByIdScoped(ConceptModel, institutionId, newConcept._id as Types.ObjectId)
@@ -117,6 +119,7 @@ export async function updateConcept(
     updatePayload,
     { new: true }
   );
+  invalidatePrefix(`dashboard:${institutionId}`);
 
   const populatedConcept = await populateConceptDetails(
     findByIdScoped(ConceptModel, institutionId, new Types.ObjectId(conceptId))
@@ -143,4 +146,5 @@ export async function deleteConcept(
   ensureCanManageConcept(existingConcept, userId, userRole);
 
   await findOneAndDeleteScoped(ConceptModel, institutionId, { _id: new Types.ObjectId(conceptId) });
+  invalidatePrefix(`dashboard:${institutionId}`);
 }

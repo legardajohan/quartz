@@ -28,6 +28,16 @@ export enum GlobalValuationStatus {
   CREATED = 'Por diligenciar',
 }
 
+/** Puntos por nivel de valoración cualitativa (docs/domain.md §Valoración por ítem). */
+export const VALUATION_POINTS: Record<QualitativeValuation, number> = {
+  [QualitativeValuation.ACHIEVED]: 3,
+  [QualitativeValuation.IN_PROCESS]: 2,
+  [QualitativeValuation.WITH_DIFICULTY]: 1,
+};
+
+/** Umbrales de `resolveQualitativeValuation` (docs/domain.md §Concepto por dimensión). */
+export const CONCEPT_THRESHOLDS = { ACHIEVED: 80, IN_PROCESS: 46 } as const;
+
 export interface ILearningValuationDTO {
   learningId: string;
   learningDescription: string;

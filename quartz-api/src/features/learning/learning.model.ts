@@ -29,4 +29,7 @@ const LearningSchema = new Schema<ILearningDocument>({
   timestamps: true
 });
 
+// Soporta la salud curricular del dashboard: aprendizajes por dimensión y período (INF-04).
+LearningSchema.index({ institutionId: 1, periodId: 1, subjectId: 1 });
+
 export const LearningModel = model<ILearningDocument>('Learning', LearningSchema);

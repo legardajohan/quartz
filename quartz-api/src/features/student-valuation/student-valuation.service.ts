@@ -10,6 +10,7 @@ import {
     deleteOneScoped,
 } from '../../repositories/base.repository';
 import { validateAllExist } from '../../services/document-validator.service';
+import { invalidatePrefix } from '../../services/memory-cache.service';
 import {
   StudentValuationCreationData,
   StudentValuationUpdateData,
@@ -21,6 +22,8 @@ import {
   GlobalValuationStatus,
   QualitativeValuation,
   RequestorScope,
+  VALUATION_POINTS,
+  CONCEPT_THRESHOLDS,
 } from './student-valuation.types';
 import AppError from '../../utils/AppError';
 import { User } from '../auth/auth.model';
@@ -37,8 +40,8 @@ import { ConceptModel } from '../concept/concept.model';
  * Umbrales de docs/domain.md §Concepto por dimensión: 80-100 Logrado · 46-79 En proceso · 0-45 Con dificultad.
  */
 export function resolveQualitativeValuation(subjectPercentage: number): QualitativeValuation {
-  if (subjectPercentage >= 80) return QualitativeValuation.ACHIEVED;
-  if (subjectPercentage >= 46) return QualitativeValuation.IN_PROCESS;
+  if (subjectPercentage >= CONCEPT_THRESHOLDS.ACHIEVED) return QualitativeValuation.ACHIEVED;
+  if (subjectPercentage >= CONCEPT_THRESHOLDS.IN_PROCESS) return QualitativeValuation.IN_PROCESS;
   return QualitativeValuation.WITH_DIFICULTY;
 }
 
@@ -389,6 +392,8 @@ export async function initializeStudentValuation(
     }
   }
 
+  invalidatePrefix(`dashboard:${institutionId}`);
+
   // Return the fresh, fully populated document from the database
   return getStudentValuationById(valuationId, institutionId, scope);
 }
@@ -447,19 +452,13 @@ export async function updateStudentValuation(
   let totalLearnings = 0;
   let valuatedLearnings = 0;
 
-  const pointsMapping = {
-    [QualitativeValuation.ACHIEVED]: 3,
-    [QualitativeValuation.IN_PROCESS]: 2,
-    [QualitativeValuation.WITH_DIFICULTY]: 1
-  };
-
   valuation.valuationsBySubject.forEach(subject => {
     let totalPoints = 0;
 
     subject.learningValuations.forEach(lv => {
       totalLearnings++;
 
-      const points = lv.qualitativeValuation ? pointsMapping[lv.qualitativeValuation] : 0;
+      const points = lv.qualitativeValuation ? VALUATION_POINTS[lv.qualitativeValuation] : 0;
       lv.pointsObtained = points;
       totalPoints += points;
 
@@ -549,6 +548,7 @@ export async function updateStudentValuation(
   }
 
   await valuation.save();
+  invalidatePrefix(`dashboard:${institutionId}`);
 
   // Directly populate and map the updated document without a second DB query.
   return populateAndMapValuation(valuation);
@@ -619,6 +619,7 @@ export async function updateValuationConcepts(
   });
 
   await valuation.save();
+  invalidatePrefix(`dashboard:${institutionId}`);
 
   return populateAndMapValuation(valuation);
 }
@@ -641,4 +642,6 @@ export async function deleteStudentValuation(
   await deleteOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
   });
+
+  invalidatePrefix(`dashboard:${institutionId}`);
 }

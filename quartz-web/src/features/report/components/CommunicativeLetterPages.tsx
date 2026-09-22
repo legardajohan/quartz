@@ -1,13 +1,8 @@
 import { View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import { STATUS_ICON_JPG } from "../statusVisuals";
 import LetterPageShell from "./LetterPageShell";
-import type { ICommunicativeLetterTemplate, QualitativeValuation } from "../types";
-
-const VALUATION_COLORS: Record<QualitativeValuation, string> = {
-  Logrado: "#16a34a",
-  "En proceso": "#d97706",
-  "Con dificultad": "#dc2626",
-};
+import type { ICommunicativeLetterTemplate } from "../types";
+import { QUALITATIVE_VALUATION_COLORS as VALUATION_COLORS } from "@/types/domain";
 
 interface PersonName {
   firstName: string;

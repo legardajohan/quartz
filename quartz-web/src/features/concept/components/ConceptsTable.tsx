@@ -8,7 +8,8 @@ import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { LockClosedIcon } from "@heroicons/react/24/outline";
 import { DataTable, Column } from "../../../components/common/DataTable";
 import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
-import { ConceptDto, QualitativeValuation } from "../types";
+import { ConceptDto } from "../types";
+import type { QualitativeValuation } from "@/types/domain";
 
 const VALUATION_CHIP_COLOR: Record<QualitativeValuation, "green" | "amber" | "red"> = {
     'Logrado': 'green',

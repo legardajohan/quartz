@@ -52,6 +52,9 @@ const UserSchema = new Schema<IUserDocument>({
 // Unicidad de la identificación por institución, no global.
 UserSchema.index({ institutionId: 1, identificationNumber: 1 }, { unique: true });
 
+// Soporta la resolución de cohorte del dashboard: estudiantes por sede (INF-04).
+UserSchema.index({ institutionId: 1, role: 1, schoolId: 1 });
+
 // Instance method to return a safe user object without password hash
 UserSchema.methods.toSafeUser = function (): SafeUser {
   return {

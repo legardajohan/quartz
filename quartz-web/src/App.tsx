@@ -19,6 +19,8 @@ import { Toaster } from 'react-hot-toast';
 // visita una de estas dos pantallas, no en el bundle inicial.
 const ReportsPage = lazy(() => import('./features/report/pages/ReportsPage'));
 const CommunicativeLetterEditPage = lazy(() => import('./features/report/pages/CommunicativeLetterEditPage'));
+// Recharts solo se descarga al entrar a /dashboard, no en el bundle inicial (INF-04).
+const DashboardPage = lazy(() => import('./features/dashboard/pages/DashboardPage'));
 
 // El spinner vive sobre el fondo del Dashboard, sin velo ni tarjeta: mismo envoltorio que usa
 // `DataTable` mientras carga, para que la espera del chunk y la de los datos se vean idénticas.
@@ -27,21 +29,6 @@ const routeFallback = (
     <Loading />
   </div>
 );
-
-// Placeholder para un futuro Dashboard
-const DashboardPage = () => {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h1 className="text-2xl font-semibold text-blue-gray-800">
-        Contenido Principal
-      </h1>
-      <p className="mt-2 text-gray-600">
-        El contenido de la página se ajustará automáticamente cuando el menú
-        lateral se abra o se cierre.
-      </p>
-    </div>
-  );
-};
 
 const AppRoot = () => {
   const showWelcomeLoader = useAuthStore((state) => state.showWelcomeLoader);
@@ -92,7 +79,14 @@ export const router = createBrowserRouter(
       <Route element={<ProtectedRoute />}>
         <Route element={<Dashboard><Outlet /></Dashboard>}>
           {/* Todas las rutas aquí dentro tendrán el menú lateral */}
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <Suspense fallback={routeFallback}>
+                <DashboardPage />
+              </Suspense>
+            }
+          />
           <Route path="/academico/aprendizajes" element={<LearningsPage />} />
           <Route path="/academico/conceptos" element={<ConceptsPage />} />
           <Route path="/academico/lista-chequeo" element={<ChecklistsPage />} />

@@ -482,6 +482,8 @@ Mismo patrón que `ReportsPage` y `CommunicativeLetterEditPage`, que ya salen de
 
 12. **Skills de diseño obligatorias.** `quartz-web/CLAUDE.md` exige cargar `emil-design-eng`, `impeccable` y `frontend-design` antes de escribir UI. Para los gráficos se añade `dataviz`. Está recogido en `tasks.md`.
 
+13. **Desviación del EARS de navegación por docente (decidida en implementación).** El criterio "al activar una fila de progreso por docente, el sistema navega a `/evaluacion` con el filtro correspondiente aplicado" no es implementable sin tocar el endpoint de usuarios: `ValuationSummary` (consumida por `StudentValuationsPage`) no trae `teacherId`, solo `_id`, `periodId`, `status`. Añadirlo es un cambio fuera de este plan (backend `users.service.ts` + store de valoraciones). Decisión del usuario: la fila navega a `/evaluacion` **sin** filtro preaplicado. El criterio EARS queda cubierto solo parcialmente (navega, no filtra); no se abre un spec aparte para esto.
+
 ---
 
 ## Verificación

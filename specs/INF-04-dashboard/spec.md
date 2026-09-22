@@ -1,7 +1,7 @@
 ---
 id: INF-04-dashboard
 feature: dashboard
-status: draft
+status: implemented
 created: 2026-09-21
 ---
 
@@ -43,64 +43,64 @@ Convertir `/dashboard` —hoy un placeholder hardcodeado en `quartz-web/src/App.
 ## Criterios de aceptación (EARS)
 
 ### Endpoint y alcance
-- [ ] Cuando un usuario autenticado solicita `GET /api/dashboard`, el sistema responde `200` con las métricas del periodo indicado en `periodId` o, si se omite, del periodo con `isActive: true`.
-- [ ] Si la institución no tiene ningún periodo activo y no se envía `periodId`, el sistema responde `200` con `period: null` y contadores en cero, **no** `404`.
-- [ ] Si el rol del solicitante es Docente, el sistema ignora el `schoolId` de la query y fuerza `req.user.schoolId`.
-- [ ] Si el rol del solicitante es Docente, el sistema devuelve `teacherProgress`, `schoolProgress` y `curriculumHealth` en `null`.
-- [ ] Si el rol del solicitante es Jefe de Área, el sistema no aplica filtro de sede salvo que la query lo pida.
-- [ ] Cuando la query trae una clave no declarada en el esquema, el sistema responde `400`.
-- [ ] Si el rol del solicitante es Estudiante, el sistema responde `403`.
+- [x] Cuando un usuario autenticado solicita `GET /api/dashboard`, el sistema responde `200` con las métricas del periodo indicado en `periodId` o, si se omite, del periodo con `isActive: true`.
+- [x] Si la institución no tiene ningún periodo activo y no se envía `periodId`, el sistema responde `200` con `period: null` y contadores en cero, **no** `404`.
+- [x] Si el rol del solicitante es Docente, el sistema ignora el `schoolId` de la query y fuerza `req.user.schoolId`.
+- [x] Si el rol del solicitante es Docente, el sistema devuelve `teacherProgress`, `schoolProgress` y `curriculumHealth` en `null`.
+- [x] Si el rol del solicitante es Jefe de Área, el sistema no aplica filtro de sede salvo que la query lo pida.
+- [x] Cuando la query trae una clave no declarada en el esquema, el sistema responde `400`.
+- [x] Si el rol del solicitante es Estudiante, el sistema responde `403`.
 
 ### Capa 1 — KPIs
-- [ ] Cuando se calcula la cohorte, el sistema cuenta los `User` con `role: 'Estudiante'` del inquilino que cumplen los filtros de sede, jornada y grado vigentes.
-- [ ] Cuando un estudiante de la cohorte no tiene documento `StudentValuation` en el periodo, el sistema lo cuenta en `notStarted`.
-- [ ] Cuando un documento `StudentValuation` tiene `globalStatus: null`, el sistema lo cuenta como `Por diligenciar`.
-- [ ] Cuando se calcula `coveragePercentage`, el sistema divide los estudiantes con `globalStatus: 'Evaluado'` entre el total de la cohorte; si la cohorte es cero, devuelve `0` y no `NaN`.
-- [ ] Cuando se calcula el progreso ítem a ítem, el sistema cuenta como valorada toda entrada de `learningValuations` con `qualitativeValuation !== null`, y toda dimensión en modo `description` con `performanceDescription !== null` como una unidad valorable.
-- [ ] Cuando existe periodo, el sistema devuelve `daysToClose` a partir de `Period.endDate`, con valor negativo si la fecha ya pasó.
+- [x] Cuando se calcula la cohorte, el sistema cuenta los `User` con `role: 'Estudiante'` del inquilino que cumplen los filtros de sede, jornada y grado vigentes.
+- [x] Cuando un estudiante de la cohorte no tiene documento `StudentValuation` en el periodo, el sistema lo cuenta en `notStarted`.
+- [x] Cuando un documento `StudentValuation` tiene `globalStatus: null`, el sistema lo cuenta como `Por diligenciar`.
+- [x] Cuando se calcula `coveragePercentage`, el sistema divide los estudiantes con `globalStatus: 'Evaluado'` entre el total de la cohorte; si la cohorte es cero, devuelve `0` y no `NaN`.
+- [x] Cuando se calcula el progreso ítem a ítem, el sistema cuenta como valorada toda entrada de `learningValuations` con `qualitativeValuation !== null`, y toda dimensión en modo `description` con `performanceDescription !== null` como una unidad valorable.
+- [x] Cuando existe periodo, el sistema devuelve `daysToClose` a partir de `Period.endDate`, con valor negativo si la fecha ya pasó.
 
 ### Capa 2 — Distribuciones
-- [ ] Cuando se agrupa el desempeño por dimensión, el sistema devuelve por cada `subjectId` el conteo de ítems en `Logrado`, `En proceso`, `Con dificultad` y sin valorar.
-- [ ] Cuando se agrupa el concepto por dimensión, el sistema aplica los mismos umbrales que `resolveQualitativeValuation` y excluye las dimensiones con `maxSubjectScore` igual a `0`.
-- [ ] Cuando una dimensión referenciada por una valoración ya no existe en `subjects`, el sistema devuelve la fila con un nombre de respaldo y no omite el dato.
-- [ ] Cuando el embudo de estados se renderiza, el sistema usa los colores ya definidos en `ValuationStatusBadge.tsx:12-43` y el orden de `VALUATION_STATE_ORDER`.
+- [x] Cuando se agrupa el desempeño por dimensión, el sistema devuelve por cada `subjectId` el conteo de ítems en `Logrado`, `En proceso`, `Con dificultad` y sin valorar.
+- [x] Cuando se agrupa el concepto por dimensión, el sistema aplica los mismos umbrales que `resolveQualitativeValuation` y excluye las dimensiones con `maxSubjectScore` igual a `0`.
+- [x] Cuando una dimensión referenciada por una valoración ya no existe en `subjects`, el sistema devuelve la fila con un nombre de respaldo y no omite el dato.
+- [x] Cuando el embudo de estados se renderiza, el sistema usa los colores ya definidos en `ValuationStatusBadge.tsx:12-43` y el orden de `VALUATION_STATE_ORDER`.
 
 ### Capa 3 — Operación (solo Jefe de Área)
-- [ ] Cuando se agrupa el progreso por docente, el sistema ordena las filas por porcentaje de evaluados ascendente.
-- [ ] Cuando el usuario activa una fila de progreso por docente, el sistema navega a `/evaluacion` con el filtro correspondiente aplicado.
-- [ ] Si la institución tiene una sola sede, el sistema no renderiza la comparativa por sede.
-- [ ] Cuando una dimensión con `evaluationMode: 'checklist'` no tiene ningún `Learning` en el periodo, el sistema la lista en salud curricular como bloqueante.
-- [ ] Cuando una dimensión no tiene `Concept` para alguno de los tres niveles en el periodo, el sistema lista el nivel faltante como hueco que rompe la Carta Comunicativa.
+- [x] Cuando se agrupa el progreso por docente, el sistema ordena las filas por porcentaje de evaluados ascendente.
+- [~] Cuando el usuario activa una fila de progreso por docente, el sistema navega a `/evaluacion` con el filtro correspondiente aplicado. **Parcial:** navega a `/evaluacion` pero sin preaplicar el filtro por docente — ver nota 13 de `plan.md` (`ValuationSummary` no trae `teacherId`; decisión del usuario fue no ampliar el alcance a ese endpoint).
+- [x] Si la institución tiene una sola sede, el sistema no renderiza la comparativa por sede.
+- [x] Cuando una dimensión con `evaluationMode: 'checklist'` no tiene ningún `Learning` en el periodo, el sistema la lista en salud curricular como bloqueante.
+- [x] Cuando una dimensión no tiene `Concept` para alguno de los tres niveles en el periodo, el sistema lista el nivel faltante como hueco que rompe la Carta Comunicativa.
 
 ### Capa 4 — Tendencia
-- [ ] Si la cohorte tiene valoraciones en menos de dos periodos, el sistema omite el gráfico de evolución.
-- [ ] Cuando existen dos o más periodos con datos, el sistema devuelve un punto por periodo ordenado cronológicamente por `year` y `startDate`.
+- [x] Si la cohorte tiene valoraciones en menos de dos periodos, el sistema omite el gráfico de evolución.
+- [x] Cuando existen dos o más periodos con datos, el sistema devuelve un punto por periodo ordenado cronológicamente por `year` y `startDate`.
 
 ### Capa 5 — Atención requerida
-- [ ] Cuando un estudiante acumula dos o más dimensiones con `subjectPercentage` menor a 46 y `maxSubjectScore` mayor a 0, el sistema lo incluye en la lista de alerta.
-- [ ] Cuando la lista de alerta se compone, el sistema devuelve como máximo 10 estudiantes, ordenados por número de dimensiones en dificultad descendente.
-- [ ] Cuando el usuario activa un estudiante de la lista, el sistema navega a `/evaluacion/:studentId`.
+- [x] Cuando un estudiante acumula dos o más dimensiones con `subjectPercentage` menor a 46 y `maxSubjectScore` mayor a 0, el sistema lo incluye en la lista de alerta.
+- [x] Cuando la lista de alerta se compone, el sistema devuelve como máximo 10 estudiantes, ordenados por número de dimensiones en dificultad descendente.
+- [x] Cuando el usuario activa un estudiante de la lista, el sistema navega a `/evaluacion/:studentId`.
 
 ### Caché y rendimiento
-- [ ] Cuando dos peticiones consecutivas comparten inquilino, rol y filtros dentro de la ventana de 60 s, el sistema sirve la segunda desde caché sin volver a consultar Mongo.
-- [ ] Cuando dos peticiones equivalentes llegan en paralelo y no hay entrada válida, el sistema ejecuta el cálculo una sola vez y sirve el mismo resultado a ambas.
-- [ ] Si el productor de una entrada de caché falla, el sistema no deja almacenada la entrada fallida.
-- [ ] Cuando se crea, actualiza o elimina una valoración, un aprendizaje o un concepto, el sistema invalida todas las entradas de caché de ese inquilino.
-- [ ] Cuando se resuelve la respuesta, el sistema ejecuta un número de consultas a Mongo independiente del tamaño de la cohorte.
-- [ ] Cuando la aplicación web carga cualquier ruta distinta de `/dashboard`, el sistema no incluye Recharts en el bundle descargado.
+- [x] Cuando dos peticiones consecutivas comparten inquilino, rol y filtros dentro de la ventana de 60 s, el sistema sirve la segunda desde caché sin volver a consultar Mongo.
+- [x] Cuando dos peticiones equivalentes llegan en paralelo y no hay entrada válida, el sistema ejecuta el cálculo una sola vez y sirve el mismo resultado a ambas.
+- [x] Si el productor de una entrada de caché falla, el sistema no deja almacenada la entrada fallida.
+- [x] Cuando se crea, actualiza o elimina una valoración, un aprendizaje o un concepto, el sistema invalida todas las entradas de caché de ese inquilino.
+- [x] Cuando se resuelve la respuesta, el sistema ejecuta un número de consultas a Mongo independiente del tamaño de la cohorte.
+- [x] Cuando la aplicación web carga cualquier ruta distinta de `/dashboard`, el sistema no incluye Recharts en el bundle descargado.
 
 ### Frontend — estado y frescura
-- [ ] Cuando el usuario vuelve a la pestaña del navegador y los datos llevan más de 60 s, el sistema los recarga automáticamente.
-- [ ] Cuando el usuario activa el botón de actualizar, el sistema recarga los datos y refresca el texto «actualizado hace X».
-- [ ] Cuando el usuario cambia un filtro, el sistema conserva en pantalla los datos anteriores mientras llegan los nuevos y no muestra el esqueleto de carga completo.
-- [ ] Mientras no hay datos previos, el sistema muestra un esqueleto que respeta la geometría final de la página.
-- [ ] Si un widget no tiene datos, el sistema muestra un estado vacío explicativo en lugar de un gráfico en blanco.
-- [ ] Si la petición falla, el sistema muestra el mensaje de error y un botón de reintento, y no deja la página en blanco.
+- [x] Cuando el usuario vuelve a la pestaña del navegador y los datos llevan más de 60 s, el sistema los recarga automáticamente.
+- [x] Cuando el usuario activa el botón de actualizar, el sistema recarga los datos y refresca el texto «actualizado hace X».
+- [x] Cuando el usuario cambia un filtro, el sistema conserva en pantalla los datos anteriores mientras llegan los nuevos y no muestra el esqueleto de carga completo.
+- [x] Mientras no hay datos previos, el sistema muestra un esqueleto que respeta la geometría final de la página.
+- [x] Si un widget no tiene datos, el sistema muestra un estado vacío explicativo en lugar de un gráfico en blanco.
+- [x] Si la petición falla, el sistema muestra el mensaje de error y un botón de reintento, y no deja la página en blanco.
 
 ### Transversales
-- [ ] **Aislamiento:** toda lectura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`/`query`. `role` y `schoolId` del solicitante se toman de `req.user`.
-- [ ] Cuando se compone la clave de caché, el sistema incluye `institutionId` y `role`, de modo que una entrada nunca puede servirse a otro inquilino ni a otro rol.
-- [ ] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web`, sin errores nuevos respecto a la rama base.
+- [x] **Aislamiento:** toda lectura del feature filtra y fuerza `institutionId` del token; ninguna operación lo acepta de `body`/`params`/`query`. `role` y `schoolId` del solicitante se toman de `req.user`.
+- [x] Cuando se compone la clave de caché, el sistema incluye `institutionId` y `role`, de modo que una entrada nunca puede servirse a otro inquilino ni a otro rol.
+- [x] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web`, sin errores nuevos respecto a la rama base.
 
 ## Dependencias
 - `VAL-04-teacher-valuation-scope` — `RequestorScope` y el criterio de alcance por sede del Docente.

@@ -35,6 +35,25 @@ export function resolveSubjectAxisLabel(subjects: Pick<Subject, 'type'>[]): Subj
 
 export type SubjectEvaluationMode = 'checklist' | 'description';
 
+export const QUALITATIVE_VALUATION_VALUES = ['Logrado', 'En proceso', 'Con dificultad'] as const;
+export type QualitativeValuation = (typeof QUALITATIVE_VALUATION_VALUES)[number];
+
+/** Hex, no clases Tailwind: Recharts y react-pdf necesitan el valor literal. */
+export const QUALITATIVE_VALUATION_COLORS: Record<QualitativeValuation, string> = {
+  'Logrado': '#16a34a',
+  'En proceso': '#d97706',
+  'Con dificultad': '#dc2626',
+};
+
+export const CHART_PALETTE = {
+  brand: '#620DD1',
+  brandSoft: '#a57cff',
+  brandFaint: '#dbd1ff',
+  accent: '#E1035A',
+  grid: '#eceff1',
+  axis: '#78909c',
+} as const;
+
 export const REPORT_KIND_VALUES = ['checklist', 'communicative-letter'] as const;
 
 export type ReportKind = (typeof REPORT_KIND_VALUES)[number];
