@@ -17,8 +17,10 @@
 - [x] `features/account/queries/useAccountQuery.ts` — query + 3 mutaciones; `onSuccess` invalida `['account','me']` y llama `refreshSession()` (perfil/foto)
 - [x] `features/account/components/ProfileForm.tsx` — foto (`ImageCropUploader`), campos comunes, `email`/sede solo lectura para Docente, payload solo con cambios, "Guardar" deshabilitado sin cambios
 - [x] `features/account/components/ChangePasswordForm.tsx` — 3 campos, toggle visibilidad, `autocomplete`, validación en cliente, reset tras éxito
-- [x] `features/account/pages/AccountPage.tsx` — sección Mi perfil o Cambiar contraseña según `?tab=` (sin pestañas), loading/error, toasts
-- [x] `App.tsx` — ruta `/mi-cuenta` dentro de `Dashboard`
+- [x] `features/account/components/AccountPageHeader.tsx` — título y descripción de cada pantalla
+- [x] `features/account/pages/ProfilePage.tsx` — perfil y foto, loading/error, toasts
+- [x] `features/account/pages/ChangePasswordPage.tsx` — cambio de contraseña, toasts
+- [x] `App.tsx` — rutas `/mi-cuenta/perfil` y `/mi-cuenta/contrasena` dentro de `Dashboard`; `/mi-cuenta` redirige a perfil
 - [x] `components/common/UserMenu.tsx` — 3 ítems lucide (`UserRound`, `KeyRound`, `LogOut`), `ChevronDown`, navegación, avatar `avatarUrl ?? AVATAR_FALLBACK`; eliminar ítems sobrantes e imports de heroicons/`user.png`
 
 ## Docs

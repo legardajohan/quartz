@@ -22,7 +22,9 @@
 | crear | `src/features/account/queries/useAccountQuery.ts` |
 | crear | `src/features/account/components/ProfileForm.tsx` |
 | crear | `src/features/account/components/ChangePasswordForm.tsx` |
-| crear | `src/features/account/pages/AccountPage.tsx` |
+| crear | `src/features/account/components/AccountPageHeader.tsx` |
+| crear | `src/features/account/pages/ProfilePage.tsx` |
+| crear | `src/features/account/pages/ChangePasswordPage.tsx` |
 | tocar | `src/App.tsx` |
 | tocar | `src/components/common/UserMenu.tsx` |
 
@@ -92,9 +94,11 @@ Controllers: `userId = req.user!._id.toString()`, `institutionId = req.user!.ins
 - `ProfileForm.tsx` — props `{ profile, isAreaLead, schools, onSubmit, onUploadPhoto, isSubmitting, isUploading }`. Cabecera con `ImageCropUploader` (`shape="circle"`, `size="lg"`), nombre y rol. Campos con `Input`/`Select` de Material Tailwind; `email` y sede `disabled` + hint para Docente. Payload = solo campos cambiados; `identificationNumber` → `number`. "Guardar" deshabilitado sin cambios.
 - `ChangePasswordForm.tsx` — 3 `Input type="password"` con toggle `Eye`/`EyeOff` (lucide), `autocomplete` correcto, errores inline (mín. 8, coinciden, distinta de la actual); reset tras éxito.
 
-**Página** `pages/AccountPage.tsx` (default export): sin pestañas. Lee `?tab=` (`perfil` | `contrasena`, fallback `perfil`) y renderiza `ProfileSection` o `PasswordSection` con su propio título y descripción (`ACCOUNT_SECTIONS`). `ProfileSection` es la única que consulta el perfil y las sedes (`useSchoolsQuery` con `enabled: isAreaLead`); estados de carga (`Skeleton`) y error.
+**Páginas** (default export, sin pestañas; título y descripción vía `components/AccountPageHeader.tsx`):
+- `pages/ProfilePage.tsx` — consulta perfil y sedes (`useSchoolsQuery` con `enabled: isAreaLead`); `Skeleton` en carga, error con "Reintentar"; toasts de perfil y foto.
+- `pages/ChangePasswordPage.tsx` — solo la mutación de contraseña; no consulta el perfil.
 
-**Ruta** en `App.tsx`: `<Route path="/mi-cuenta" element={<AccountPage />} />` dentro del bloque `Dashboard` (sin `RoleRoute`: ambos roles).
+**Rutas** en `App.tsx`, dentro del bloque `Dashboard` (sin `RoleRoute`: ambos roles): `/mi-cuenta/perfil` → `ProfilePage`, `/mi-cuenta/contrasena` → `ChangePasswordPage`, `/mi-cuenta` → `<Navigate to="/mi-cuenta/perfil" replace />`.
 
 **`UserMenu.tsx`:** array `PROFILE_MENU_ITEMS` `{ label, icon, to? | action }` con `UserRound`, `KeyRound`, `LogOut`, `ChevronDown` de `lucide-react`; quita imports de `@heroicons` y `user.png`; `useNavigate` para los dos primeros; estilo destructivo (pink) solo en "Cerrar sesión"; avatar `user?.avatarUrl ?? AVATAR_FALLBACK`.
 
@@ -115,4 +119,4 @@ Controllers: `userId = req.user!._id.toString()`, `institutionId = req.user!.ins
 - Mutaciones de perfil y foto usan `queryClient.setQueryData(accountQueryKey, profile)` en vez de `invalidateQueries`: la API ya devuelve el `OwnProfile` actualizado, se evita un GET extra.
 - `useSchoolsQuery` acepta `{ enabled }` (default `true`, sin cambio para sus consumidores) para no pedir sedes cuando el usuario es Docente.
 - Constante de dominio nombrada `IDENTIFICATION_TYPES` (patrón vecino `SUBJECT_TYPES`) en lugar de `IDENTIFICATION_TYPE_VALUES`.
-- Sin pestañas en `/mi-cuenta` (pedido del usuario tras la primera versión): el menú de usuario es la única navegación entre secciones.
+- Sin pestañas y con rutas propias en lugar de `?tab=` (pedido del usuario tras la primera versión): cada opción del menú es una pantalla, igual que `/gestion/usuarios` o `/gestion/configuracion`.

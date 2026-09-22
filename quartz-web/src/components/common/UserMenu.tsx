@@ -19,8 +19,8 @@ type ProfileMenuItem =
     | { label: string; icon: LucideIcon; action: "logout" };
 
 const PROFILE_MENU_ITEMS: ProfileMenuItem[] = [
-    { label: "Mi perfil", icon: UserRound, to: "/mi-cuenta?tab=perfil" },
-    { label: "Cambiar contraseña", icon: KeyRound, to: "/mi-cuenta?tab=contrasena" },
+    { label: "Mi perfil", icon: UserRound, to: "/mi-cuenta/perfil" },
+    { label: "Cambiar contraseña", icon: KeyRound, to: "/mi-cuenta/contrasena" },
     { label: "Cerrar sesión", icon: LogOut, action: "logout" },
 ];
 

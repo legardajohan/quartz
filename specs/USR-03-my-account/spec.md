@@ -12,7 +12,7 @@ Dar al Jefe de Área y al Docente autoservicio sobre su propia cuenta: ver y act
 
 ## Alcance
 **Incluye:**
-- Página `/mi-cuenta` con dos secciones, **Mi perfil** y **Cambiar contraseña** (`?tab=perfil|contrasena`), sin navegación propia: se accede solo desde el menú de usuario.
+- Pantallas `/mi-cuenta/perfil` (**Mi perfil**) y `/mi-cuenta/contrasena` (**Cambiar contraseña**), sin navegación propia entre ellas: se accede desde el menú de usuario.
 - Endpoints `GET|PATCH /api/users/me`, `PATCH /api/users/me/password`, `PATCH /api/users/me/photo`.
 - Menú de usuario: "Mi perfil", "Cambiar contraseña", "Cerrar sesión", con iconos `lucide-react`.
 - `avatarUrl` en `sessionData.user` para mostrar la foto propia en el menú.
@@ -30,13 +30,14 @@ Dar al Jefe de Área y al Docente autoservicio sobre su propia cuenta: ver y act
 **Menú de usuario**
 - [x] Cuando un usuario abre el menú de usuario, el sistema muestra exactamente tres ítems: "Mi perfil" (`UserRound`), "Cambiar contraseña" (`KeyRound`), "Cerrar sesión" (`LogOut`), iconos de `lucide-react`.
 - [x] El sistema no muestra los ítems "Editar perfil", "Bandeja de entrada" ni "Ayuda".
-- [x] Cuando el usuario elige "Mi perfil", el sistema navega a `/mi-cuenta?tab=perfil`; cuando elige "Cambiar contraseña", a `/mi-cuenta?tab=contrasena`.
+- [x] Cuando el usuario elige "Mi perfil", el sistema navega a `/mi-cuenta/perfil`; cuando elige "Cambiar contraseña", a `/mi-cuenta/contrasena`.
 - [x] Cuando el usuario elige "Cerrar sesión", el sistema ejecuta `logout()` igual que hoy.
 - [x] Si `sessionData.user.avatarUrl` existe, el menú muestra esa foto; si no, `AVATAR_FALLBACK`.
 
-**Página `/mi-cuenta`**
-- [x] Cuando un usuario autenticado abre `/mi-cuenta` sin `tab` o con un valor desconocido, el sistema muestra la sección Mi perfil.
-- [x] El sistema no muestra pestañas ni otra navegación entre secciones en `/mi-cuenta`; cada sección muestra su propio título.
+**Rutas `/mi-cuenta/*`**
+- [x] Cuando un usuario autenticado abre `/mi-cuenta`, el sistema redirige a `/mi-cuenta/perfil`.
+- [x] Si la subruta no existe (p. ej. `/mi-cuenta/otra`), el sistema muestra la página 404 existente.
+- [x] El sistema no muestra pestañas ni otra navegación entre `/mi-cuenta/perfil` y `/mi-cuenta/contrasena`; cada pantalla muestra su propio título.
 - [x] Si el usuario no está autenticado, el sistema redirige a `/login` (`ProtectedRoute`).
 
 **Perfil — ambos roles**

@@ -13,7 +13,8 @@ import ChecklistsPage from './features/checklist-template/pages/ChecklistsPage';
 import StudentValuationsPage from './features/student-valuation/pages/StudentValuationsPage';
 import UsersPage from './features/users/pages/UsersPage';
 import ConfigurationPage from './features/configuration/pages/ConfigurationPage';
-import AccountPage from './features/account/pages/AccountPage';
+import ProfilePage from './features/account/pages/ProfilePage';
+import ChangePasswordPage from './features/account/pages/ChangePasswordPage';
 import { Toaster } from 'react-hot-toast';
 
 // @react-pdf/renderer y los assets base64 del informe solo se cargan cuando el usuario
@@ -111,7 +112,9 @@ export const router = createBrowserRouter(
             }
           />
           <Route path="/gestion/usuarios" element={<UsersPage />} />
-          <Route path="/mi-cuenta" element={<AccountPage />} />
+          <Route path="/mi-cuenta" element={<Navigate to="/mi-cuenta/perfil" replace />} />
+          <Route path="/mi-cuenta/perfil" element={<ProfilePage />} />
+          <Route path="/mi-cuenta/contrasena" element={<ChangePasswordPage />} />
 
           <Route element={<RoleRoute allowedRoles={['Jefe de Área']} />}>
             <Route path="/gestion/configuracion" element={<ConfigurationPage />} />
