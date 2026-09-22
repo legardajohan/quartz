@@ -31,7 +31,7 @@ export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
-      <div className="w-full sm:w-48">
+      <div className="w-full sm:w-52">
         <Select
           color="purple"
           label="Período"
@@ -49,7 +49,7 @@ export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
       </div>
 
       {isAreaLead && (
-        <div className="w-full sm:w-48">
+        <div className="w-full sm:w-52">
           <Select
             color="purple"
             label="Sede"
@@ -69,7 +69,7 @@ export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
       )}
 
       {multipleShifts && (
-        <div className="w-full sm:w-44">
+        <div className="w-full sm:w-52">
           <Select
             color="purple"
             label="Jornada"
@@ -87,7 +87,7 @@ export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
         </div>
       )}
 
-      <div className="w-full sm:w-44">
+      <div className="w-full sm:w-52">
         <Select
           color="purple"
           label="Grado"
