@@ -6,15 +6,16 @@
 **Frontend:** **SPA desacoplada** que consume la API solo por REST.
 
 ## Stack (React + Typescript + Vite) 
-`react@18.2` · `vite@5` · `zustand@5` · `axios@1` · `react-router-dom@6` · `tailwindcss@3` · `@material-tailwind/react` · `react-hot-toast` · `@heroicons/react`. Alias `@/* → src/*` (vía `vite-tsconfig-paths`).
+`react@18.2` · `vite@5` · `zustand@5` · `@tanstack/react-query@5` · `axios@1` · `react-router-dom@6` · `tailwindcss@3` · `@material-tailwind/react` · `react-hot-toast` · `@heroicons/react`. Alias `@/* → src/*` (vía `vite-tsconfig-paths`).
 
 ## Estructura por feature
 ```
 src/features/<feature>/
 ├── pages/                 # componentes enrutados: <Feature>Page.tsx
 ├── components/            # UI específica (presentacional, sin llamadas API)
-├── types/                # index.ts agrega api.ts / store.ts / domain.ts
-└── use<Feature>Store.ts  # store Zustand (estado + acciones API)
+├── types/                # index.ts agrega api.ts / store.ts (o api.ts) / domain.ts
+├── use<Feature>Store.ts  # store Zustand — si el feature es Zustand (ver "Estado")
+└── queries/use<Feature>Query.ts  # hooks React Query — si el feature es React Query (ver "Estado")
 ```
 Transversal: `components/{ui,common,layouts,router,icons}`, `api/apiClient.ts`, `types/domain.ts`. Alias `@/* → src/*`.
 
@@ -35,8 +36,23 @@ Transversal: `components/{ui,common,layouts,router,icons}`, `api/apiClient.ts`, 
 | Usuarios | `users/` | `users/` |
 | Periodos / Materias / Colegios | `period/`, `subject/`, `school/` | (consumidos vía `sessionData`) |
 
-## Estado (Zustand)
-- Un store por feature (`use<Feature>Store.ts`). Acciones con API manejan `isLoading`/`isSubmitting`/`error`.
+## Estado: Zustand vs. React Query
+Coexisten **por tipo de dato**, no por preferencia. Antes de crear el store/hook de un feature nuevo, decidir con esta regla:
+
+| El dato es… | Usar | Ejemplo en el repo |
+|---|---|---|
+| **Estado de servidor**: lista/recurso remoto que se lee, cachea, refetchea e invalida tras mutar | **React Query** (`queries/use<Feature>Query.ts`) | `features/users/queries/useUsersQuery.ts`, `features/dashboard/queries/useDashboardQuery.ts` |
+| **Estado de sesión/cliente**: vive en el front, se persiste o se deriva de la sesión, no es "una lista paginable de servidor" | **Zustand** (`use<Feature>Store.ts`) | `useAuthStore` (sesión, token), stores de feature con flujos propios de formulario/CRUD simple |
+
+No migrar un store existente de una tecnología a otra solo por consistencia — la elección ya hecha en cada feature es correcta para su tipo de dato; migrar sin un defecto real es *churn* sin beneficio.
+
+### Si es React Query
+- Un `queryKey` por recurso+filtros: `['<feature>', params] as const`. Mutaciones invalidan ese `queryKey` en `onSuccess` (patrón `useUsersQuery.ts`).
+- Defaults globales en `src/lib/queryClient.ts` (`staleTime: 5min`, `retry: 1`, `refetchOnWindowFocus: false`); un feature los sobreescribe en su propio `useQuery` cuando necesita otra frecuencia (p. ej. `dashboard`, alineado a un TTL de servidor).
+- **Prohibido** duplicar en un store Zustand lo que ya da React Query (`isLoading`, caché, invalidación).
+
+### Si es Zustand
+- Un store por feature (`use<Feature>Store.ts`). Acciones con API manejan `isLoading`/`isSubmitting`/`error` a mano (no hay caché ni invalidación automática — es el costo de este patrón).
 - `useAuthStore` es la fuente de verdad de sesión (`token`, `sessionData.user`); persiste en `localStorage` (`persist` + `partialize`).
 - Acceso a rol: `const role = useAuthStore().sessionData?.user.role;`
 - **Inmutabilidad:** nunca mutar estado; crear nuevos objetos/arrays (`[...state.items]`, `state.items.map(...)`).
