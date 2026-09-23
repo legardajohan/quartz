@@ -1,4 +1,4 @@
-import { UserRole, IdentificationType, GradeLevel } from '../auth/auth.types';
+import { UserRole, IdentificationType, GradeLevel, UserAccountStatus } from '../auth/auth.types';
 import { GlobalValuationStatus } from '../student-valuation/student-valuation.types';
 
 export interface School {
@@ -33,10 +33,16 @@ export type UserWithValuations = {
     valuations: ValuationSummary[];
     avatarUrl?: string;
     shift?: Shift | null;
+    accountStatus?: UserAccountStatus;
+    invitationExpiresAt?: string; // ISO; solo si la cuenta está Pendiente.
 };
 
-// Roles que se pueden dar de alta desde /gestion/usuarios. Jefe de Área queda fuera.
-export type WritableUserRole = UserRole.ESTUDIANTE | UserRole.DOCENTE;
+// Roles que se pueden dar de alta desde /gestion/usuarios.
+export type WritableUserRole = UserRole.ESTUDIANTE | UserRole.DOCENTE | UserRole.JEFE_DE_AREA;
+
+// Roles del "Equipo docente": se invitan por correo (USR-04).
+export const STAFF_ROLES = [UserRole.DOCENTE, UserRole.JEFE_DE_AREA] as const;
+export type StaffRole = typeof STAFF_ROLES[number];
 
 export interface CreateUserDTO {
     role: WritableUserRole;
@@ -49,10 +55,11 @@ export interface CreateUserDTO {
     phoneNumber?: string;
     schoolId: string;
     gradesTaught: GradeLevel[];
-    email?: string;    // requerido si role === Docente
-    password?: string; // requerido si role === Docente
+    email?: string;    // requerido si role ∈ STAFF_ROLES
     shiftId?: string;  // solo Estudiante; opcional
 }
+
+export type CreatedUserResponse = UserWithValuations & { invitationEmailSent: boolean };
 
 // El rol es inmutable tras la creación: no forma parte del payload de actualización.
 // shiftId admite `null` explícito para desasignar la jornada del estudiante.

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { UserRole, IdentificationType, GradeLevel } from '../auth/auth.types';
+import { strongPasswordSchema } from '../auth/auth.validation';
+import { STAFF_ROLES } from './users.types';
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
@@ -13,6 +15,11 @@ export const getUsersSchema = z.object({
       message: 'El rol no es válido.',
     }).optional(),
     schoolId: objectId('El ID de la escuela no es un ObjectId válido.').optional(),
+    // CSV de roles del Equipo docente, p. ej. `Docente,Jefe de Área`.
+    roles: z.string().refine(
+      (val) => val.split(',').every((r) => (STAFF_ROLES as readonly string[]).includes(r)),
+      { message: 'Los roles no son válidos.' }
+    ).optional(),
   }),
 });
 
@@ -38,12 +45,18 @@ const createTeacherSchema = z.object({
   ...baseUserFields,
   role: z.literal(UserRole.DOCENTE),
   gradesTaught: z.array(z.nativeEnum(GradeLevel)).min(1, 'El docente debe tener al menos un grado.'),
-  email: z.string().email('El correo no es válido.'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
+  email: z.string().trim().email('El correo no es válido.'),
+}).strict();
+
+const createAreaLeadSchema = z.object({
+  ...baseUserFields,
+  role: z.literal(UserRole.JEFE_DE_AREA),
+  gradesTaught: z.array(z.nativeEnum(GradeLevel)).optional(),
+  email: z.string().trim().email('El correo no es válido.'),
 }).strict();
 
 export const createUserSchema = z.object({
-  body: z.discriminatedUnion('role', [createStudentSchema, createTeacherSchema]),
+  body: z.discriminatedUnion('role', [createStudentSchema, createTeacherSchema, createAreaLeadSchema]),
 });
 
 export const updateUserSchema = z.object({
@@ -59,9 +72,8 @@ export const updateUserSchema = z.object({
     identificationNumber: z.number().int('La identificación debe ser un número entero.').positive('La identificación debe ser un número positivo.').optional(),
     phoneNumber: z.string().optional(),
     schoolId: objectId('El ID de la sede no es un ObjectId válido.').optional(),
-    gradesTaught: z.array(z.nativeEnum(GradeLevel)).min(1, 'Debe indicar al menos un grado.').optional(),
-    email: z.string().email('El correo no es válido.').optional(),
-    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.').optional(),
+    gradesTaught: z.array(z.nativeEnum(GradeLevel)).optional(),
+    email: z.string().trim().email('El correo no es válido.').optional(),
     shiftId: objectId('El ID de la jornada no es un ObjectId válido.').nullable().optional(),
   }).strict(),
 });
@@ -83,7 +95,7 @@ export const updateOwnProfileSchema = z.object({
 export const changeOwnPasswordSchema = z.object({
   body: z.object({
     currentPassword: z.string().min(1, 'La contraseña actual es obligatoria.'),
-    newPassword: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres.'),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string().min(1, 'Debe confirmar la nueva contraseña.'),
   }).strict()
     .refine((b) => b.newPassword === b.confirmPassword, {
@@ -106,4 +118,10 @@ export const uploadUserPhotoSchema = z.object({
   params: z.object({
     userId: objectId('El ID del usuario no es un ObjectId válido.'),
   }),
+});
+
+export const resendInvitationSchema = z.object({
+  params: z.object({
+    userId: objectId('El ID del usuario no es un ObjectId válido.'),
+  }).strict(),
 });

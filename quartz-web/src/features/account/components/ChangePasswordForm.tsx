@@ -1,69 +1,16 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Input } from "@material-tailwind/react";
-import { Check, Circle, Eye, EyeOff } from "lucide-react";
+import { Button } from "@material-tailwind/react";
+import PasswordField from "@/components/common/PasswordField";
+import PasswordRequirements from "@/components/common/PasswordRequirements";
+import { isStrongPassword } from "@/utils/passwordPolicy";
 import type { ChangeOwnPassword } from "../types";
-
-const MIN_PASSWORD_LENGTH = 8;
 
 const EMPTY_FORM: ChangeOwnPassword = {
   currentPassword: "",
   newPassword: "",
   confirmPassword: "",
 };
-
-interface PasswordFieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  autoComplete: "current-password" | "new-password";
-  isVisible: boolean;
-  onToggleVisibility: () => void;
-  error?: boolean;
-}
-
-function PasswordField({ label, value, onChange, autoComplete, isVisible, onToggleVisibility, error }: PasswordFieldProps) {
-  const ToggleIcon = isVisible ? EyeOff : Eye;
-  return (
-    <Input
-      color="purple"
-      type={isVisible ? "text" : "password"}
-      label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      autoComplete={autoComplete}
-      error={error}
-      crossOrigin="anonymous"
-      icon={
-        <button
-          type="button"
-          onClick={onToggleVisibility}
-          aria-label={isVisible ? `Ocultar ${label.toLowerCase()}` : `Mostrar ${label.toLowerCase()}`}
-          aria-pressed={isVisible}
-          className="-m-1.5 rounded-md p-1.5 text-gray-500 transition-colors duration-150 hover:text-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
-        >
-          <ToggleIcon className="h-4 w-4" aria-hidden />
-        </button>
-      }
-    />
-  );
-}
-
-interface RequirementProps {
-  met: boolean;
-  label: string;
-}
-
-function Requirement({ met, label }: RequirementProps) {
-  const Icon = met ? Check : Circle;
-  return (
-    <li className={`flex items-center gap-2 text-sm transition-colors duration-200 ${met ? "text-green-700" : "text-gray-600"}`}>
-      <Icon className={`h-3.5 w-3.5 shrink-0 ${met ? "" : "scale-75"}`} strokeWidth={met ? 3 : 2} aria-hidden />
-      <span>{label}</span>
-      <span className="sr-only">{met ? "(cumplido)" : "(pendiente)"}</span>
-    </li>
-  );
-}
 
 export interface ChangePasswordFormProps {
   /** Devuelve `true` si el cambio se aplicó; el formulario se limpia solo en ese caso. */
@@ -80,10 +27,10 @@ export default function ChangePasswordForm({ onSubmit, isSubmitting }: ChangePas
   });
   const [showErrors, setShowErrors] = useState(false);
 
-  const hasMinLength = formData.newPassword.length >= MIN_PASSWORD_LENGTH;
+  const isStrong = isStrongPassword(formData.newPassword);
   const isDifferent = formData.newPassword.length > 0 && formData.newPassword !== formData.currentPassword;
   const matches = formData.confirmPassword.length > 0 && formData.newPassword === formData.confirmPassword;
-  const isValid = formData.currentPassword.length > 0 && hasMinLength && isDifferent && matches;
+  const isValid = formData.currentPassword.length > 0 && isStrong && isDifferent && matches;
 
   const update = (key: keyof ChangeOwnPassword, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -127,7 +74,7 @@ export default function ChangePasswordForm({ onSubmit, isSubmitting }: ChangePas
             autoComplete="new-password"
             isVisible={visibleFields.newPassword}
             onToggleVisibility={() => toggleVisibility("newPassword")}
-            error={showErrors && (!hasMinLength || !isDifferent)}
+            error={showErrors && (!isStrong || !isDifferent)}
           />
           <PasswordField
             label="Repite la nueva contraseña"
@@ -140,11 +87,13 @@ export default function ChangePasswordForm({ onSubmit, isSubmitting }: ChangePas
           />
         </div>
 
-        <ul className="space-y-1.5" aria-live="polite">
-          <Requirement met={hasMinLength} label={`Al menos ${MIN_PASSWORD_LENGTH} caracteres`} />
-          <Requirement met={isDifferent} label="Distinta de la contraseña actual" />
-          <Requirement met={matches} label="Las dos contraseñas nuevas coinciden" />
-        </ul>
+        <PasswordRequirements
+          password={formData.newPassword}
+          extra={[
+            { met: isDifferent, label: "Distinta de la contraseña actual" },
+            { met: matches, label: "Las dos contraseñas nuevas coinciden" },
+          ]}
+        />
       </div>
 
       <div className="flex justify-end border-t border-gray-100 pt-6">

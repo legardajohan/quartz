@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
+import ActivateAccountPage from './features/auth/pages/ActivateAccountPage';
 import { useAuthStore } from './features/auth/useAuthStore';
 import { WelcomeLoader } from './features/auth/components/WelcomeLoader';
 import { ProtectedRoute } from './components/router/ProtectedRoute';
@@ -76,6 +77,7 @@ export const router = createBrowserRouter(
     <Route element={<AppRoot />}>
       {/* RUTAS PÚBLICAS */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/activar-cuenta" element={<ActivateAccountPage />} />
 
       {/* RUTAS PROTEGIDAS CON LAYOUT */}
       <Route element={<ProtectedRoute />}>

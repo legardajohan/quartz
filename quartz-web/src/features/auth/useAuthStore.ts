@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/apiClient';
 import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
-import type { AuthState, LoginRequest, LoginResponse, SessionResponse } from './types';
+import type { AuthState, LoginRequest, LoginResponse, SessionResponse, ActivateAccountRequest } from './types';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -40,6 +40,17 @@ export const useAuthStore = create<AuthState>()(
             error: errorMessage
           });
         }
+      },
+
+      activateAccount: async (request: ActivateAccountRequest) => {
+        const { token, sessionData } = await apiPost<LoginResponse, ActivateAccountRequest>('/auth/activation', request);
+        set({
+          token,
+          sessionData,
+          isLoading: false,
+          error: null,
+          showWelcomeLoader: true
+        });
       },
 
       logout: () => {

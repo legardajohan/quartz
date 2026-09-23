@@ -15,3 +15,16 @@ export interface LoginResponse {
 export interface SessionResponse {
   sessionData: ISessionData;
 }
+
+// Activación de cuenta por invitación (USR-04).
+export interface ActivationPreview {
+  email: string;
+  firstName: string;
+  institutionName: string;
+}
+
+export interface ActivateAccountRequest {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}

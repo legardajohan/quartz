@@ -9,6 +9,7 @@ import {
   updateOwnProfileController,
   changeOwnPasswordController,
   uploadOwnPhotoController,
+  resendInvitationController,
 } from './users.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { requireTenant } from '../../middlewares/require-tenant.middleware';
@@ -24,6 +25,7 @@ import {
   uploadUserPhotoSchema,
   updateOwnProfileSchema,
   changeOwnPasswordSchema,
+  resendInvitationSchema,
 } from './users.validation';
 import { UserRole } from '../auth/auth.types';
 
@@ -89,7 +91,8 @@ router.get(
 
 /**
  * POST /api/users
- * Crea un Estudiante o Docente. Solo Jefe de Área.
+ * Crea un Estudiante, Docente o Jefe de Área. Solo Jefe de Área.
+ * Docente/Jefe de Área nacen Pendientes y reciben la invitación por correo (USR-04).
  */
 router.post(
   '/',
@@ -126,6 +129,20 @@ router.delete(
   authorize([UserRole.JEFE_DE_AREA]),
   validate(deleteUserSchema),
   asyncHandler(deleteUserController)
+);
+
+/**
+ * POST /api/users/:userId/invitation
+ * Reenvía la invitación de un Docente/Jefe de Área Pendiente (USR-04). Solo Jefe de Área,
+ * nunca sobre sí mismo. Enfriamiento de 60 s por usuario.
+ */
+router.post(
+  '/:userId/invitation',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA]),
+  validate(resendInvitationSchema),
+  asyncHandler(resendInvitationController)
 );
 
 /**

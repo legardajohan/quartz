@@ -9,19 +9,22 @@ import {
   updateOwnProfile,
   changeOwnPassword,
   uploadOwnPhoto,
+  resendInvitation,
 } from './users.service';
-import { CreateUserDTO, UpdateUserDTO, UpdateOwnProfileDTO, ChangeOwnPasswordDTO } from './users.types';
+import { CreateUserDTO, UpdateUserDTO, UpdateOwnProfileDTO, ChangeOwnPasswordDTO, StaffRole } from './users.types';
 import AppError from '../../utils/AppError';
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   const sessionUser = req.user!;
-  const { id, role, schoolId } = req.query as { id?: string; role?: string; schoolId?: string };
+  const { id, role, roles, schoolId } = req.query as { id?: string; role?: string; roles?: string; schoolId?: string };
   const institutionId = sessionUser.institutionId.toString();
 
   const users = await getUsersByFilters({
     institutionId,
     id,
     role,
+    // `validate()` no reescribe `req.query`: el CSV ya validado se separa aquí.
+    roles: roles ? (roles.split(',') as StaffRole[]) : undefined,
     schoolId,
     requestorRole: sessionUser.role,
     requestorSchoolId: sessionUser.schoolId?.toString(),
@@ -40,6 +43,7 @@ export const updateUserController = async (req: Request, res: Response): Promise
   const institutionId = req.user!.institutionId.toString();
   const { userId } = req.params;
   const updated = await updateUser(institutionId, userId, req.body as UpdateUserDTO, {
+    userId: req.user!._id.toString(),
     role: req.user!.role,
     schoolId: req.user!.schoolId?.toString(),
   });
@@ -49,7 +53,14 @@ export const updateUserController = async (req: Request, res: Response): Promise
 export const deleteUserController = async (req: Request, res: Response): Promise<void> => {
   const institutionId = req.user!.institutionId.toString();
   const { userId } = req.params;
-  await deleteUser(institutionId, userId);
+  await deleteUser(institutionId, userId, req.user!._id.toString());
+  res.status(204).send();
+};
+
+export const resendInvitationController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { userId } = req.params;
+  await resendInvitation(institutionId, userId, req.user!._id.toString());
   res.status(204).send();
 };
 

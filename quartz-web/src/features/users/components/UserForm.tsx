@@ -3,7 +3,8 @@ import { Input, Select, Option, Checkbox, Typography } from "@material-tailwind/
 import { ImageCropUploader } from "@/components/common/ImageCropUploader";
 import { IDENTIFICATION_TYPES } from "@/types/domain";
 import type { IdentificationType, GradeLevel, Shift } from "@/types/domain";
-import type { UserDto, UserSchool, WritableUserRole } from "../types";
+import { STAFF_ROLES } from "../types";
+import type { StaffRole, UserDto, UserSchool, WritableUserRole } from "../types";
 
 const GRADE_LEVELS: GradeLevel[] = [
   "Transición"
@@ -20,7 +21,6 @@ export interface UserFormData {
   schoolId: string;
   gradesTaught: GradeLevel[];
   email: string;
-  password: string;
   shiftId: string;
 }
 
@@ -35,7 +35,6 @@ const EMPTY_FORM: UserFormData = {
   schoolId: "",
   gradesTaught: [],
   email: "",
-  password: "",
   shiftId: "",
 };
 
@@ -51,13 +50,14 @@ function formDataFromUser(user: UserDto): UserFormData {
     schoolId: user.school?._id ?? "",
     gradesTaught: (user.gradesTaught ?? []) as GradeLevel[],
     email: user.email ?? "",
-    password: "",
     shiftId: user.shift?._id ?? "",
   };
 }
 
 interface UserFormProps {
   role: WritableUserRole;
+  /** Alta en "Equipo docente": muestra el selector de rol. El rol es inmutable al editar. */
+  onRoleChange?: (role: StaffRole) => void;
   initialData?: UserDto | null;
   schools: UserSchool[];
   shifts: Shift[];
@@ -71,6 +71,7 @@ interface UserFormProps {
 
 export function UserForm({
   role,
+  onRoleChange,
   initialData,
   schools,
   shifts,
@@ -82,7 +83,8 @@ export function UserForm({
   onFormChange,
 }: UserFormProps) {
   const [formData, setFormData] = useState<UserFormData>(EMPTY_FORM);
-  const isTeacher = role === "Docente";
+  const isStaff = role !== "Estudiante";
+  const isAreaLeadRole = role === "Jefe de Área";
 
   useEffect(() => {
     setFormData(initialData ? formDataFromUser(initialData) : EMPTY_FORM);
@@ -101,7 +103,6 @@ export function UserForm({
       formData.phoneNumber !== initial.phoneNumber ||
       formData.schoolId !== initial.schoolId ||
       formData.email !== initial.email ||
-      formData.password !== "" ||
       formData.shiftId !== initial.shiftId ||
       JSON.stringify(formData.gradesTaught) !== JSON.stringify(initial.gradesTaught);
 
@@ -134,6 +135,22 @@ export function UserForm({
           size="xl"
         />
       </div>
+
+      {onRoleChange && (
+        <Select
+          name="role"
+          color="purple"
+          label="Rol"
+          value={role}
+          onChange={(val) => val && onRoleChange(val as StaffRole)}
+        >
+          {STAFF_ROLES.map((staffRole) => (
+            <Option key={staffRole} value={staffRole}>
+              {staffRole}
+            </Option>
+          ))}
+        </Select>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Select
@@ -193,7 +210,7 @@ export function UserForm({
         />
       </div>
 
-      {isTeacher ? (
+      {isStaff ? (
         <div className="grid grid-cols-2 gap-4">
           <Select
             name="schoolId"
@@ -214,7 +231,7 @@ export function UserForm({
           <Select
             name="gradesTaught"
             color="purple"
-            label="Cursos a cargo"
+            label={isAreaLeadRole ? "Cursos a cargo (opcional)" : "Cursos a cargo"}
             value={formData.gradesTaught.join(", ")}
             selected={() => formData.gradesTaught.join(", ")}
             onChange={() => {}}
@@ -306,8 +323,8 @@ export function UserForm({
         crossOrigin="anonymous"
       />
 
-      {isTeacher && (
-        <>
+      {isStaff && (
+        <div className="space-y-1.5">
           <Input
             type="email"
             color="purple"
@@ -316,15 +333,14 @@ export function UserForm({
             onChange={(e) => update("email", e.target.value)}
             crossOrigin="anonymous"
           />
-          <Input
-            type="password"
-            color="purple"
-            label={initialData ? "Nueva contraseña (opcional)" : "Contraseña"}
-            value={formData.password}
-            onChange={(e) => update("password", e.target.value)}
-            crossOrigin="anonymous"
-          />
-        </>
+          <Typography variant="small" className="text-xs font-normal text-gray-600">
+            {initialData
+              ? initialData.accountStatus === "Pendiente"
+                ? "Si cambias el correo, enviaremos un nuevo enlace de activación a la dirección nueva."
+                : "Es el correo con el que inicia sesión."
+              : "Enviaremos a este correo un enlace para que cree su contraseña. Vence en 15 días."}
+          </Typography>
+        </div>
       )}
     </div>
   );

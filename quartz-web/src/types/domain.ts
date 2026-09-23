@@ -1,5 +1,9 @@
 export type UserRole = 'Jefe de Área' | 'Docente' | 'Estudiante';
 
+// Estado de cuenta de Docente/Jefe de Área (USR-04). Ausente ⇒ Activo.
+export const ACCOUNT_STATUSES = ['Pendiente', 'Activo'] as const;
+export type AccountStatus = typeof ACCOUNT_STATUSES[number];
+
 export const IDENTIFICATION_TYPES = ['CC', 'TI', 'RC'] as const;
 export type IdentificationType = typeof IDENTIFICATION_TYPES[number];
 

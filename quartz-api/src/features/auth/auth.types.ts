@@ -7,6 +7,18 @@ export enum UserRole {
   ESTUDIANTE = 'Estudiante',
 }
 
+// Solo aplica a Docente y Jefe de Área. Ausente ⇒ Activo (usuarios previos a USR-04).
+export enum UserAccountStatus {
+  PENDIENTE = 'Pendiente',
+  ACTIVO = 'Activo',
+}
+
+export interface IActivationPreview {
+  email: string;
+  firstName: string;
+  institutionName: string;
+}
+
 export enum IdentificationType {
   CC = 'CC',
   TI = 'TI',
