@@ -129,13 +129,12 @@ async function issueInvitation(institutionId: string, userId: string): Promise<v
     throw new AppError('Usuario no encontrado.', 404);
   }
 
-  const institution = await Institution.findById(institutionId).select('name shieldJpgUrl').lean();
+  const institution = await Institution.findById(institutionId).select('name').lean();
 
   const email = buildInvitationEmail({
     firstName: user.firstName,
     role: user.role,
     institutionName: institution?.name ?? '',
-    shieldJpgUrl: institution?.shieldJpgUrl,
     activationUrl: buildActivationUrl(token),
     expiresAt,
   });
