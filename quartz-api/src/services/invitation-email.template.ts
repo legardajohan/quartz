@@ -54,9 +54,9 @@ export function buildInvitationEmail(input: InvitationEmailInput): InvitationEma
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;padding:40px 32px;">
         <tr><td align="center">
           <img src="${QUARTZ_LOGO_URL}" alt="Quartz" width="190" height="22" style="display:block;margin:0 auto 32px;width:190px;height:22px;border:0;" />
-          <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#1f2937;">Bienvenido a Quartz, ${firstName}</h1>
+          <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#1f2937;">Bienvenido a QUARTZ, ${firstName}</h1>
           <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4b5563;">Te invitaron a unirte a <strong>${institutionName}</strong> como <strong>${role}</strong>.</p>
-          <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#4b5563;">Crea tu contraseña para activar la cuenta y empezar a usar Quartz.</p>
+          <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#4b5563;">Crea tu contraseña para activar la cuenta y empezar a usar nuestra plataforma.</p>
           <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="border-radius:999px;background-color:${BRAND_PURPLE};">
             <a href="${activationUrl}" target="_blank" rel="noopener" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:999px;">Activar mi cuenta</a>
           </td></tr></table>
@@ -71,10 +71,10 @@ export function buildInvitationEmail(input: InvitationEmailInput): InvitationEma
 </html>`;
 
   const text = [
-    `Bienvenido a Quartz, ${input.firstName}`,
+    `Bienvenido a QUARTZ, ${input.firstName}`,
     '',
     `Te invitaron a unirte a ${input.institutionName} como ${input.role}.`,
-    'Crea tu contraseña para activar la cuenta y empezar a usar Quartz:',
+    'Crea tu contraseña para activar la cuenta y empezar a usar nuestra plataforma:',
     input.activationUrl,
     '',
     `El enlace vence el ${expiration} (${INVITATION_TTL_DAYS} días) y solo se puede usar una vez.`,
