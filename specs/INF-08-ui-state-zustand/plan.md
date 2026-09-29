@@ -1,0 +1,114 @@
+# INF-08 — Plan técnico
+
+## Principio
+Cambios aditivos o de solo lectura sobre lo existente: ningún store cambia su forma pública salvo añadir `resetAll()` al `logout`. Si una mejora exige cambiar el contrato de `useAuthStore`, queda fuera.
+
+## Archivos
+### quartz-web
+| Acción | Ruta |
+|---|---|
+| crear | `src/stores/useTableFiltersStore.ts` |
+| tocar | `src/features/auth/useAuthStore.ts` (solo `logout`: `+ resetAll()`) |
+| tocar (selectores) | `features/auth/pages/LoginPage.tsx`, `features/checklist-template/pages/ChecklistsPage.tsx`, `features/dashboard/components/DashboardFilters.tsx`, `features/report/components/ConsolidatedReportsPanel.tsx`, `features/student-valuation/components/StudentValuationDetail.tsx` |
+| tocar (selectores + filtros) | `features/learning/pages/LearningsPage.tsx`, `features/concept/pages/ConceptsPage.tsx`, `features/users/pages/UsersPage.tsx`, `features/student-valuation/pages/StudentValuationsPage.tsx`, `features/report/pages/ReportsPage.tsx`, `features/report/components/IndividualReportsPanel.tsx` |
+| tocar | `quartz-web/CLAUDE.md` (transversales + § "Estado") |
+
+## Contratos
+
+### 1. Selectores en `useAuthStore` (sin cambio de comportamiento)
+| Antes | Después |
+|---|---|
+| `const { sessionData } = useAuthStore();` | `const sessionData = useAuthStore((s) => s.sessionData);` |
+| `const { login, isLoading, error, clearError } = useAuthStore();` | `useAuthStore(useShallow((s) => ({ login: s.login, isLoading: s.isLoading, error: s.error, clearError: s.clearError })))` |
+- Si la página solo usa un campo derivado, seleccionar ese campo (`(s) => s.sessionData?.subjects`), cuidando devolver referencias estables (no `?? []` dentro del selector: el fallback va fuera).
+- `useShallow` desde `zustand/react/shallow` (zustand@5).
+
+### 2. `src/stores/useTableFiltersStore.ts`
+```ts
+export type TableId =
+  | 'learnings' | 'concepts'
+  | 'users-students' | 'users-staff'
+  | 'valuations' | 'reports';
+
+export interface TableFilters {
+  search: string;
+  selected: Record<string, string[]>; // clave = FilterGroup.id
+  page: number;
+  initialized: boolean;               // default ya aplicado en esta sesión
+}
+
+interface TableFiltersState {
+  tables: Partial<Record<TableId, TableFilters>>;
+  setSearch: (id: TableId, search: string) => void;                     // + page = 1
+  toggleFilter: (id: TableId, groupId: string, value: string) => void;  // + page = 1
+  setPage: (id: TableId, page: number) => void;
+  initDefaults: (id: TableId, selected: Record<string, string[]>) => void; // no-op si initialized
+  resetAll: () => void;
+}
+```
+- `create<TableFiltersState>()` sin `persist`; actualizaciones inmutables.
+- `EMPTY_FILTERS` y `EMPTY_LIST` constantes de módulo → selectores con referencia estable.
+
+### 3. Hook
+```ts
+export function useTableFilters(id: TableId) {
+  const filters = useTableFiltersStore((s) => s.tables[id] ?? EMPTY_FILTERS);
+  const { setSearch, toggleFilter, setPage, initDefaults } = useTableFiltersStore(
+    useShallow((s) => ({ setSearch: s.setSearch, toggleFilter: s.toggleFilter, setPage: s.setPage, initDefaults: s.initDefaults }))
+  );
+  return {
+    search: filters.search,
+    page: filters.page,
+    selectedOf: (groupId: string) => filters.selected[groupId] ?? EMPTY_LIST,
+    setSearch: (value: string) => setSearch(id, value),
+    toggle: (groupId: string) => (value: string) => toggleFilter(id, groupId, value),
+    setPage: (page: number) => setPage(id, page),
+    initDefaults: (selected: Record<string, string[]>) => initDefaults(id, selected),
+  };
+}
+```
+
+### 4. Uso en página (patrón)
+```tsx
+const table = useTableFilters('learnings');
+
+useEffect(() => {
+  if (activePeriod) table.initDefaults({ period: [activePeriod._id] }); // idempotente
+}, [activePeriod]);
+
+const filterGroups: FilterGroup[] = [
+  { id: 'period', label: 'Periodo', options, selected: table.selectedOf('period'), onToggle: table.toggle('period') },
+];
+
+<SearchFilterBar search={table.search} onSearchChange={table.setSearch} filters={filterGroups} />
+```
+- Se sustituyen los `useState` de `search`/`selected*`/`currentPage` y los `useRef` `hasInitialized*`. Modales, formularios y `activeTab` siguen en `useState`.
+- `UsersPage`: `useTableFilters(activeTab === 'students' ? 'users-students' : 'users-staff')`; se elimina el `useEffect` que reseteaba la página al cambiar de pestaña (cada pestaña tiene la suya).
+- `ReportsPage` es dueña de `'reports'`; `IndividualReportsPanel` lee `page`/`setPage` del mismo `tableId`; se elimina su `useEffect` de reset (el store ya pone `page = 1` al filtrar).
+- Página efectiva: `Math.min(table.page, totalPages)` para cuando la lista se reduce tras una invalidación.
+- Los casts a `GradeLevel`/`ValuationState` se quedan en el `useMemo` de filtrado, como hoy.
+
+### 5. `useAuthStore.logout`
+- Añadir `useTableFiltersStore.getState().resetAll();` junto a `queryClient.clear()` (INF-05). Sin ciclo: `src/stores/` no importa `features/`.
+
+### 6. `quartz-web/CLAUDE.md`
+- Transversales: `stores/`, para estado UI compartido entre rutas (sin datos de servidor ni `apiClient`).
+- § "Estado":
+  - Consumir stores siempre con selector y `useShallow` para varias claves.
+  - Reemplazar el ejemplo `useAuthStore().sessionData?.user.role` por `useAuthStore((s) => s.sessionData?.user.role)`.
+  - Estado de un solo componente/página (modal, borrador) → `useState`.
+
+## Notas
+- Un solo store con `Record<TableId, …>`: todas las tablas comparten la forma de `FilterGroup`, y el reset en `logout` queda en una línea.
+- Modales en Zustand descartado: su vida es la de la página y globalizarlos añade estado que hay que limpiar sin ningún beneficio.
+- Los selectores son la mejora de Zustand con mejor relación riesgo/beneficio: mismo dato, menos renders, y el diff es mecánico.
+
+## Verificación
+- `cd quartz-web && npm run build && npm run lint`
+- `npm run dev`: cero errores en consola.
+- Manual (usuario):
+  - Login/logout y F5 con sesión guardada funcionan igual que antes.
+  - En Aprendizajes, filtrar + buscar + página 2 → ir a Usuarios → volver: mismos valores.
+  - Quitar el periodo activo → salir y volver: no reaparece.
+  - F5 o logout → defaults.
+  - Abrir y cerrar modales y crear/editar: sin cambios de comportamiento.

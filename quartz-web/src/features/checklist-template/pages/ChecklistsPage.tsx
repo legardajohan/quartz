@@ -1,9 +1,15 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Dialog, DialogHeader, DialogBody, IconButton } from "@material-tailwind/react";
 import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import { useChecklistTemplateStore } from "../useChecklistTemplateStore";
+import { extractErrorMessage } from "@/api/apiClient";
+import {
+  useChecklistTemplatesQuery,
+  useCreateChecklistTemplateMutation,
+  useUpdateChecklistTemplateMutation,
+  useDeleteChecklistTemplateMutation,
+} from "../queries/useChecklistTemplatesQuery";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
@@ -21,16 +27,15 @@ import type {
 
 type CreateFormData = { name: string; periodId: string; grade: string };
 
+const NO_TEMPLATES: ChecklistTemplateDto[] = [];
+
 export default function ChecklistsPage() {
-  const {
-    templates,
-    isLoading,
-    isSubmitting,
-    error,
-    createTemplate,
-    updateTemplate,
-    deleteTemplate,
-  } = useChecklistTemplateStore();
+  const { data: templates = NO_TEMPLATES, isPending: isLoading, error: queryError } = useChecklistTemplatesQuery();
+  const createMutation = useCreateChecklistTemplateMutation();
+  const updateMutation = useUpdateChecklistTemplateMutation();
+  const deleteMutation = useDeleteChecklistTemplateMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de plantillas.") : null;
 
   const { sessionData } = useAuthStore();
   const { canManageOwned } = usePermissions();
@@ -49,10 +54,6 @@ export default function ChecklistsPage() {
   // — Delete modal state —
   const [isDeleteOpen, setDeleteOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<ChecklistTemplateDto | null>(null);
-
-  useEffect(() => {
-    useChecklistTemplateStore.getState().fetchTemplates();
-  }, []);
 
   // Handlers — create
   const handleOpenCreate = () => {
@@ -73,7 +74,7 @@ export default function ChecklistsPage() {
     e.preventDefault();
     if (!createFormData) return;
     const payload: NewChecklistTemplate = createFormData;
-    const promise = createTemplate(payload);
+    const promise = createMutation.mutateAsync(payload);
     toast.promise(promise, {
       loading: "Creando plantilla…",
       success: <b>¡Plantilla creada!</b>,
@@ -98,7 +99,7 @@ export default function ChecklistsPage() {
   const handleEditorSave = (subjects: SubjectSnapshot[]) => {
     if (!selectedTemplate) return;
     const payload: UpdateChecklistTemplate = { name: editorName, subjects };
-    const promise = updateTemplate(selectedTemplate._id, payload);
+    const promise = updateMutation.mutateAsync({ id: selectedTemplate._id, data: payload });
     toast.promise(promise, {
       loading: "Guardando cambios…",
       success: <b>¡Plantilla actualizada!</b>,
@@ -120,7 +121,7 @@ export default function ChecklistsPage() {
 
   const handleConfirmDelete = () => {
     if (!templateToDelete) return;
-    const promise = deleteTemplate(templateToDelete._id);
+    const promise = deleteMutation.mutateAsync(templateToDelete._id);
     toast.promise(promise, {
       loading: "Eliminando plantilla…",
       success: <b>Plantilla eliminada.</b>,

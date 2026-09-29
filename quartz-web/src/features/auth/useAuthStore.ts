@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/apiClient';
 import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
+import { queryClient } from '../../lib/queryClient';
 import type { AuthState, LoginRequest, LoginResponse, SessionResponse, ActivateAccountRequest } from './types';
 
 export const useAuthStore = create<AuthState>()(
@@ -22,6 +23,8 @@ export const useAuthStore = create<AuthState>()(
             password,
           });
 
+          // La caché es de la sesión anterior (otro usuario o institución): se descarta antes de fijar la nueva.
+          queryClient.clear();
           set({
             token,
             sessionData,
@@ -44,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
 
       activateAccount: async (request: ActivateAccountRequest) => {
         const { token, sessionData } = await apiPost<LoginResponse, ActivateAccountRequest>('/auth/activation', request);
+        queryClient.clear();
         set({
           token,
           sessionData,
@@ -55,6 +59,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         purgeAllShieldCacheEntries();
+        queryClient.clear();
         set({
           token: null,
           sessionData: null,

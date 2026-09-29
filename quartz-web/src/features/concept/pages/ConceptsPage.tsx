@@ -2,7 +2,13 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import { useConceptStore } from "../useConceptStore";
+import { extractErrorMessage } from "@/api/apiClient";
+import {
+  useConceptsQuery,
+  useCreateConceptMutation,
+  useUpdateConceptMutation,
+  useDeleteConceptMutation,
+} from "../queries/useConceptsQuery";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
@@ -18,9 +24,15 @@ import { normalizeText } from "../../../utils/normalizeText";
 
 const VALUATION_TYPES: QualitativeValuation[] = ["Logrado", "En proceso", "Con dificultad"];
 
+const NO_CONCEPTS: ConceptDto[] = [];
+
 export default function ConceptsPage() {
-  const { concepts, isLoading, isSubmitting, error, createConcept, updateConcept, deleteConcept } =
-    useConceptStore();
+  const { data: concepts = NO_CONCEPTS, isPending: isLoading, error: queryError } = useConceptsQuery();
+  const createMutation = useCreateConceptMutation();
+  const updateMutation = useUpdateConceptMutation();
+  const deleteMutation = useDeleteConceptMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de conceptos.") : null;
   const { sessionData } = useAuthStore();
   const { canManageOwned } = usePermissions();
 
@@ -45,10 +57,6 @@ export default function ConceptsPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const hasInitializedFilter = useRef(false);
-
-  useEffect(() => {
-    useConceptStore.getState().fetchConcepts();
-  }, []);
 
   // Set default active period filter
   useEffect(() => {
@@ -86,7 +94,7 @@ export default function ConceptsPage() {
   const handleConfirmDelete = () => {
     if (!conceptToDelete) return;
 
-    const promise = deleteConcept(conceptToDelete._id);
+    const promise = deleteMutation.mutateAsync(conceptToDelete._id);
     toast.promise(promise, {
       loading: "Eliminando concepto...",
       success: <b>Concepto eliminado con éxito</b>,
@@ -118,14 +126,14 @@ export default function ConceptsPage() {
     let promise;
     if (selectedConcept) {
       const conceptToUpdate: UpdateConcept = { ...payload };
-      promise = updateConcept(selectedConcept._id, conceptToUpdate);
+      promise = updateMutation.mutateAsync({ id: selectedConcept._id, data: conceptToUpdate });
       toast.promise(promise, {
         loading: "Actualizando concepto...",
         success: <b>¡Concepto actualizado con éxito!</b>,
         error: (err) => <b>{err.toString()}</b>,
       });
     } else {
-      promise = createConcept(payload);
+      promise = createMutation.mutateAsync(payload);
       toast.promise(promise, {
         loading: "Creando concepto...",
         success: <b>¡Concepto creado con éxito!</b>,

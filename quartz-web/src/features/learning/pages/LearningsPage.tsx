@@ -3,7 +3,13 @@ import { Typography } from "@material-tailwind/react";
 import { PlusIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import { useLearningStore } from "../useLearningStore";
+import { extractErrorMessage } from "@/api/apiClient";
+import {
+  useLearningsQuery,
+  useCreateLearningMutation,
+  useUpdateLearningMutation,
+  useDeleteLearningMutation,
+} from "../queries/useLearningsQuery";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
@@ -17,9 +23,15 @@ import { LearningsTable } from "../components/LearningsTable";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { normalizeText } from "../../../utils/normalizeText";
 
+const NO_LEARNINGS: Learning[] = [];
+
 export default function LearningsPage() {
-  const { learnings, isLoading, isSubmitting, error, createLearning, updateLearning, deleteLearning } =
-    useLearningStore();
+  const { data: learnings = NO_LEARNINGS, isPending: isLoading, error: queryError } = useLearningsQuery();
+  const createMutation = useCreateLearningMutation();
+  const updateMutation = useUpdateLearningMutation();
+  const deleteMutation = useDeleteLearningMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de aprendizajes.") : null;
   const { sessionData } = useAuthStore();
   const { isAreaLead } = usePermissions();
 
@@ -43,10 +55,6 @@ export default function LearningsPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const hasInitializedFilter = useRef(false);
-
-  useEffect(() => {
-    useLearningStore.getState().fetchLearnings();
-  }, []);
 
   // Set default active period filter
   useEffect(() => {
@@ -84,7 +92,7 @@ export default function LearningsPage() {
   const handleConfirmDelete = () => {
     if (!learningToDelete) return;
 
-    const promise = deleteLearning(learningToDelete._id);
+    const promise = deleteMutation.mutateAsync(learningToDelete._id);
     toast.promise(promise, {
       loading: "Eliminando aprendizaje...",
       success: <b>Aprendizaje eliminado con éxito</b>,
@@ -110,7 +118,7 @@ export default function LearningsPage() {
       const learningToUpdate: UpdateLearning = {
         ...learningFormData,
       };
-      promise = updateLearning(selectedLearning._id, learningToUpdate);
+      promise = updateMutation.mutateAsync({ id: selectedLearning._id, data: learningToUpdate });
       toast.promise(promise, {
         loading: "Actualizando aprendizaje...",
         success: <b>¡Aprendizaje actualizado con éxito!</b>,
@@ -121,7 +129,7 @@ export default function LearningsPage() {
         ...learningFormData,
         grade: "Transición",
       };
-      promise = createLearning(learningToCreate);
+      promise = createMutation.mutateAsync(learningToCreate);
       toast.promise(promise, {
         loading: "Creando aprendizaje...",
         success: <b>¡Aprendizaje creado con éxito!</b>,

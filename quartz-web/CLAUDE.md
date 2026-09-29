@@ -14,10 +14,9 @@ src/features/<feature>/
 ├── pages/                 # componentes enrutados: <Feature>Page.tsx
 ├── components/            # UI específica (presentacional, sin llamadas API)
 ├── types/                # index.ts agrega api.ts / store.ts (o api.ts) / domain.ts
-├── use<Feature>Store.ts  # store Zustand — si el feature es Zustand (ver "Estado")
-└── queries/use<Feature>Query.ts  # hooks React Query — si el feature es React Query (ver "Estado")
+└── queries/use<Feature>Query.ts  # hooks React Query: query + mutaciones + factory de keys (ver "Estado")
 ```
-Transversal: `components/{ui,common,layouts,router,icons}`, `api/apiClient.ts`, `types/domain.ts`. Alias `@/* → src/*`.
+Transversal: `components/{ui,common,layouts,router,icons}`, `api/{apiClient,withErrorMessage}.ts`, `lib/queryClient.ts`, `types/domain.ts`. Alias `@/* → src/*`.
 
 ## Comunicación con la API
 - **Única salida HTTP:** `src/api/apiClient.ts` (`apiGet/apiPost/apiPatch/apiDelete`). **Prohibido** `fetch`/`axios` directo en componentes/stores.
@@ -36,25 +35,36 @@ Transversal: `components/{ui,common,layouts,router,icons}`, `api/apiClient.ts`, 
 | Usuarios | `users/` | `users/` |
 | Periodos / Materias / Colegios | `period/`, `subject/`, `school/` | (consumidos vía `sessionData`) |
 
-## Estado: Zustand vs. React Query
-Coexisten **por tipo de dato**, no por preferencia. Antes de crear el store/hook de un feature nuevo, decidir con esta regla:
+## Estado: React Query (servidor) + Zustand (sesión y UI)
+Cada tipo de dato tiene un dueño. Antes de crear estado nuevo, decidir con esta tabla:
 
 | El dato es… | Usar | Ejemplo en el repo |
 |---|---|---|
-| **Estado de servidor**: lista/recurso remoto que se lee, cachea, refetchea e invalida tras mutar | **React Query** (`queries/use<Feature>Query.ts`) | `features/users/queries/useUsersQuery.ts`, `features/dashboard/queries/useDashboardQuery.ts` |
-| **Estado de sesión/cliente**: vive en el front, se persiste o se deriva de la sesión, no es "una lista paginable de servidor" | **Zustand** (`use<Feature>Store.ts`) | `useAuthStore` (sesión, token), stores de feature con flujos propios de formulario/CRUD simple |
+| **Estado de servidor**: cualquier lista/recurso remoto que se lee, cachea, refetchea e invalida tras mutar | **React Query** (`queries/use<Feature>Query.ts`) | `features/learning/queries/useLearningsQuery.ts`, `features/users/queries/useUsersQuery.ts` |
+| **Sesión**: token y `sessionData`, persistidos y revalidados con `refreshSession()` | **Zustand** (`useAuthStore`) | `features/auth/useAuthStore.ts` |
+| **Estado de un solo componente/página**: modales, formularios, borradores | `useState` local | páginas CRUD |
 
-No migrar un store existente de una tecnología a otra solo por consistencia — la elección ya hecha en cada feature es correcta para su tipo de dato; migrar sin un defecto real es *churn* sin beneficio.
+**Prohibido** guardar datos de servidor en un store Zustand (`isLoading`, listas, caché, invalidación): eso lo da React Query. Un feature nuevo **no** crea `use<Feature>Store.ts` para datos remotos.
+> Transición: `period`, `subject`, `school`, `institution` (INF-06) y `student-valuation`, `report` (INF-07) aún usan store Zustand; se migran en esos specs. No copiar ese patrón.
 
-### Si es React Query
-- Un `queryKey` por recurso+filtros: `['<feature>', params] as const`. Mutaciones invalidan ese `queryKey` en `onSuccess` (patrón `useUsersQuery.ts`).
-- Defaults globales en `src/lib/queryClient.ts` (`staleTime: 5min`, `retry: 1`, `refetchOnWindowFocus: false`); un feature los sobreescribe en su propio `useQuery` cuando necesita otra frecuencia (p. ej. `dashboard`, alineado a un TTL de servidor).
-- **Prohibido** duplicar en un store Zustand lo que ya da React Query (`isLoading`, caché, invalidación).
+### React Query
+- Defaults globales en `src/lib/queryClient.ts`: `staleTime 5min`, `gcTime 30min`, `refetchOnWindowFocus false`, sin reintento en 4xx, `mutations.retry 0`.
+- Frescura por tipo de dato con `STALE_TIME` (mismo archivo); una query lo sobrescribe solo si necesita otra frecuencia:
 
-### Si es Zustand
-- Un store por feature (`use<Feature>Store.ts`). Acciones con API manejan `isLoading`/`isSubmitting`/`error` a mano (no hay caché ni invalidación automática — es el costo de este patrón).
+  | Tier | `staleTime` | Recursos |
+  |---|---|---|
+  | `catalog` | 30 min | subjects, periods, schools, institution, branding |
+  | `list` (default) | 5 min | learnings, concepts, checklist-templates, users |
+  | `live` | 0 | valoración, carta, reporte (pinta la caché y revalida) |
+  | dashboard | 60 s | alineado a su TTL de servidor |
+- **Keys:** un factory por feature en su archivo `queries/`: `learningKeys = { all: ['learnings'] as const, list: () => [...learningKeys.all, 'list'] as const }`.
+- **Mutaciones:** `useMutation` + `mutateAsync` (para `toast.promise`); `onSuccess` invalida `<feature>Keys.all` y los dominios que dependen del recurso (p. ej. aprendizajes/conceptos → `['dashboard']`). Envolver la llamada con `withErrorMessage` (`src/api/withErrorMessage.ts`) para que el toast reciba el mensaje ya resuelto.
+- **Carga:** `isPending` = sin datos en caché (spinner); con caché `stale` la UI pinta al instante y revalida en segundo plano (`isFetching`).
+- **Seguridad multi-tenant:** `useAuthStore` ejecuta `queryClient.clear()` en `login`, `activateAccount` y `logout`. **Prohibido** `persistQueryClient`/guardar la caché en `localStorage`.
+
+### Zustand
 - `useAuthStore` es la fuente de verdad de sesión (`token`, `sessionData.user`); persiste en `localStorage` (`persist` + `partialize`).
-- Acceso a rol: `const role = useAuthStore().sessionData?.user.role;`
+- Acceso a rol: `const role = useAuthStore((s) => s.sessionData?.user.role);`
 - **Inmutabilidad:** nunca mutar estado; crear nuevos objetos/arrays (`[...state.items]`, `state.items.map(...)`).
 
 ## Convenciones de export (ESM)
@@ -81,7 +91,7 @@ Toda tarea que toque `quartz-web` (UI, componentes, páginas, estilos) invoca, a
 - Toda llamada que pueda fallar va en `try/catch`; feedback con `react-hot-toast`.
 
 ## Orden al crear un feature
-1. `types/` → 2. `use<Feature>Store.ts` (acciones con `apiClient`) → 3. `components/` (presentacional) → 4. `pages/<Feature>Page.tsx` → 5. ruta en `App.tsx` (bajo `ProtectedRoute` si es sensible).
+1. `types/` → 2. `queries/use<Feature>Query.ts` (query + mutaciones con `apiClient`) → 3. `components/` (presentacional) → 4. `pages/<Feature>Page.tsx` → 5. ruta en `App.tsx` (bajo `ProtectedRoute` si es sensible).
 
 > El slice completo back + front lo andamia la skill `quartz-feature-scaffold`; el orden del backend vive en `quartz-api/CLAUDE.md`.
 
