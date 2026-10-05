@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { SpinnerIcon } from "@/components/icons/SpinnerIcon";
 import { extractErrorMessage } from "@/api/apiClient";
 import { useAuthStore } from "../../auth/useAuthStore";
-import { useSchoolsQuery } from "../../users/queries/useSchoolsQuery";
+import { useSchoolsQuery } from "../../school/queries/useSchoolsQuery";
 import { useBulkReportDownload } from "../useBulkReportDownload";
 import type { IConsolidatedReportFilters } from "../types";
 import { REPORT_KIND_LABELS, type GradeLevel, type ReportKind } from "@/types/domain";

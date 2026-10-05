@@ -1,7 +1,7 @@
 import { Select, Option } from "@material-tailwind/react";
 import { useAuthStore } from "@/features/auth/useAuthStore";
 import { usePermissions } from "@/features/auth/usePermissions";
-import { useSchoolsQuery } from "@/features/users/queries/useSchoolsQuery";
+import { useSchoolsQuery } from "@/features/school/queries/useSchoolsQuery";
 import type { GradeLevel } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).

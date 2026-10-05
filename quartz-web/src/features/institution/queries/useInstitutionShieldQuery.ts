@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/api/apiClient";
 import { blobToDataUrl } from "@/utils/blobToDataUrl";
 import { useAuthStore } from "@/features/auth/useAuthStore";
-import { useInstitutionStore } from "../useInstitutionStore";
+import { useInstitutionBrandingQuery } from "./useInstitutionQuery";
 import { readShieldFromCache, writeShieldToCache } from "../shieldCache";
 
 export interface InstitutionShieldResult {
@@ -12,7 +12,7 @@ export interface InstitutionShieldResult {
 
 export function useInstitutionShieldQuery(): InstitutionShieldResult {
   const institutionId = useAuthStore((state) => state.sessionData?.user.institutionId);
-  const shieldVersion = useInstitutionStore((state) => state.branding?.shieldVersion);
+  const shieldVersion = useInstitutionBrandingQuery().data?.shieldVersion;
 
   const { data, isLoading } = useQuery({
     queryKey: ["institution-shield", institutionId, shieldVersion],

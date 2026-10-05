@@ -1,4 +1,8 @@
-import type { SchoolDto } from './store';
+export interface SchoolDto {
+  _id: string;
+  schoolNumber: number;
+  name: string;
+}
 
 export type SchoolsResponse = SchoolDto[];
 

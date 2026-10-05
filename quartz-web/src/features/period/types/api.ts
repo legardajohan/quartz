@@ -1,4 +1,12 @@
-import type { PeriodDto } from './store';
+export interface PeriodDto {
+  _id: string;
+  name: string;
+  year: number;
+  startDate: string;
+  endDate: string;
+  closingAlertDate: string | null;
+  isActive: boolean;
+}
 
 export type PeriodsResponse = PeriodDto[];
 

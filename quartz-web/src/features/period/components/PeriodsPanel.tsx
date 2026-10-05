@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { PlusIcon, BellAlertIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { Typography, IconButton, Tooltip } from "@material-tailwind/react";
 import toast from "react-hot-toast";
 
-import { usePeriodStore } from "../usePeriodStore";
+import { usePeriodsQuery, useCreatePeriodMutation, useUpdatePeriodMutation, useDeletePeriodMutation } from "../queries/usePeriodsQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
 import { DataTable, Column, ITEMS_PER_PAGE } from "../../../components/common/DataTable";
@@ -16,9 +17,15 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 }
 
+const NO_PERIODS: PeriodDto[] = [];
+
 export function PeriodsPanel() {
-  const { periods, isLoading, isSubmitting, error, fetchPeriods, createPeriod, updatePeriod, deletePeriod } =
-    usePeriodStore();
+  const { data: periods = NO_PERIODS, isPending: isLoading, error: queryError } = usePeriodsQuery();
+  const createMutation = useCreatePeriodMutation();
+  const updateMutation = useUpdatePeriodMutation();
+  const deleteMutation = useDeletePeriodMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de periodos.") : null;
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
@@ -27,10 +34,6 @@ export function PeriodsPanel() {
   const [periodToDelete, setPeriodToDelete] = useState<PeriodDto | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    fetchPeriods();
-  }, [fetchPeriods]);
 
   const handleOpenCreateModal = () => {
     setSelectedPeriod(null);
@@ -58,7 +61,7 @@ export function PeriodsPanel() {
   const handleConfirmDelete = () => {
     if (!periodToDelete) return;
 
-    const promise = deletePeriod(periodToDelete._id);
+    const promise = deleteMutation.mutateAsync(periodToDelete._id);
     toast.promise(promise, {
       loading: "Eliminando periodo...",
       success: <b>Periodo eliminado con éxito</b>,
@@ -90,14 +93,14 @@ export function PeriodsPanel() {
 
     let promise;
     if (selectedPeriod) {
-      promise = updatePeriod(selectedPeriod._id, payload as UpdatePeriod);
+      promise = updateMutation.mutateAsync({ id: selectedPeriod._id, data: payload as UpdatePeriod });
       toast.promise(promise, {
         loading: "Actualizando periodo...",
         success: <b>¡Periodo actualizado con éxito!</b>,
         error: (err) => <b>{err.toString()}</b>,
       });
     } else {
-      promise = createPeriod(payload as NewPeriod);
+      promise = createMutation.mutateAsync(payload as NewPeriod);
       toast.promise(promise, {
         loading: "Creando periodo...",
         success: <b>¡Periodo creado con éxito!</b>,

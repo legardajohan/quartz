@@ -19,7 +19,7 @@ import {
   useUploadStudentPhotoMutation,
   useResendInvitationMutation,
 } from "../queries/useUsersQuery";
-import { useSchoolsQuery } from "../queries/useSchoolsQuery";
+import { useSchoolsQuery } from "@/features/school/queries/useSchoolsQuery";
 import { STAFF_ROLES } from "../types";
 import type { UserDto, NewUser, UpdateUser, WritableUserRole, StaffRole, GetUsersQuery } from "../types";
 import { UsersTable } from "../components/UsersTable";

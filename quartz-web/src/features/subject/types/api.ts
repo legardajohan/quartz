@@ -1,5 +1,6 @@
-import type { SubjectType, SubjectEvaluationMode } from '@/types/domain';
-import type { SubjectDto } from './store';
+import type { Subject, SubjectType, SubjectEvaluationMode } from '@/types/domain';
+
+export type SubjectDto = Subject;
 
 export type SubjectsResponse = SubjectDto[];
 

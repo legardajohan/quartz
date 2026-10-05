@@ -1,4 +1,25 @@
-import type { ReportKind } from '@/types/domain';
+import type { ReportKind, Shift } from '@/types/domain';
+
+export type ShiftDto = Shift;
+
+export interface InstitutionSettingsDto {
+  enabledReports: ReportKind[];
+  multipleShifts: boolean;
+  shifts: ShiftDto[];
+}
+
+export interface InstitutionDto {
+  _id: string;
+  name: string;
+  daneCode: string;
+  address: string;
+  rectorName: string;
+  phoneNumber?: string;
+  email: string;
+  isActive: boolean;
+  settings: InstitutionSettingsDto;
+  shieldUrl?: string;
+}
 
 export interface InstitutionBrandingDto {
   name: string;

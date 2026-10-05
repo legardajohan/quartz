@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { extractErrorMessage } from "@/api/apiClient";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { usePermissions } from "@/features/auth/usePermissions";
-import { useSchoolsQuery } from "@/features/users/queries/useSchoolsQuery";
+import { useSchoolsQuery } from "@/features/school/queries/useSchoolsQuery";
 import AccountPageHeader from "../components/AccountPageHeader";
 import ProfileForm from "../components/ProfileForm";
 import {

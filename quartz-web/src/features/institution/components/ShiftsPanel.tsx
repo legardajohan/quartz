@@ -3,7 +3,7 @@ import { Switch, Input, IconButton, Typography } from "@material-tailwind/react"
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import { useInstitutionStore } from "../useInstitutionStore";
+import { useInstitutionQuery, useUpdateInstitutionSettingsMutation } from "../queries/useInstitutionQuery";
 import { extractErrorMessage } from "@/api/apiClient";
 import type { ShiftDto } from "../types";
 
@@ -18,15 +18,14 @@ function draftsFromShifts(shifts: ShiftDto[]): ShiftDraft[] {
 }
 
 export function ShiftsPanel() {
-  const { institution, isLoading, isSubmitting, error, fetchInstitution, updateSettings } = useInstitutionStore();
+  const { data: institution, isPending: isLoading, error: queryError } = useInstitutionQuery();
+  const updateMutation = useUpdateInstitutionSettingsMutation();
+  const isSubmitting = updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de la configuración institucional.") : null;
 
   const [multipleShifts, setMultipleShifts] = useState(false);
   const [drafts, setDrafts] = useState<ShiftDraft[]>([]);
   const nextKeyRef = useRef(0);
-
-  useEffect(() => {
-    fetchInstitution();
-  }, [fetchInstitution]);
 
   useEffect(() => {
     if (institution) {
@@ -75,7 +74,7 @@ export function ShiftsPanel() {
       return;
     }
 
-    const promise = updateSettings({
+    const promise = updateMutation.mutateAsync({
       multipleShifts,
       shifts: drafts.map((d) => (d._id ? { _id: d._id, name: d.name.trim() } : { name: d.name.trim() })),
     });

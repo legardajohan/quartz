@@ -1,10 +1,7 @@
 import type { UserRole, IdentificationType, GradeLevel, Shift, AccountStatus } from '@/types/domain';
+import type { SchoolDto } from '@/features/school/types';
 
-export interface UserSchool {
-  _id: string;
-  schoolNumber: number;
-  name: string;
-}
+export type UserSchool = SchoolDto;
 
 export type UserShift = Shift;
 

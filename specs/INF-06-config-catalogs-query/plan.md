@@ -76,3 +76,10 @@ export function useInstitutionQuery() {
 - `cd quartz-web && npm run build && npm run lint`
 - `npm run dev`: cero errores en consola.
 - Manual (usuario): Network — abrir `/gestion/configuracion` y recorrer los 5 pasos: 1 sola request a `/institutions/me`; navegar por el sidebar: 0 requests a `/branding`; subir escudo: el sidebar y el PDF usan el nuevo.
+
+## Ajustes durante la implementación
+- Base de rama: `feat/INF-05-server-state-foundation` (por decisión del usuario; ya incluye USR-04), no `develop`.
+- No planeado pero necesario: `ProfilePage`, `DashboardFilters` y `ConsolidatedReportsPanel` también importaban `users/queries/useSchoolsQuery`; ahora importan `school/queries/useSchoolsQuery`.
+- `UserSchool` pasa a ser alias de `SchoolDto` (campos idénticos).
+- `types/store.ts` contenía los DTOs: se movieron a `types/api.ts` y `types/index.ts` solo exporta `api`.
+- Periodos/dimensiones: `fetchQuery(staleTime: 0)` ya deja la caché fresca, así que no se hace un `invalidateQueries` adicional de `['periods']`/`['subjects']` (evitaría una segunda request); solo se invalida en el `catch` si el refetch falla. `['dashboard']` se invalida siempre.

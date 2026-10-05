@@ -1,19 +1,16 @@
-import { useEffect } from "react";
 import { Typography } from "@material-tailwind/react";
 import toast from "react-hot-toast";
 
-import { useInstitutionStore } from "../useInstitutionStore";
+import { useInstitutionQuery, useUploadShieldMutation } from "../queries/useInstitutionQuery";
 import { ImageCropUploader } from "../../../components/common/ImageCropUploader";
 
 export function InstitutionShieldPanel() {
-  const { institution, isSubmitting, fetchInstitution, uploadShield } = useInstitutionStore();
-
-  useEffect(() => {
-    fetchInstitution();
-  }, [fetchInstitution]);
+  const { data: institution } = useInstitutionQuery();
+  const uploadMutation = useUploadShieldMutation();
+  const isSubmitting = uploadMutation.isPending;
 
   const handleUpload = async (blob: Blob) => {
-    const promise = uploadShield(blob);
+    const promise = uploadMutation.mutateAsync(blob);
     toast.promise(promise, {
       loading: "Subiendo escudo...",
       success: <b>Escudo actualizado con éxito</b>,

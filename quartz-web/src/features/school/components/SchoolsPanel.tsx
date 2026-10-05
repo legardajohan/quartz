@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { Typography, IconButton, Tooltip } from "@material-tailwind/react";
 import toast from "react-hot-toast";
 
-import { useSchoolStore } from "../useSchoolStore";
+import { useSchoolsQuery, useCreateSchoolMutation, useUpdateSchoolMutation, useDeleteSchoolMutation } from "../queries/useSchoolsQuery";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
 import { DataTable, Column, ITEMS_PER_PAGE } from "../../../components/common/DataTable";
@@ -12,9 +12,15 @@ import { SchoolForm, SchoolFormData } from "./SchoolForm";
 import { SchoolDto, NewSchool, UpdateSchool } from "../types";
 import { extractErrorMessage } from "../../../api/apiClient";
 
+const NO_SCHOOLS: SchoolDto[] = [];
+
 export function SchoolsPanel() {
-  const { schools, isLoading, isSubmitting, error, fetchSchools, createSchool, updateSchool, deleteSchool } =
-    useSchoolStore();
+  const { data: schools = NO_SCHOOLS, isPending: isLoading, error: queryError } = useSchoolsQuery();
+  const createMutation = useCreateSchoolMutation();
+  const updateMutation = useUpdateSchoolMutation();
+  const deleteMutation = useDeleteSchoolMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de sedes.") : null;
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
@@ -23,10 +29,6 @@ export function SchoolsPanel() {
   const [schoolToDelete, setSchoolToDelete] = useState<SchoolDto | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    fetchSchools();
-  }, [fetchSchools]);
 
   const handleOpenCreateModal = () => {
     setSelectedSchool(null);
@@ -54,7 +56,7 @@ export function SchoolsPanel() {
   const handleConfirmDelete = () => {
     if (!schoolToDelete) return;
 
-    const promise = deleteSchool(schoolToDelete._id);
+    const promise = deleteMutation.mutateAsync(schoolToDelete._id);
     toast.promise(promise, {
       loading: "Eliminando...",
       success: <b>Sede eliminada con éxito</b>,
@@ -78,7 +80,7 @@ export function SchoolsPanel() {
     let promise;
     if (selectedSchool) {
       const schoolToUpdate: UpdateSchool = { name: schoolFormData.name.trim() };
-      promise = updateSchool(selectedSchool._id, schoolToUpdate);
+      promise = updateMutation.mutateAsync({ id: selectedSchool._id, data: schoolToUpdate });
       toast.promise(promise, {
         loading: "Actualizando...",
         success: <b>¡Sede actualizada con éxito!</b>,
@@ -86,7 +88,7 @@ export function SchoolsPanel() {
       });
     } else {
       const schoolToCreate: NewSchool = { name: schoolFormData.name.trim() };
-      promise = createSchool(schoolToCreate);
+      promise = createMutation.mutateAsync(schoolToCreate);
       toast.promise(promise, {
         loading: "Creando...",
         success: <b>¡Sede creada con éxito!</b>,
