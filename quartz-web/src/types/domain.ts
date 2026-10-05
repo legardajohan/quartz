@@ -1,3 +1,5 @@
+import type { PeriodDto } from '@/features/period/types';
+
 export type UserRole = 'Jefe de Área' | 'Docente' | 'Estudiante';
 
 // Estado de cuenta de Docente/Jefe de Área (USR-04). Ausente ⇒ Activo.
@@ -86,12 +88,6 @@ export interface Shift {
   name: string;
 }
 
-export interface ChecklistTemplates {
-    _id: string;
-    periodId: string;
-    name: string;
-  }
-
 export interface User {
   _id: string;
   institutionId: string;
@@ -108,6 +104,8 @@ export interface User {
   avatarUrl?: string; 
 }
 
+// Payload de `/auth/*`: los catálogos se siembran en React Query (`seedSessionCatalogs`) y se
+// descartan; el store solo guarda `user`.
 export interface ISessionData {
   user: Pick<User, 
     '_id' | 
@@ -119,9 +117,8 @@ export interface ISessionData {
     'schoolId' | 
     'avatarUrl'
     >;
-  periods: Period[];
+  periods: PeriodDto[];
   subjects: Subject[];
-  checklistTemplates: ChecklistTemplates[];
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: Shift[];

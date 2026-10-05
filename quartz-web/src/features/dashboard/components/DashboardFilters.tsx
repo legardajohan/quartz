@@ -1,14 +1,18 @@
 import { Select, Option } from "@material-tailwind/react";
-import { useAuthStore } from "@/features/auth/useAuthStore";
+import { usePeriodsQuery } from "@/features/period/queries/usePeriodsQuery";
+import { useInstitutionSettingsQuery } from "@/features/institution/queries/useInstitutionQuery";
+import type { PeriodDto } from "@/features/period/types";
 import { usePermissions } from "@/features/auth/usePermissions";
 import { useSchoolsQuery } from "@/features/school/queries/useSchoolsQuery";
-import type { GradeLevel } from "@/types/domain";
+import type { GradeLevel, Shift } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 const ALL_SCHOOLS_LABEL = "Todas las sedes";
 const ALL_GRADES_LABEL = "Todos los grados";
 const ALL_SHIFTS_LABEL = "Todas las jornadas";
+const NO_PERIODS: PeriodDto[] = [];
+const NO_SHIFTS: Shift[] = [];
 
 export interface DashboardFilterValues {
   periodId: string;
@@ -23,11 +27,13 @@ interface DashboardFiltersProps {
 }
 
 export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
-  const { sessionData } = useAuthStore();
   const { isAreaLead } = usePermissions();
   const { data: schools = [] } = useSchoolsQuery();
 
-  const multipleShifts = sessionData?.multipleShifts ?? false;
+  const { data: periods = NO_PERIODS } = usePeriodsQuery();
+  const { data: settings } = useInstitutionSettingsQuery();
+  const multipleShifts = settings?.multipleShifts ?? false;
+  const shifts = settings?.shifts ?? NO_SHIFTS;
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center">
@@ -38,9 +44,9 @@ export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
           value={values.periodId}
           onChange={(val) => onChange({ ...values, periodId: val ?? "" })}
           menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
-          key={sessionData?.periods.length}
+          key={periods.length}
         >
-          {(sessionData?.periods ?? []).map((period) => (
+          {periods.map((period) => (
             <Option key={period._id} value={period._id}>
               {period.name}
             </Option>
@@ -78,7 +84,7 @@ export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
             menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
           >
             <Option value="">{ALL_SHIFTS_LABEL}</Option>
-            {(sessionData?.shifts ?? []).map((shift) => (
+            {shifts.map((shift) => (
               <Option key={shift._id} value={shift._id}>
                 {shift.name}
               </Option>

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
 import { useStudentValuationQuery, useUpdateValuationMutation } from "../queries/useStudentValuationQuery";
 import { extractErrorMessage } from "../../../api/apiClient";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
 import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
@@ -20,7 +20,7 @@ import { Loading } from "../../../components/ui/Loading";
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
     const navigate = useNavigate();
-    const { sessionData } = useAuthStore();
+    const { data: subjects } = useSubjectsQuery();
     const { isAreaLead } = usePermissions();
     const activePeriod = useActivePeriod();
     const { data: serverValuation, isPending, error } = useStudentValuationQuery(studentId, activePeriod?._id);
@@ -235,9 +235,9 @@ export default function StudentValuationDetail() {
                                         : subject.subjectId
                                 )
                             }
-                            // Inject icon based on index in sessionData.subjects
+                            // Inject icon based on index in the subjects catalog
                             icon={(() => {
-                                const subjectIndex = sessionData?.subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
+                                const subjectIndex = subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
                                 if (subjectIndex !== -1) {
                                     return SUBJECT_ICONS[subjectIndex % SUBJECT_ICONS.length];
                                 }

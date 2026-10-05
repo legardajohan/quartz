@@ -5,8 +5,18 @@ import {
     findOneAndUpdateScoped,
     deleteOneScoped,
 } from '../../repositories/base.repository';
-import { CreateSubjectData, UpdateSubjectData } from './subject.types';
+import { CreateSubjectData, UpdateSubjectData, ISubjectDTO } from './subject.types';
 import AppError from '../../utils/AppError';
+
+// Mismo DTO para `GET /subjects` y para el payload de sesión.
+export function mapSubjectToDTO(subject: PlainSubjectObject): ISubjectDTO {
+    return {
+        _id: subject._id.toString(),
+        name: subject.name,
+        type: subject.type,
+        evaluationMode: subject.evaluationMode,
+    };
+}
 
 export const getSubjectsByInstitution = async (institutionId: string): Promise<PlainSubjectObject[]> => {
     return findScoped(Subject, institutionId).sort({ name: 1 }).lean<PlainSubjectObject[]>();

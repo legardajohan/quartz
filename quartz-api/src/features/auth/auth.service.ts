@@ -5,10 +5,9 @@ import jwt from 'jsonwebtoken';
 import { Institution } from '../institution/institution.model';
 import { hashActivationToken } from '../../utils/activationToken';
 import AppError from '../../utils/AppError';
-import { getPeriodsByInstitution } from '../period/period.service';
-import { getSubjectsByInstitution } from '../subject/subject.service';
-import { getChecklistTemplatesForSession } from '../checklist-template/checklist-template.service';
-import { getEnabledReports, getShiftSettings } from '../institution/institution.service';
+import { getPeriodsByInstitution, mapPeriodToDTO } from '../period/period.service';
+import { getSubjectsByInstitution, mapSubjectToDTO } from '../subject/subject.service';
+import { getInstitutionSettings } from '../institution/institution.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
@@ -32,24 +31,20 @@ export function toSessionUser(user: SafeUser): ISessionData['user'] {
 
 export async function getSessionData(user: SafeUser): Promise<ISessionData> {
     const institutionId = user.institutionId.toString();
-    const userId = user._id.toString();
 
-    const [periods, subjects, checklistTemplates, enabledReports, shiftSettings] = await Promise.all([
+    const [periods, subjects, settings] = await Promise.all([
         getPeriodsByInstitution(institutionId),
         getSubjectsByInstitution(institutionId),
-        getChecklistTemplatesForSession(userId, institutionId),
-        getEnabledReports(institutionId),
-        getShiftSettings(institutionId),
+        getInstitutionSettings(institutionId),
     ]);
 
     const sessionData: ISessionData = {
         user: toSessionUser(user),
-        periods: periods.map(p => ({ _id: p._id.toString(), name: p.name, isActive: p.isActive })),
-        subjects: subjects.map(s => ({ _id: s._id.toString(), name: s.name, type: s.type, evaluationMode: s.evaluationMode })),
-        checklistTemplates: checklistTemplates,
-        enabledReports,
-        multipleShifts: shiftSettings.multipleShifts,
-        shifts: shiftSettings.shifts,
+        periods: periods.map(mapPeriodToDTO),
+        subjects: subjects.map(mapSubjectToDTO),
+        enabledReports: settings.enabledReports,
+        multipleShifts: settings.multipleShifts,
+        shifts: settings.shifts,
     };
 
     return sessionData;

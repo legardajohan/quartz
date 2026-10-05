@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import {
   getInstitutionById,
   getInstitutionBranding,
+  getInstitutionSettings,
   getInstitutionShieldJpg,
   updateInstitutionSettings,
   uploadInstitutionShield,
@@ -18,6 +19,12 @@ export const getMyInstitutionBrandingController = async (req: Request, res: Resp
   const institutionId = req.user!.institutionId.toString();
   const branding = await getInstitutionBranding(institutionId);
   res.status(200).json(branding);
+};
+
+export const getMyInstitutionSettingsController = async (req: Request, res: Response) => {
+  const institutionId = req.user!.institutionId.toString();
+  const settings = await getInstitutionSettings(institutionId);
+  res.status(200).json(settings);
 };
 
 export const updateMyInstitutionController = async (req: Request, res: Response) => {

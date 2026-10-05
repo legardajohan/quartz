@@ -10,7 +10,8 @@ import {
   useUpdateChecklistTemplateMutation,
   useDeleteChecklistTemplateMutation,
 } from "../queries/useChecklistTemplatesQuery";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
+import type { PeriodDto } from "../../period/types";
 import { usePermissions } from "../../auth/usePermissions";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
@@ -28,6 +29,7 @@ import type {
 type CreateFormData = { name: string; periodId: string; grade: string };
 
 const NO_TEMPLATES: ChecklistTemplateDto[] = [];
+const NO_PERIODS: PeriodDto[] = [];
 
 export default function ChecklistsPage() {
   const { data: templates = NO_TEMPLATES, isPending: isLoading, error: queryError } = useChecklistTemplatesQuery();
@@ -37,9 +39,8 @@ export default function ChecklistsPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const error = queryError ? extractErrorMessage(queryError, "Falló la carga de plantillas.") : null;
 
-  const { sessionData } = useAuthStore();
   const { canManageOwned } = usePermissions();
-  const periods = sessionData?.periods ?? [];
+  const { data: periods = NO_PERIODS } = usePeriodsQuery();
 
   // — Create modal state —
   const [isCreateOpen, setCreateOpen] = useState(false);

@@ -10,7 +10,10 @@ import {
   useUpdateLearningMutation,
   useDeleteLearningMutation,
 } from "../queries/useLearningsQuery";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
+import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
+import type { PeriodDto } from "../../period/types";
+import type { Subject } from "@/types/domain";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
 import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
@@ -24,6 +27,8 @@ import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { normalizeText } from "../../../utils/normalizeText";
 
 const NO_LEARNINGS: Learning[] = [];
+const NO_PERIODS: PeriodDto[] = [];
+const NO_SUBJECTS: Subject[] = [];
 
 export default function LearningsPage() {
   const { data: learnings = NO_LEARNINGS, isPending: isLoading, error: queryError } = useLearningsQuery();
@@ -32,11 +37,11 @@ export default function LearningsPage() {
   const deleteMutation = useDeleteLearningMutation();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const error = queryError ? extractErrorMessage(queryError, "Falló la carga de aprendizajes.") : null;
-  const { sessionData } = useAuthStore();
   const { isAreaLead } = usePermissions();
 
-  const subjects = sessionData?.subjects ?? [];
-  const periods = sessionData?.periods ?? [];
+  const { data: subjects = NO_SUBJECTS } = useSubjectsQuery();
+  // Tras F5 la lista llega después del primer render: el default de periodo activo espera a ella.
+  const { data: periods = NO_PERIODS } = usePeriodsQuery();
   const activePeriod = useActivePeriod();
   const axis = useSubjectAxisLabel();
 

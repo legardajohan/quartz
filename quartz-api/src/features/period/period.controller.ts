@@ -4,21 +4,8 @@ import {
     createPeriod,
     updatePeriod,
     deletePeriod,
+    mapPeriodToDTO,
 } from './period.service';
-import { PlainPeriodObject } from './period.model';
-import { IPeriodDTO } from './period.types';
-
-function mapPeriodToDTO(period: PlainPeriodObject): IPeriodDTO {
-    return {
-        _id: period._id.toString(),
-        name: period.name,
-        year: period.year,
-        startDate: period.startDate.toISOString(),
-        endDate: period.endDate.toISOString(),
-        closingAlertDate: period.closingAlertDate ? period.closingAlertDate.toISOString() : null,
-        isActive: period.isActive,
-    };
-}
 
 export const getPeriods = async (req: Request, res: Response) => {
     const institutionId = req.user!.institutionId.toString();

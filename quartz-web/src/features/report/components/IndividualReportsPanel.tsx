@@ -5,14 +5,16 @@ import CommunicativeLetterModal from "./CommunicativeLetterModal";
 import { useLetterAvailabilityQuery } from "../queries/useReportQuery";
 import { useUsersQuery } from "../../users/queries/useUsersQuery";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
-import { useAuthStore } from "../../auth/useAuthStore";
 import { useActivePeriod } from "../../period/useActivePeriod";
+import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
 import { normalizeText } from "../../../utils/normalizeText";
-import type { GradeLevel } from "@/types/domain";
+import { REPORT_KIND_VALUES, type GradeLevel, type ReportKind } from "@/types/domain";
 import type { UserDto } from "../../users/types";
 
 const NO_USERS: UserDto[] = [];
 const STUDENTS_QUERY = { role: "Estudiante" } as const;
+// Sin ajustes (aún no llegan o falló la request) se asume el default del backend: ambos informes.
+const DEFAULT_ENABLED_REPORTS: ReportKind[] = [...REPORT_KIND_VALUES];
 
 interface IndividualReportsPanelProps {
   search: string;
@@ -21,7 +23,7 @@ interface IndividualReportsPanelProps {
 }
 
 export default function IndividualReportsPanel({ search, selectedGrades, selectedSchools }: IndividualReportsPanelProps) {
-  const { sessionData } = useAuthStore();
+  const { data: settings } = useInstitutionSettingsQuery();
 
   const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
   const [selectedStudentName, setSelectedStudentName] = useState("");
@@ -87,7 +89,7 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
         isLoading={isLoading}
         onViewChecklist={handleViewChecklist}
         onViewLetter={handleViewLetter}
-        enabledReports={sessionData?.enabledReports ?? ['checklist', 'communicative-letter']}
+        enabledReports={settings?.enabledReports ?? DEFAULT_ENABLED_REPORTS}
         isLetterAvailable={letterAvailability?.isAvailable ?? false}
         activePeriodId={activePeriodId}
       />

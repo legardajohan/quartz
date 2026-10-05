@@ -1,7 +1,7 @@
 ---
 id: INF-09-session-identity-only
 feature: session-identity-only
-status: draft
+status: implemented
 created: 2026-10-05
 ---
 
@@ -34,22 +34,22 @@ Eliminar la doble fuente de verdad de los catálogos: `useAuthStore.sessionData`
 - Cambiar roles de `GET /institutions/me`.
 
 ## Criterios de aceptación (EARS)
-- [ ] `sessionData` en el store contiene solo `user`; `useAuthStore` no expone `setSubjects`, `setPeriods`, `setEnabledReports` ni `setShifts`.
-- [ ] Cuando se inicia sesión, se activa una cuenta o se ejecuta `refreshSession()`, el sistema purga la caché y luego escribe `['periods','list']`, `['subjects','list']` e `['institution','settings']` con los datos de la respuesta, sin emitir requests adicionales a `/periods`, `/subjects` ni `/institutions/me/settings`.
-- [ ] Los periodos sembrados tienen los mismos campos que `GET /periods` (`year`, `startDate`, `endDate`, `closingAlertDate`, `isActive`); `PeriodsPanel` muestra las fechas completas sin refetch.
-- [ ] Mientras los catálogos sembrados tengan < 30 min (`STALE_TIME.catalog`), el sistema no los refetchea al montar.
-- [ ] Cuando el Docente carga cualquier pantalla tras caducar la caché, el sistema obtiene los ajustes con `GET /institutions/me/settings` sin error 403.
-- [ ] `GET /institutions/me/settings` responde `{ enabledReports, multipleShifts, shifts }` para Jefe de Área y Docente, con `institutionId` tomado del token; un rol distinto recibe 403.
-- [ ] Cuando se crea/edita/elimina un periodo o una dimensión, el sistema invalida `['periods']` o `['subjects']` y `['dashboard']`, sin escribir en `sessionData`.
-- [ ] Cuando se guardan los ajustes de institución, el sistema escribe la respuesta en `['institution','me']` y `['institution','settings']`; los consumidores de `enabledReports`/`shifts` se actualizan sin recargar.
-- [ ] Ningún componente ni hook lee `periods`, `subjects`, `enabledReports`, `multipleShifts` ni `shifts` de `useAuthStore`.
-- [ ] Mientras los catálogos no han llegado (F5), los consumidores renderizan con listas vacías estables sin errores en consola; los filtros que aplican un valor por defecto una sola vez (periodo activo) lo aplican cuando el dato llega.
-- [ ] Cuando existe una sesión persistida con el formato anterior (`sessionData` con catálogos), el sistema la lee sin pedir login, conserva `token` y `user`, y descarta los catálogos de `localStorage`.
-- [ ] `localStorage['quartz-session']` contiene solo `token` y `sessionData.user`.
-- [ ] `/auth/login`, `/auth/activation` y `/auth/session` no incluyen `checklistTemplates`; `getChecklistTemplatesForSession` e `IChecklistTemplateForSession` no existen; `ChecklistTemplates` no existe en `quartz-web/src/types/domain.ts`.
-- [ ] Si `refreshSession()` falla por red o 5xx, el sistema conserva `token` y `user` persistidos y no toca la caché; si responde 401, ejecuta `logout()` (comportamiento actual).
-- [ ] **Aislamiento:** `GET /institutions/me/settings` filtra por `institutionId` del token y no acepta `institutionId` de `body`/`params`/`query`; la siembra ocurre después de `queryClient.clear()` y `logout()` purga la caché (INF-05); ningún catálogo se persiste en storage.
-- [ ] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web` (sin errores nuevos respecto de la línea base).
+- [x] `sessionData` en el store contiene solo `user`; `useAuthStore` no expone `setSubjects`, `setPeriods`, `setEnabledReports` ni `setShifts`.
+- [x] Cuando se inicia sesión, se activa una cuenta o se ejecuta `refreshSession()`, el sistema purga la caché y luego escribe `['periods','list']`, `['subjects','list']` e `['institution','settings']` con los datos de la respuesta, sin emitir requests adicionales a `/periods`, `/subjects` ni `/institutions/me/settings`.
+- [x] Los periodos sembrados tienen los mismos campos que `GET /periods` (`year`, `startDate`, `endDate`, `closingAlertDate`, `isActive`); `PeriodsPanel` muestra las fechas completas sin refetch.
+- [x] Mientras los catálogos sembrados tengan < 30 min (`STALE_TIME.catalog`), el sistema no los refetchea al montar.
+- [x] Cuando el Docente carga cualquier pantalla tras caducar la caché, el sistema obtiene los ajustes con `GET /institutions/me/settings` sin error 403.
+- [x] `GET /institutions/me/settings` responde `{ enabledReports, multipleShifts, shifts }` para Jefe de Área y Docente, con `institutionId` tomado del token; un rol distinto recibe 403.
+- [x] Cuando se crea/edita/elimina un periodo o una dimensión, el sistema invalida `['periods']` o `['subjects']` y `['dashboard']`, sin escribir en `sessionData`.
+- [x] Cuando se guardan los ajustes de institución, el sistema escribe la respuesta en `['institution','me']` y `['institution','settings']`; los consumidores de `enabledReports`/`shifts` se actualizan sin recargar.
+- [x] Ningún componente ni hook lee `periods`, `subjects`, `enabledReports`, `multipleShifts` ni `shifts` de `useAuthStore`.
+- [x] Mientras los catálogos no han llegado (F5), los consumidores renderizan con listas vacías estables sin errores en consola; los filtros que aplican un valor por defecto una sola vez (periodo activo) lo aplican cuando el dato llega.
+- [x] Cuando existe una sesión persistida con el formato anterior (`sessionData` con catálogos), el sistema la lee sin pedir login, conserva `token` y `user`, y descarta los catálogos de `localStorage`.
+- [x] `localStorage['quartz-session']` contiene solo `token` y `sessionData.user`.
+- [x] `/auth/login`, `/auth/activation` y `/auth/session` no incluyen `checklistTemplates`; `getChecklistTemplatesForSession` e `IChecklistTemplateForSession` no existen; `ChecklistTemplates` no existe en `quartz-web/src/types/domain.ts`.
+- [x] Si `refreshSession()` falla por red o 5xx, el sistema conserva `token` y `user` persistidos y no toca la caché; si responde 401, ejecuta `logout()` (comportamiento actual).
+- [x] **Aislamiento:** `GET /institutions/me/settings` filtra por `institutionId` del token y no acepta `institutionId` de `body`/`params`/`query`; la siembra ocurre después de `queryClient.clear()` y `logout()` purga la caché (INF-05); ningún catálogo se persiste en storage.
+- [x] `npx tsc --noEmit` en verde en `quartz-api`; `npm run build && npm run lint` en verde en `quartz-web` (sin errores nuevos respecto de la línea base).
 
 ## Dependencias
 - **Base de rama:** `feat/INF-07-valuation-report-query` (cadena `INF-05 → INF-06 → INF-07 → INF-09 → INF-08`, cada una desde la anterior, sin pasar por `develop`). El PR a `develop` se abre cuando sus predecesoras estén mergeadas, o su diff las arrastrará.

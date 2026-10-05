@@ -5,10 +5,10 @@ import { useDeleteValuationMutation } from "../queries/useStudentValuationQuery"
 import { useUsersQuery } from "../../users/queries/useUsersQuery";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { extractErrorMessage } from "../../../api/apiClient";
-import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
 import { useLetterAvailabilityQuery } from "../../report/queries/useReportQuery";
+import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
 import StudentValuationDetail from "../components/StudentValuationDetail";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import {
@@ -31,7 +31,7 @@ const STUDENTS_QUERY = { role: "Estudiante" } as const;
 export default function StudentValuationsPage() {
   const { studentId } = useParams();
   const navigate = useNavigate();
-  const { sessionData } = useAuthStore();
+  const { data: settings } = useInstitutionSettingsQuery();
   const { isAreaLead, schoolId } = usePermissions();
   const activePeriod = useActivePeriod();
   const { data: users = NO_USERS, isPending, error } = useUsersQuery(STUDENTS_QUERY);
@@ -159,7 +159,7 @@ export default function StudentValuationsPage() {
         }}
         onOpenChecklist={handleOpenChecklist}
         onViewLetter={handleViewLetter}
-        isLetterEnabled={(sessionData?.enabledReports ?? []).includes("communicative-letter")}
+        isLetterEnabled={settings?.enabledReports.includes("communicative-letter") ?? false}
         isLetterAvailable={letterAvailability?.isAvailable ?? false}
         currentPage={currentPage}
         totalPages={totalPages}

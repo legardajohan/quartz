@@ -2,12 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPatch } from '@/api/apiClient';
 import { withErrorMessage } from '@/api/withErrorMessage';
 import { STALE_TIME } from '@/lib/queryClient';
-import { useAuthStore } from '@/features/auth/useAuthStore';
-import type { InstitutionDto, InstitutionBrandingDto, UpdateInstitutionSettings } from '../types';
+import type {
+  InstitutionDto,
+  InstitutionBrandingDto,
+  InstitutionSettingsDto,
+  UpdateInstitutionSettings,
+} from '../types';
 
 export const institutionKeys = {
   all: ['institution'] as const,
   me: ['institution', 'me'] as const,
+  settings: ['institution', 'settings'] as const,
   branding: ['institution', 'branding'] as const,
 };
 
@@ -15,6 +20,17 @@ export function useInstitutionQuery() {
   return useQuery({
     queryKey: institutionKeys.me,
     queryFn: () => apiGet<InstitutionDto>('/institutions/me'),
+    staleTime: STALE_TIME.catalog,
+  });
+}
+
+// Ajustes transversales (informes, jornadas) para Jefe de Área y Docente; `/me` es solo Jefe de Área.
+// Se siembra con la sesión (`seedSessionCatalogs`). Un fallo deja `data` en `undefined`: los
+// consumidores caen a sus defaults.
+export function useInstitutionSettingsQuery() {
+  return useQuery({
+    queryKey: institutionKeys.settings,
+    queryFn: () => apiGet<InstitutionSettingsDto>('/institutions/me/settings'),
     staleTime: STALE_TIME.catalog,
   });
 }
@@ -39,10 +55,8 @@ export function useUpdateInstitutionSettingsMutation() {
         'Falló la actualización de la configuración.',
       ),
     onSuccess: (updated) => {
-      const { setEnabledReports, setShifts } = useAuthStore.getState();
-      setEnabledReports(updated.settings.enabledReports);
-      setShifts(updated.settings.multipleShifts, updated.settings.shifts);
       queryClient.setQueryData(institutionKeys.me, updated);
+      queryClient.setQueryData(institutionKeys.settings, updated.settings);
     },
   });
 }

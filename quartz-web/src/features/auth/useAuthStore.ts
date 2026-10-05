@@ -3,7 +3,15 @@ import { persist } from 'zustand/middleware';
 import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/apiClient';
 import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
 import { queryClient } from '../../lib/queryClient';
-import type { AuthState, LoginRequest, LoginResponse, SessionResponse, ActivateAccountRequest } from './types';
+import { seedSessionCatalogs } from './seedSessionCatalogs';
+import type {
+  AuthState,
+  LoginRequest,
+  LoginResponse,
+  SessionResponse,
+  ActivateAccountRequest,
+  SessionUser,
+} from './types';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -23,11 +31,14 @@ export const useAuthStore = create<AuthState>()(
             password,
           });
 
-          // La caché es de la sesión anterior (otro usuario o institución): se descarta antes de fijar la nueva.
+          // La caché es de la sesión anterior (otro usuario o institución): se descarta antes de
+          // sembrar la nueva, y se siembra antes de fijar `token` para que el primer render
+          // autenticado ya tenga catálogos.
           queryClient.clear();
+          seedSessionCatalogs(sessionData);
           set({
             token,
-            sessionData,
+            sessionData: { user: sessionData.user },
             isLoading: false,
             error: null,
             showWelcomeLoader: true
@@ -48,9 +59,10 @@ export const useAuthStore = create<AuthState>()(
       activateAccount: async (request: ActivateAccountRequest) => {
         const { token, sessionData } = await apiPost<LoginResponse, ActivateAccountRequest>('/auth/activation', request);
         queryClient.clear();
+        seedSessionCatalogs(sessionData);
         set({
           token,
-          sessionData,
+          sessionData: { user: sessionData.user },
           isLoading: false,
           error: null,
           showWelcomeLoader: true
@@ -79,48 +91,18 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const { sessionData } = await apiGet<SessionResponse>('/auth/session');
-          set({ sessionData });
+          // El servidor es la fuente: re-sembrar sobrescribe la caché sin riesgo.
+          seedSessionCatalogs(sessionData);
+          set({ sessionData: { user: sessionData.user } });
         } catch (error: unknown) {
           if (isAxiosError(error) && error.response?.status === 401) {
             get().logout();
             return;
           }
 
-          // Red o 5xx: se conserva la sessionData persistida, sin tocar `isLoading` ni
+          // Red o 5xx: se conservan `token` y `user` persistidos y la caché, sin tocar `isLoading` ni
           // `error` — esta revalidación es silenciosa, no debe parpadear la UI.
         }
-      },
-
-      setSubjects: (subjects) => {
-        set((state) => ({
-          sessionData: state.sessionData
-            ? { ...state.sessionData, subjects }
-            : null
-        }));
-      },
-
-      setPeriods: (periods) => {
-        set((state) => ({
-          sessionData: state.sessionData
-            ? { ...state.sessionData, periods }
-            : null
-        }));
-      },
-
-      setEnabledReports: (enabledReports) => {
-        set((state) => ({
-          sessionData: state.sessionData
-            ? { ...state.sessionData, enabledReports }
-            : null
-        }));
-      },
-
-      setShifts: (multipleShifts, shifts) => {
-        set((state) => ({
-          sessionData: state.sessionData
-            ? { ...state.sessionData, multipleShifts, shifts }
-            : null
-        }));
       },
 
       dismissWelcomeLoader: () => {
@@ -129,6 +111,16 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'quartz-session',
+      // v0 guardaba `sessionData` con catálogos. `migrate` conserva `token` + `user` (sin re-login)
+      // y descarta los catálogos; sin él, el cambio de versión tiraría la sesión guardada.
+      version: 1,
+      migrate: (persisted) => {
+        const old = persisted as { token?: string | null; sessionData?: { user?: SessionUser } | null };
+        return {
+          token: old.token ?? null,
+          sessionData: old.sessionData?.user ? { user: old.sessionData.user } : null,
+        } as AuthState;
+      },
       partialize: (state) => ({
         token: state.token,
         sessionData: state.sessionData

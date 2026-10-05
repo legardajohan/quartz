@@ -146,6 +146,8 @@ migrate: (persisted) => {
 - **Dos keys para los ajustes:** `['institution','me']` (administrativo, solo Jefe de Área) y `['institution','settings']` (transversal). La mutación escribe ambas para no dejar una obsoleta.
 - **`refreshSession` también re-siembra** (p. ej. tras editar el perfil en `useAccountQuery`): el servidor es la fuente, así que sobrescribir es seguro y mantiene alineada la caché.
 - **Parpadeo tras F5:** aceptado. `login`/`activateAccount` siembran antes de fijar `token`, por lo que el primer render autenticado ya tiene catálogos; solo el F5 los pide a la respuesta de `refreshSession`.
+- *(Añadido en implementación)* `refreshSession` **no** llama a `queryClient.clear()` (el criterio EARS lo agrupa con login/activación): es el mismo usuario e institución, y purgar tiraría las demás cachés en cada edición de perfil. Solo re-siembra, como indica la tabla de `useAuthStore`.
+- *(Añadido en implementación)* `usePeriodsQuery` acepta un `select` opcional para que `useActivePeriod` reutilice su `queryFn`. `ConsolidatedReportsPanel` cae a `REPORT_KIND_VALUES` (default del backend) sin ajustes, igual que `IndividualReportsPanel`.
 - Un fallo de `GET /institutions/me/settings` en el Docente cae a los fallbacks (`enabledReports` por defecto, sin jornadas); no se muestra toast.
 
 ## Verificación

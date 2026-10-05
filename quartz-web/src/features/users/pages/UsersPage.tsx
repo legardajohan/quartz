@@ -4,8 +4,8 @@ import { PlusIcon, AcademicCapIcon, BriefcaseIcon, ExclamationTriangleIcon } fro
 import toast from "react-hot-toast";
 
 import { extractErrorMessage } from "@/api/apiClient";
-import type { GradeLevel, IdentificationType } from "@/types/domain";
-import { useAuthStore } from "../../auth/useAuthStore";
+import type { GradeLevel, IdentificationType, Shift } from "@/types/domain";
+import { useInstitutionSettingsQuery } from "@/features/institution/queries/useInstitutionQuery";
 import { usePermissions } from "../../auth/usePermissions";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { FormModal } from "@/components/common/FormModal";
@@ -40,15 +40,16 @@ const TAB_QUERY: Record<UsersTab, GetUsersQuery> = {
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
+const NO_SHIFTS: Shift[] = [];
 
 export default function UsersPage() {
-  const { sessionData } = useAuthStore();
   const { isAreaLead, userId: currentUserId } = usePermissions();
   const canCreate = isAreaLead;
   const canDelete = isAreaLead;
   const canEdit = true; // ambos roles; el backend acota al Docente a su sede
-  const multipleShifts = sessionData?.multipleShifts ?? false;
-  const shifts = sessionData?.shifts ?? [];
+  const { data: settings } = useInstitutionSettingsQuery();
+  const multipleShifts = settings?.multipleShifts ?? false;
+  const shifts = settings?.shifts ?? NO_SHIFTS;
 
   const [activeTab, setActiveTab] = useState<UsersTab>("students");
   const [newStaffRole, setNewStaffRole] = useState<StaffRole>("Docente");

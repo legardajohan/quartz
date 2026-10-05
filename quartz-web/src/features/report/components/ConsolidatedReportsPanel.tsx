@@ -6,13 +6,18 @@ import { SpinnerIcon } from "@/components/icons/SpinnerIcon";
 import { extractErrorMessage } from "@/api/apiClient";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { useSchoolsQuery } from "../../school/queries/useSchoolsQuery";
+import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
+import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
+import type { PeriodDto } from "../../period/types";
 import { useBulkReportDownload } from "../useBulkReportDownload";
 import type { IConsolidatedReportFilters } from "../types";
-import { REPORT_KIND_LABELS, type GradeLevel, type ReportKind } from "@/types/domain";
+import { REPORT_KIND_LABELS, REPORT_KIND_VALUES, type GradeLevel, type ReportKind, type Shift } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 const ALL_SCHOOLS_LABEL = "Todas las sedes";
+const NO_PERIODS: PeriodDto[] = [];
+const NO_SHIFTS: Shift[] = [];
 
 const REPORT_OPTIONS: { value: ReportKind; description: string; icon: React.ElementType }[] = [
   {
@@ -31,9 +36,14 @@ export default function ConsolidatedReportsPanel() {
   const { sessionData } = useAuthStore();
   const { data: schools = [] } = useSchoolsQuery();
   const { download, isDownloading } = useBulkReportDownload();
+  const { data: periods = NO_PERIODS } = usePeriodsQuery();
+  const { data: settings } = useInstitutionSettingsQuery();
 
   const isDocente = sessionData?.user.role === "Docente";
-  const multipleShifts = sessionData?.multipleShifts ?? false;
+  const multipleShifts = settings?.multipleShifts ?? false;
+  const shifts = settings?.shifts ?? NO_SHIFTS;
+  // Sin ajustes (fallo de la request) se asume el default del backend: ambos informes.
+  const enabledReports: readonly ReportKind[] = settings?.enabledReports ?? REPORT_KIND_VALUES;
 
   const [schoolId, setSchoolId] = useState(isDocente ? sessionData?.user.schoolId ?? "" : "");
   const [grade, setGrade] = useState<GradeLevel | "">(GRADE_LEVELS.length === 1 ? GRADE_LEVELS[0] : "");
@@ -42,11 +52,11 @@ export default function ConsolidatedReportsPanel() {
   const [pickedKind, setPickedKind] = useState<ReportKind | null>(null);
 
   const reportOptions = useMemo(
-    () => REPORT_OPTIONS.filter((option) => sessionData?.enabledReports.includes(option.value)),
-    [sessionData?.enabledReports]
+    () => REPORT_OPTIONS.filter((option) => enabledReports.includes(option.value)),
+    [enabledReports]
   );
 
-  // Derivado en vez de guardado en estado: `enabledReports` llega con la sesión, así que la
+  // Derivado en vez de guardado en estado: `enabledReports` llega con los ajustes, así que la
   // primera opción disponible queda preseleccionada sin un `useEffect` de sincronización.
   const reportKind =
     pickedKind && reportOptions.some((option) => option.value === pickedKind)
@@ -60,7 +70,7 @@ export default function ConsolidatedReportsPanel() {
   const selectedSchoolLabel = isDocente
     ? ownSchoolName
     : schools.find((s) => s._id === schoolId)?.name ?? ALL_SCHOOLS_LABEL;
-  const selectedPeriodLabel = sessionData?.periods.find((p) => p._id === periodId)?.name ?? "";
+  const selectedPeriodLabel = periods.find((p) => p._id === periodId)?.name ?? "";
 
   const isReady = !!grade && !!periodId && !!reportKind;
 
@@ -153,7 +163,7 @@ export default function ConsolidatedReportsPanel() {
             menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
           >
             <Option value="">Todas las jornadas</Option>
-            {(sessionData?.shifts ?? []).map((shift) => (
+            {shifts.map((shift) => (
               <Option key={shift._id} value={shift._id}>
                 {shift.name}
               </Option>
@@ -167,9 +177,9 @@ export default function ConsolidatedReportsPanel() {
           value={periodId}
           onChange={(val) => setPeriodId(val ?? "")}
           menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
-          key={sessionData?.periods.length}
+          key={periods.length}
         >
-          {(sessionData?.periods ?? []).map((period) => (
+          {periods.map((period) => (
             <Option key={period._id} value={period._id}>
               {period.name}
             </Option>

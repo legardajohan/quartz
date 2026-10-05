@@ -9,7 +9,10 @@ import {
   useUpdateConceptMutation,
   useDeleteConceptMutation,
 } from "../queries/useConceptsQuery";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
+import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
+import type { PeriodDto } from "../../period/types";
+import type { Subject } from "@/types/domain";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
 import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
@@ -25,6 +28,8 @@ import { normalizeText } from "../../../utils/normalizeText";
 const VALUATION_TYPES: QualitativeValuation[] = ["Logrado", "En proceso", "Con dificultad"];
 
 const NO_CONCEPTS: ConceptDto[] = [];
+const NO_PERIODS: PeriodDto[] = [];
+const NO_SUBJECTS: Subject[] = [];
 
 export default function ConceptsPage() {
   const { data: concepts = NO_CONCEPTS, isPending: isLoading, error: queryError } = useConceptsQuery();
@@ -33,11 +38,11 @@ export default function ConceptsPage() {
   const deleteMutation = useDeleteConceptMutation();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const error = queryError ? extractErrorMessage(queryError, "Falló la carga de conceptos.") : null;
-  const { sessionData } = useAuthStore();
   const { canManageOwned } = usePermissions();
 
-  const subjects = sessionData?.subjects ?? [];
-  const periods = sessionData?.periods ?? [];
+  const { data: subjects = NO_SUBJECTS } = useSubjectsQuery();
+  // Tras F5 la lista llega después del primer render: el default de periodo activo espera a ella.
+  const { data: periods = NO_PERIODS } = usePeriodsQuery();
   const activePeriod = useActivePeriod();
   const axis = useSubjectAxisLabel();
 
