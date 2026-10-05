@@ -2,7 +2,9 @@
 
 ## Frontend (`quartz-web`)
 ### Selectores (sin cambio de comportamiento)
-- [ ] `LoginPage`, `ChecklistsPage`, `DashboardFilters`, `ConsolidatedReportsPanel`, `StudentValuationDetail` — `useAuthStore(selector)` / `useShallow`
+- [ ] Verificar que INF-09 está implementado (`sessionData` sin catálogos, sin `setSubjects`/`setPeriods`/`setEnabledReports`/`setShifts`); si no, detenerse
+- [ ] Recalcular consumidores: `grep -rn "useAuthStore()" src` y ajustar las listas de abajo
+- [ ] `LoginPage`, `ChecklistsPage`, `DashboardFilters`, `ConsolidatedReportsPanel`, `StudentValuationDetail` (los que sigan en la lista) — `useAuthStore(selector)` / `useShallow`
 - [ ] `grep -rn "useAuthStore()" src` → 0 resultados (tras completar también el bloque de filtros)
 
 ### Filtros de tablas

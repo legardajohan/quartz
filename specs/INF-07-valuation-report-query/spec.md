@@ -49,9 +49,9 @@ Migrar `student-valuation` y `report` de Zustand a React Query: una sola lista d
 - [ ] `npm run build && npm run lint` en verde en `quartz-web`.
 
 ## Dependencias
-- **Base de rama:** `feat/USR-04-user-invitation` (incluye INF-04, USR-03 y USR-04, aún no mergeados en `develop`). El PR a `develop` se abre tras mergear USR-04, o su diff arrastrará esos commits.
+- **Base de rama:** `feat/INF-06-config-catalogs-query` (cadena `INF-05 → INF-06 → INF-07 → INF-09 → INF-08`, cada una desde la anterior, sin pasar por `develop`). El PR a `develop` se abre cuando sus predecesoras estén mergeadas, o su diff las arrastrará.
 - INF-05-server-state-foundation.
-- Recomendado después de INF-06 (sin dependencia técnica dura).
+- INF-06-config-catalogs-query (base de rama; sin dependencia técnica dura).
 
 ## Trazabilidad
 - Frontend: `quartz-web/src/features/{student-valuation,report,users}/`

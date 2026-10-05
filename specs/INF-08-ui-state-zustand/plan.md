@@ -1,7 +1,7 @@
 # INF-08 — Plan técnico
 
 ## Principio
-Cambios aditivos o de solo lectura sobre lo existente: ningún store cambia su forma pública salvo añadir `resetAll()` al `logout`. Si una mejora exige cambiar el contrato de `useAuthStore`, queda fuera.
+Cambios aditivos o de solo lectura sobre lo que deja INF-09: ningún store cambia su forma pública salvo añadir `resetAll()` al `logout`. La reducción de `sessionData` y la eliminación de los setters de catálogo son de INF-09; si aparece algo más del contrato de `useAuthStore` por cambiar, se anota como deuda y no entra aquí.
 
 ## Archivos
 ### quartz-web
@@ -13,6 +13,8 @@ Cambios aditivos o de solo lectura sobre lo existente: ningún store cambia su f
 | tocar (selectores + filtros) | `features/learning/pages/LearningsPage.tsx`, `features/concept/pages/ConceptsPage.tsx`, `features/users/pages/UsersPage.tsx`, `features/student-valuation/pages/StudentValuationsPage.tsx`, `features/report/pages/ReportsPage.tsx`, `features/report/components/IndividualReportsPanel.tsx` |
 | tocar | `quartz-web/CLAUDE.md` (transversales + § "Estado") |
 
+> Las filas "selectores" son las de cuando se redactó el spec, antes de INF-09. Al empezar, se recalculan con `grep -rn "useAuthStore()" src`: los archivos que INF-09 ya migró a hooks de catálogo salen de la lista, y los que aparezcan nuevos entran.
+
 ## Contratos
 
 ### 1. Selectores en `useAuthStore` (sin cambio de comportamiento)
@@ -20,7 +22,7 @@ Cambios aditivos o de solo lectura sobre lo existente: ningún store cambia su f
 |---|---|
 | `const { sessionData } = useAuthStore();` | `const sessionData = useAuthStore((s) => s.sessionData);` |
 | `const { login, isLoading, error, clearError } = useAuthStore();` | `useAuthStore(useShallow((s) => ({ login: s.login, isLoading: s.isLoading, error: s.error, clearError: s.clearError })))` |
-- Si la página solo usa un campo derivado, seleccionar ese campo (`(s) => s.sessionData?.subjects`), cuidando devolver referencias estables (no `?? []` dentro del selector: el fallback va fuera).
+- Si la página solo usa un campo derivado, seleccionar ese campo (`(s) => s.sessionData?.user.role`), cuidando devolver referencias estables (no `?? []` dentro del selector: el fallback va fuera).
 - `useShallow` desde `zustand/react/shallow` (zustand@5).
 
 ### 2. `src/stores/useTableFiltersStore.ts`
