@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore } from '../useAuthStore';
 import { PresentationPanel } from '../components/PresentationPanel';
 import { LoginPanel } from '../components/LoginPanel';
@@ -11,7 +12,9 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { login, isLoading, error, token } = useAuthStore();
+  const { login, isLoading, error, token } = useAuthStore(
+    useShallow((s) => ({ login: s.login, isLoading: s.isLoading, error: s.error, token: s.token }))
+  );
 
   useEffect(() => {
     if (token) {

@@ -12,6 +12,7 @@ import schoolRoutes from './features/school/school.routes';
 import conceptRoutes from './features/concept/concept.routes';
 import reportRoutes from './features/report/report.routes';
 import institutionRoutes from './features/institution/institution.routes';
+import dashboardRoutes from './features/dashboard/dashboard.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import dotenv from 'dotenv';
 
@@ -45,6 +46,8 @@ app.use('/api/concepts', conceptRoutes);
 app.use('/api/reports', reportRoutes);
 // Routes for institution settings (periods per year, enabled reports)
 app.use('/api/institutions', institutionRoutes);
+// Routes for the analytics dashboard (read-only, in-memory cached)
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use(errorHandler);
 

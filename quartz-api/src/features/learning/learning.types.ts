@@ -25,3 +25,10 @@ export type LearningData = {
 };
 
 export type UpdateLearningData = Partial<LearningData>;
+
+export interface ILearningFilter {
+  subjectId?: string;
+  periodId?: string;
+  userId?: string;
+  grade?: string;
+}

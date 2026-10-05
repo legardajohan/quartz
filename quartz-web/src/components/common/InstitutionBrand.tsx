@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { School } from 'lucide-react';
-import { useInstitutionStore } from '../../features/institution/useInstitutionStore';
+import { useInstitutionBrandingQuery } from '../../features/institution/queries/useInstitutionQuery';
 
 export interface InstitutionBrandProps {
   tone?: 'dark' | 'light';
@@ -28,16 +28,11 @@ const TONE_STYLES = {
 } as const;
 
 export function InstitutionBrand({ tone = 'dark' }: InstitutionBrandProps): React.ReactElement {
-  const branding = useInstitutionStore((state) => state.branding);
-  const fetchBranding = useInstitutionStore((state) => state.fetchBranding);
+  const { data: branding } = useInstitutionBrandingQuery();
   const [shieldFailed, setShieldFailed] = useState(false);
   const [topWordCount, setTopWordCount] = useState(1);
   const textRef = useRef<HTMLDivElement>(null);
   const measurerRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    fetchBranding();
-  }, [fetchBranding]);
 
   useEffect(() => {
     setShieldFailed(false);

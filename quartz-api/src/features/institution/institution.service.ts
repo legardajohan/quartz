@@ -8,6 +8,7 @@ import {
   ReportKind,
   IShiftDTO,
   IShiftSettings,
+  IInstitutionSettings,
 } from './institution.types';
 import AppError from '../../utils/AppError';
 import { assertWebp } from '../../utils/assertWebp';
@@ -72,6 +73,16 @@ export const getShiftSettings = async (institutionId: string): Promise<IShiftSet
     multipleShifts: institution?.settings?.multipleShifts ?? false,
     shifts: (institution?.settings?.shifts ?? []).map(mapShiftToDTO),
   };
+};
+
+// Ajustes transversales (informes habilitados + jornadas): el Docente los necesita y no puede
+// leer `getInstitutionById`, que expone datos administrativos.
+export const getInstitutionSettings = async (institutionId: string): Promise<IInstitutionSettings> => {
+  const [enabledReports, shiftSettings] = await Promise.all([
+    getEnabledReports(institutionId),
+    getShiftSettings(institutionId),
+  ]);
+  return { enabledReports, ...shiftSettings };
 };
 
 // Versión mínima de `getInstitutionById` para consumo transversal (p. ej. el sidebar):

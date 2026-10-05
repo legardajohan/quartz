@@ -8,17 +8,15 @@ import {
     IconButton,
     Tooltip,
 } from "@material-tailwind/react";
-import { useStudentValuationStore } from "../useStudentValuationStore";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import toast from "react-hot-toast";
 import { useState } from "react";
 
-import type { UserDto } from "../types/store";
+import type { UserDto } from "@/features/users/types";
+import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { getValuationState } from '../types/domain';
 import { ValuationStatusBadge } from './ValuationStatusBadge';
 import { AVATAR_FALLBACK } from "@/constants/assets";
-
-export const ITEMS_PER_PAGE = 10;
 
 const TABLE_HEAD = [
     "ID",
@@ -33,6 +31,9 @@ const TABLE_HEAD = [
 
 interface StudentValuationTableProps {
     users: UserDto[];
+    isLoading: boolean;
+    error: string | null;
+    onDeleteValuation: (valuationId: string) => Promise<void>;
     onOpenChecklist?: (studentId: string) => void;
     onViewLetter?: (studentId: string, valuationId: string) => void;
     isLetterEnabled?: boolean;
@@ -46,6 +47,9 @@ import { Loading } from "../../../components/ui/Loading";
 
 export default function StudentValuationTable({
     users,
+    isLoading,
+    error,
+    onDeleteValuation,
     onOpenChecklist,
     onViewLetter,
     isLetterEnabled = false,
@@ -55,35 +59,32 @@ export default function StudentValuationTable({
     onNextPage,
     onPrevPage,
 }: StudentValuationTableProps) {
-    const { isLoading, error, deleteValuation } = useStudentValuationStore();
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [selectedStudentName, setSelectedStudentName] = useState<string>("");
 
     const handleOpenChecklist = (studentId: string) => {
         onOpenChecklist?.(studentId);
     };
 
-    const handleDeleteClick = (valuationId: string, userId: string, studentName: string) => {
+    const handleDeleteClick = (valuationId: string, studentName: string) => {
         setSelectedValuationId(valuationId);
-        setSelectedUserId(userId);
         setSelectedStudentName(studentName);
         setDeleteModalOpen(true);
     };
 
     const handleConfirmDelete = async () => {
-        if (!selectedValuationId || !selectedUserId) return;
+        if (!selectedValuationId) return;
 
         try {
-            await deleteValuation(selectedValuationId, selectedUserId);
+            await onDeleteValuation(selectedValuationId);
             setDeleteModalOpen(false);
             toast.success("Evaluación eliminada con éxito");
             setSelectedValuationId(null);
-            setSelectedUserId(null);
             setSelectedStudentName("");
-        } catch (err: any) {
-            toast.error(`Error al eliminar la evaluación: ${err.message}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Error desconocido";
+            toast.error(`Error al eliminar la evaluación: ${message}`);
         }
     };
 
@@ -253,7 +254,6 @@ export default function StudentValuationTable({
                                                         variant="text"
                                                         onClick={() => handleDeleteClick(
                                                             user.valuations[0]._id,
-                                                            user._id,
                                                             `${user.firstName} ${user.lastName} ${user.secondLastName || ''}`
                                                         )}
                                                         color="white"

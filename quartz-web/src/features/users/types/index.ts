@@ -6,4 +6,7 @@ export type {
   NewUser,
   UpdateUser,
   WritableUserRole,
+  StaffRole,
+  CreatedUser,
 } from './api';
+export { STAFF_ROLES } from './api';

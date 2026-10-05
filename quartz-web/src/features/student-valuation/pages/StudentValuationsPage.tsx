@@ -1,61 +1,61 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import StudentValuationTable from "../components/StudentValuationTable";
-import { useStudentValuationStore, ITEMS_PER_PAGE } from "../useStudentValuationStore";
-import { useAuthStore } from "../../auth/useAuthStore";
-import { useReportStore } from "../../report/useReportStore";
+import { useDeleteValuationMutation } from "../queries/useStudentValuationQuery";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
+import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
+import { extractErrorMessage } from "../../../api/apiClient";
+import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
+import { useLetterAvailabilityQuery } from "../../report/queries/useReportQuery";
+import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
 import StudentValuationDetail from "../components/StudentValuationDetail";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import {
   getValuationState,
   VALUATION_STATE_ORDER,
   VALUATION_STATE_LABELS,
-  type ValuationState,
 } from "../types/domain";
 import { normalizeText } from "../../../utils/normalizeText";
-import type { SchoolDto } from "../types";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
+import type { UserDto, UserSchool } from "../../users/types";
 import type { GradeLevel } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 
+const NO_USERS: UserDto[] = [];
+// Misma key que `UsersPage` (pestaña Estudiantes) e `/informes`: una sola caché compartida.
+const STUDENTS_QUERY = { role: "Estudiante" } as const;
+
 export default function StudentValuationsPage() {
   const { studentId } = useParams();
   const navigate = useNavigate();
-  const { fetchUsers, users } = useStudentValuationStore();
-  const { sessionData } = useAuthStore();
-  const { fetchLetterAvailability, letterAvailability } = useReportStore();
+  const { data: settings } = useInstitutionSettingsQuery();
+  const { isAreaLead, schoolId } = usePermissions();
+  const activePeriod = useActivePeriod();
+  const { data: users = NO_USERS, isPending, error } = useUsersQuery(STUDENTS_QUERY);
+  const { data: letterAvailability } = useLetterAvailabilityQuery(activePeriod?._id);
+  const deleteValuation = useDeleteValuationMutation();
 
-  const [search, setSearch] = useState("");
-  const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
-  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const [selectedStates, setSelectedStates] = useState<ValuationState[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // Fetch users when component mounts or when navigating back to list
-  useEffect(() => {
-    const user = sessionData?.user;
-    // Only fetch if we are in the list view (no studentId)
-    // allowing the list to be fresh when we return.
-    if (user && !studentId) {
-      fetchUsers({
-        role: "Estudiante",
-      });
-    }
-  }, [sessionData?.user, fetchUsers, studentId]);
-
-  useEffect(() => {
-    const activePeriod = sessionData?.periods?.find((p) => p.isActive);
-    if (activePeriod) {
-      fetchLetterAvailability(activePeriod._id);
-    }
-  }, [sessionData?.periods, fetchLetterAvailability]);
+  // Búsqueda, filtros y página sobreviven a la navegación (store de UI, en memoria).
+  const table = useTableFilters("valuations");
+  const { search, initDefaults } = table;
+  const selectedGrades = table.selectedOf("grade");
+  const selectedSchools = table.selectedOf("school");
+  const selectedStates = table.selectedOf("state");
 
   const schools = useMemo(() => {
-    const bySchoolId = new Map<string, SchoolDto>();
+    const bySchoolId = new Map<string, UserSchool>();
     users.forEach((user) => bySchoolId.set(user.school._id, user.school));
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
+
+  // Default de sede propia del Jefe de Área: una vez por sesión; si la quita, no se re-aplica.
+  useEffect(() => {
+    if (!isAreaLead || !schoolId || schools.length === 0) return;
+    initDefaults(schools.some((s) => s._id === schoolId) ? { school: [schoolId] } : {});
+  }, [isAreaLead, schoolId, schools, initDefaults]);
 
   const filteredUsers = useMemo(() => {
     const term = normalizeText(search);
@@ -82,38 +82,38 @@ export default function StudentValuationsPage() {
       label: "Grado",
       options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
-      onToggle: (value) =>
-        setSelectedGrades((prev) =>
-          prev.includes(value as GradeLevel) ? prev.filter((g) => g !== value) : [...prev, value as GradeLevel]
-        ),
+      onToggle: table.toggle("grade"),
     },
     {
       id: "state",
       label: "Estado",
       options: VALUATION_STATE_ORDER.map((state) => ({ value: state, label: VALUATION_STATE_LABELS[state] })),
       selected: selectedStates,
-      onToggle: (value) =>
-        setSelectedStates((prev) =>
-          prev.includes(value as ValuationState) ? prev.filter((s) => s !== value) : [...prev, value as ValuationState]
-        ),
+      onToggle: table.toggle("state"),
     },
-    {
-      id: "school",
-      label: "Sede",
-      options: schools.map((school) => ({ value: school._id, label: school.name })),
-      selected: selectedSchools,
-      onToggle: (value) =>
-        setSelectedSchools((prev) => (prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value])),
-    },
+    ...(isAreaLead
+      ? [
+          {
+            id: "school",
+            label: "Sede",
+            options: schools.map((school) => ({ value: school._id, label: school.name })),
+            selected: selectedSchools,
+            onToggle: table.toggle("school"),
+          } satisfies FilterGroup,
+        ]
+      : []),
   ];
 
   // Render detail view if a student is selected via URL
   if (studentId) {
-    return <StudentValuationDetail />;
+    // `key`: un cambio de estudiante monta un detalle nuevo, sin arrastrar el borrador anterior.
+    return <StudentValuationDetail key={studentId} />;
   }
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  // La página guardada puede quedar fuera de rango si la lista se reduce.
+  const currentPage = Math.min(table.page, totalPages);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
@@ -134,10 +134,7 @@ export default function StudentValuationsPage() {
       <div className="flex">
         <SearchFilterBar
           search={search}
-          onSearchChange={(value) => {
-            setSearch(value);
-            setCurrentPage(1);
-          }}
+          onSearchChange={table.setSearch}
           placeholder="Buscar por nombre o identificación"
           groups={filterGroups}
         />
@@ -145,14 +142,19 @@ export default function StudentValuationsPage() {
 
       <StudentValuationTable
         users={paginatedUsers}
+        isLoading={isPending}
+        error={error ? extractErrorMessage(error, "Falló la carga de usuarios.") : null}
+        onDeleteValuation={async (valuationId) => {
+          await deleteValuation.mutateAsync(valuationId);
+        }}
         onOpenChecklist={handleOpenChecklist}
         onViewLetter={handleViewLetter}
-        isLetterEnabled={(sessionData?.enabledReports ?? []).includes("communicative-letter")}
+        isLetterEnabled={settings?.enabledReports.includes("communicative-letter") ?? false}
         isLetterAvailable={letterAvailability?.isAvailable ?? false}
         currentPage={currentPage}
         totalPages={totalPages}
-        onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+        onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
       />
     </div>
   );

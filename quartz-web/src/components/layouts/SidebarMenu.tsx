@@ -12,17 +12,10 @@ import {
   Card,
 } from "@material-tailwind/react";
 import {
-  AcademicCapIcon,
-  DocumentCheckIcon,
-  HomeIcon,
-  PresentationChartBarIcon,
-  ShieldCheckIcon
-} from "@heroicons/react/24/solid";
-import {
   ChevronRightIcon,
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
-import { PanelLeftClose } from "lucide-react";
+import { PanelLeftClose, LayoutDashboard, GraduationCap, ClipboardCheck, FileChartColumn, Settings } from "lucide-react";
 
 import starryBackground from '../../assets/images/starry-background.svg';
 import { useAuthStore } from '../../features/auth/useAuthStore';
@@ -56,13 +49,13 @@ interface SidebarMenuItem {
 const menuItems: SidebarMenuItem[] = [
   {
     id: 1,
-    icon: <HomeIcon className="h-5 w-5" />,
-    label: "Inicio",
+    icon: <LayoutDashboard className="h-5 w-5" />,
+    label: "Dashboard",
     path: "/dashboard",
   },
   {
     id: 2,
-    icon: <AcademicCapIcon className="h-5 w-5" />,
+    icon: <GraduationCap className="h-5 w-5" />,
     label: "Académico",
     basePath: "/academico",
     subItems: [
@@ -73,24 +66,23 @@ const menuItems: SidebarMenuItem[] = [
   },
   {
     id: 3,
-    icon: <DocumentCheckIcon className="h-5 w-5" />,
+    icon: <ClipboardCheck className="h-5 w-5" />,
     label: "Evaluación",
     path: "/evaluacion",
   },
   {
     id: 4,
-    icon: <PresentationChartBarIcon className="h-5 w-5" />,
+    icon: <FileChartColumn className="h-5 w-5" />,
     label: "Informes",
     path: "/informes",
   },
   {
     id: 5,
-    icon: <ShieldCheckIcon className="h-5 w-5" />,
+    icon: <Settings className="h-5 w-5" />,
     label: "Gestión",
     basePath: "/gestion",
     subItems: [
       { id: 51, label: "Usuarios", path: "/gestion/usuarios" },
-      { id: 52, label: "Consolidados", path: "/gestion/consolidados" },
       { id: 53, label: "Configuración", path: "/gestion/configuracion", roles: ["Jefe de Área"] },
     ],
   },

@@ -5,6 +5,12 @@ import { IPeriodDocument } from '../period/period.model';
 import { ISubjectDocument } from '../subject/subject.model';
 import { SubjectEvaluationMode } from '../subject/subject.types';
 import { ILearningDocument } from '../learning/learning.model';
+import { UserRole } from '../auth/auth.types';
+
+export interface RequestorScope {
+  role: UserRole;
+  schoolId?: string;
+}
 
 // -----------------------------------------------------------------------------
 // I. DATA TRANSFER OBJECTS (DTOs) for enriched data
@@ -21,6 +27,16 @@ export enum GlobalValuationStatus {
   IN_PROGRESS = 'Evaluando',
   CREATED = 'Por diligenciar',
 }
+
+/** Puntos por nivel de valoración cualitativa (docs/domain.md §Valoración por ítem). */
+export const VALUATION_POINTS: Record<QualitativeValuation, number> = {
+  [QualitativeValuation.ACHIEVED]: 3,
+  [QualitativeValuation.IN_PROCESS]: 2,
+  [QualitativeValuation.WITH_DIFICULTY]: 1,
+};
+
+/** Umbrales de `resolveQualitativeValuation` (docs/domain.md §Concepto por dimensión). */
+export const CONCEPT_THRESHOLDS = { ACHIEVED: 80, IN_PROCESS: 46 } as const;
 
 export interface ILearningValuationDTO {
   learningId: string;

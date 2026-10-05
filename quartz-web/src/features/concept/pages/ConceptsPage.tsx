@@ -1,9 +1,20 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import { useConceptStore } from "../useConceptStore";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { extractErrorMessage } from "@/api/apiClient";
+import {
+  useConceptsQuery,
+  useCreateConceptMutation,
+  useUpdateConceptMutation,
+  useDeleteConceptMutation,
+} from "../queries/useConceptsQuery";
+import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
+import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
+import type { PeriodDto } from "../../period/types";
+import type { Subject } from "@/types/domain";
+import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
 import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
@@ -13,17 +24,27 @@ import { ConceptForm, ConceptFormData } from "../components/ConceptForm";
 import { ConceptsTable } from "../components/ConceptsTable";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { normalizeText } from "../../../utils/normalizeText";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
 
 const VALUATION_TYPES: QualitativeValuation[] = ["Logrado", "En proceso", "Con dificultad"];
 
-export default function ConceptsPage() {
-  const { concepts, isLoading, isSubmitting, error, createConcept, updateConcept, deleteConcept } =
-    useConceptStore();
-  const { sessionData } = useAuthStore();
+const NO_CONCEPTS: ConceptDto[] = [];
+const NO_PERIODS: PeriodDto[] = [];
+const NO_SUBJECTS: Subject[] = [];
 
-  const subjects = sessionData?.subjects ?? [];
-  const periods = sessionData?.periods ?? [];
-  const currentUser = sessionData?.user;
+export default function ConceptsPage() {
+  const { data: concepts = NO_CONCEPTS, isPending: isLoading, error: queryError } = useConceptsQuery();
+  const createMutation = useCreateConceptMutation();
+  const updateMutation = useUpdateConceptMutation();
+  const deleteMutation = useDeleteConceptMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de conceptos.") : null;
+  const { canManageOwned } = usePermissions();
+
+  const { data: subjects = NO_SUBJECTS } = useSubjectsQuery();
+  // Tras F5 la lista llega después del primer render: el default de periodo activo espera a ella.
+  const { data: periods = NO_PERIODS } = usePeriodsQuery();
+  const activePeriod = useActivePeriod();
   const axis = useSubjectAxisLabel();
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -33,35 +54,19 @@ export default function ConceptsPage() {
   const [conceptToDelete, setConceptToDelete] = useState<ConceptDto | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
 
-  // Filters
-  const [search, setSearch] = useState("");
-  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [selectedValuationTypes, setSelectedValuationTypes] = useState<QualitativeValuation[]>([]);
+  // Búsqueda, filtros y página sobreviven a la navegación (store de UI, en memoria).
+  const table = useTableFilters("concepts");
+  const { search, initDefaults } = table;
+  const selectedPeriods = table.selectedOf("period");
+  const selectedSubjects = table.selectedOf("subject");
+  const selectedValuationTypes = table.selectedOf("valuation");
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const hasInitializedFilter = useRef(false);
-
+  // Default de periodo activo: una vez por sesión; si el usuario lo quita, no se re-aplica.
   useEffect(() => {
-    useConceptStore.getState().fetchConcepts();
-  }, []);
-
-  // Set default active period filter
-  useEffect(() => {
-    if (!hasInitializedFilter.current && periods.length > 0) {
-      const activePeriod = periods.find(p => p.isActive);
-      if (activePeriod) {
-        setSelectedPeriods([activePeriod._id]);
-      }
-      hasInitializedFilter.current = true;
+    if (periods.length > 0) {
+      initDefaults(activePeriod ? { period: [activePeriod._id] } : {});
     }
-  }, [periods]);
-
-  const canManage = useCallback((concept: ConceptDto): boolean => {
-    if (!currentUser) return false;
-    return currentUser.role === 'Jefe de Área' || concept.author._id === currentUser._id;
-  }, [currentUser]);
+  }, [periods, activePeriod, initDefaults]);
 
   const handleOpenCreateModal = () => {
     setSelectedConcept(null);
@@ -89,7 +94,7 @@ export default function ConceptsPage() {
   const handleConfirmDelete = () => {
     if (!conceptToDelete) return;
 
-    const promise = deleteConcept(conceptToDelete._id);
+    const promise = deleteMutation.mutateAsync(conceptToDelete._id);
     toast.promise(promise, {
       loading: "Eliminando concepto...",
       success: <b>Concepto eliminado con éxito</b>,
@@ -121,14 +126,14 @@ export default function ConceptsPage() {
     let promise;
     if (selectedConcept) {
       const conceptToUpdate: UpdateConcept = { ...payload };
-      promise = updateConcept(selectedConcept._id, conceptToUpdate);
+      promise = updateMutation.mutateAsync({ id: selectedConcept._id, data: conceptToUpdate });
       toast.promise(promise, {
         loading: "Actualizando concepto...",
         success: <b>¡Concepto actualizado con éxito!</b>,
         error: (err) => <b>{err.toString()}</b>,
       });
     } else {
-      promise = createConcept(payload);
+      promise = createMutation.mutateAsync(payload);
       toast.promise(promise, {
         loading: "Creando concepto...",
         success: <b>¡Concepto creado con éxito!</b>,
@@ -137,27 +142,6 @@ export default function ConceptsPage() {
     }
 
     handleCloseModals();
-  };
-
-  const togglePeriodFilter = (periodId: string) => {
-    setSelectedPeriods(prev =>
-      prev.includes(periodId) ? prev.filter(id => id !== periodId) : [...prev, periodId]
-    );
-    setCurrentPage(1);
-  };
-
-  const toggleSubjectFilter = (subjectId: string) => {
-    setSelectedSubjects(prev =>
-      prev.includes(subjectId) ? prev.filter(id => id !== subjectId) : [...prev, subjectId]
-    );
-    setCurrentPage(1);
-  };
-
-  const toggleValuationTypeFilter = (valuationType: QualitativeValuation) => {
-    setSelectedValuationTypes(prev =>
-      prev.includes(valuationType) ? prev.filter(v => v !== valuationType) : [...prev, valuationType]
-    );
-    setCurrentPage(1);
   };
 
   const filteredConcepts = useMemo(() => {
@@ -177,25 +161,27 @@ export default function ConceptsPage() {
       label: "Periodo",
       options: periods.map((period) => ({ value: period._id, label: period.name })),
       selected: selectedPeriods,
-      onToggle: togglePeriodFilter,
+      onToggle: table.toggle("period"),
     },
     {
       id: "subject",
       label: axis.plural,
       options: subjects.map((subject) => ({ value: subject._id, label: subject.name })),
       selected: selectedSubjects,
-      onToggle: toggleSubjectFilter,
+      onToggle: table.toggle("subject"),
     },
     {
       id: "valuation",
       label: "Valoración",
       options: VALUATION_TYPES.map((v) => ({ value: v, label: v })),
       selected: selectedValuationTypes,
-      onToggle: (value) => toggleValuationTypeFilter(value as QualitativeValuation),
+      onToggle: table.toggle("valuation"),
     },
   ];
 
   const totalPages = Math.ceil(filteredConcepts.length / ITEMS_PER_PAGE);
+  // La página guardada puede quedar fuera de rango si la lista se reduce (p. ej. tras eliminar).
+  const currentPage = Math.max(1, Math.min(table.page, totalPages));
   const paginatedConcepts = filteredConcepts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -225,10 +211,7 @@ export default function ConceptsPage() {
         <div className="mb-6 flex">
           <SearchFilterBar
             search={search}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
+            onSearchChange={table.setSearch}
             placeholder="Buscar concepto"
             groups={conceptFilterGroups}
           />
@@ -240,10 +223,10 @@ export default function ConceptsPage() {
           concepts={paginatedConcepts}
           currentPage={currentPage}
           totalPages={totalPages}
-          onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-          onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
+          onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+          onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
           isLoading={isLoading}
-          canManage={canManage}
+          canManage={(concept) => canManageOwned(concept.author._id)}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />

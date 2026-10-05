@@ -1,54 +1,75 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
-import { PlusIcon, AcademicCapIcon, BriefcaseIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, AcademicCapIcon, BriefcaseIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { extractErrorMessage } from "@/api/apiClient";
-import type { GradeLevel, IdentificationType } from "@/types/domain";
-import { useAuthStore } from "../../auth/useAuthStore";
+import type { GradeLevel, IdentificationType, Shift } from "@/types/domain";
+import { useInstitutionSettingsQuery } from "@/features/institution/queries/useInstitutionQuery";
+import { usePermissions } from "../../auth/usePermissions";
 import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { FormModal } from "@/components/common/FormModal";
 import { ITEMS_PER_PAGE } from "@/components/common/DataTable";
 import SearchFilterBar, { type FilterGroup } from "@/components/common/SearchFilterBar";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
 import {
   useUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
   useUploadStudentPhotoMutation,
+  useResendInvitationMutation,
 } from "../queries/useUsersQuery";
-import { useSchoolsQuery } from "../queries/useSchoolsQuery";
-import type { UserDto, NewUser, UpdateUser, WritableUserRole } from "../types";
+import { useSchoolsQuery } from "@/features/school/queries/useSchoolsQuery";
+import { STAFF_ROLES } from "../types";
+import type { UserDto, NewUser, UpdateUser, WritableUserRole, StaffRole, GetUsersQuery } from "../types";
 import { UsersTable } from "../components/UsersTable";
 import { UserForm, type UserFormData } from "../components/UserForm";
 
-const ROLE_TABS = [
-  { value: "Estudiante" as const, label: "Estudiantes", icon: AcademicCapIcon },
-  { value: "Docente" as const, label: "Docentes", icon: BriefcaseIcon },
+type UsersTab = "students" | "staff";
+
+// "Equipo docente" agrupa Docentes y Jefes de Área (USR-04); solo lo ve el Jefe de Área.
+const ROLE_TABS: { value: UsersTab; label: string; icon: typeof AcademicCapIcon }[] = [
+  { value: "students", label: "Estudiantes", icon: AcademicCapIcon },
+  { value: "staff", label: "Equipo docente", icon: BriefcaseIcon },
 ];
+
+const TAB_QUERY: Record<UsersTab, GetUsersQuery> = {
+  students: { role: "Estudiante" },
+  staff: { roles: STAFF_ROLES },
+};
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
+const NO_SHIFTS: Shift[] = [];
 
 export default function UsersPage() {
-  const { sessionData } = useAuthStore();
-  const canManage = sessionData?.user.role === "Jefe de Área";
-  const multipleShifts = sessionData?.multipleShifts ?? false;
-  const shifts = sessionData?.shifts ?? [];
+  const { isAreaLead, userId: currentUserId } = usePermissions();
+  const canCreate = isAreaLead;
+  const canDelete = isAreaLead;
+  const canEdit = true; // ambos roles; el backend acota al Docente a su sede
+  const { data: settings } = useInstitutionSettingsQuery();
+  const multipleShifts = settings?.multipleShifts ?? false;
+  const shifts = settings?.shifts ?? NO_SHIFTS;
 
-  const [activeRole, setActiveRole] = useState<WritableUserRole>("Estudiante");
-  const { data: users = [], isLoading, isError, error } = useUsersQuery({ role: activeRole });
+  const [activeTab, setActiveTab] = useState<UsersTab>("students");
+  const [newStaffRole, setNewStaffRole] = useState<StaffRole>("Docente");
+  const isStaffTab = activeTab === "staff";
+  const visibleRoleTabs = isAreaLead ? ROLE_TABS : ROLE_TABS.filter((tab) => tab.value === "students");
+  const { data: users = [], isLoading, isError, error } = useUsersQuery(TAB_QUERY[activeTab]);
   const { data: schools = [] } = useSchoolsQuery();
 
   const createMutation = useCreateUserMutation();
   const updateMutation = useUpdateUserMutation();
   const deleteMutation = useDeleteUserMutation();
   const uploadPhotoMutation = useUploadStudentPhotoMutation();
+  const resendInvitationMutation = useResendInvitationMutation();
 
-  const [search, setSearch] = useState("");
-  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Cada pestaña conserva su búsqueda, filtros y página (store de UI, en memoria).
+  const table = useTableFilters(isStaffTab ? "users-staff" : "users-students");
+  const { search } = table;
+  const selectedSchools = table.selectedOf("school");
+  const selectedGrades = table.selectedOf("grade");
 
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -59,12 +80,9 @@ export default function UsersPage() {
   const [pendingAvatarBlob, setPendingAvatarBlob] = useState<Blob | null>(null);
   const [pendingAvatarPreview, setPendingAvatarPreview] = useState<string | null>(null);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeRole]);
-
   const handleOpenCreateModal = () => {
     setSelectedUser(null);
+    setNewStaffRole("Docente");
     setPendingAvatarBlob(null);
     setPendingAvatarPreview(null);
     setFormModalOpen(true);
@@ -97,6 +115,15 @@ export default function UsersPage() {
     setIsFormDirty(dirty);
   }, []);
 
+  const handleResendInvitation = (user: UserDto) => {
+    const promise = resendInvitationMutation.mutateAsync(user._id);
+    toast.promise(promise, {
+      loading: "Enviando invitación...",
+      success: <b>Invitación enviada a {user.email}</b>,
+      error: (err) => <b>{extractErrorMessage(err, "No se pudo reenviar la invitación.")}</b>,
+    });
+  };
+
   const handleAvatarChange = async (blob: Blob) => {
     if (selectedUser) {
       const updated = await uploadPhotoMutation.mutateAsync({ studentId: selectedUser._id, blob });
@@ -106,20 +133,6 @@ export default function UsersPage() {
     if (pendingAvatarPreview) URL.revokeObjectURL(pendingAvatarPreview);
     setPendingAvatarBlob(blob);
     setPendingAvatarPreview(URL.createObjectURL(blob));
-  };
-
-  const toggleSchoolFilter = (schoolId: string) => {
-    setSelectedSchools((prev) =>
-      prev.includes(schoolId) ? prev.filter((id) => id !== schoolId) : [...prev, schoolId]
-    );
-    setCurrentPage(1);
-  };
-
-  const toggleGradeFilter = (grade: GradeLevel) => {
-    setSelectedGrades((prev) =>
-      prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]
-    );
-    setCurrentPage(1);
   };
 
   const filteredUsers = useMemo(() => {
@@ -137,30 +150,39 @@ export default function UsersPage() {
   }, [users, search, selectedSchools, selectedGrades]);
 
   const filterGroups: FilterGroup[] = [
-    {
-      id: "school",
-      label: "Sede",
-      options: schools.map((school) => ({ value: school._id, label: school.name })),
-      selected: selectedSchools,
-      onToggle: toggleSchoolFilter,
-    },
+    ...(isAreaLead
+      ? [
+          {
+            id: "school",
+            label: "Sede",
+            options: schools.map((school) => ({ value: school._id, label: school.name })),
+            selected: selectedSchools,
+            onToggle: table.toggle("school"),
+          } satisfies FilterGroup,
+        ]
+      : []),
     {
       id: "grade",
       label: "Grado",
       options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
-      onToggle: (value) => toggleGradeFilter(value as GradeLevel),
+      onToggle: table.toggle("grade"),
     },
   ];
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  // La página guardada puede quedar fuera de rango si la lista se reduce (p. ej. tras eliminar).
+  const currentPage = Math.min(table.page, totalPages);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
   const isEditMode = !!selectedUser;
-  const formRole: WritableUserRole = (selectedUser?.role as WritableUserRole) ?? activeRole;
+  const formRole: WritableUserRole =
+    (selectedUser?.role as WritableUserRole) ?? (isStaffTab ? newStaffRole : "Estudiante");
+  const isStaffForm = formRole !== "Estudiante";
+  const resendingUserId = resendInvitationMutation.isPending ? resendInvitationMutation.variables : null;
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const isSubmitDisabled = isSubmitting || (isEditMode && !isFormDirty);
 
@@ -186,14 +208,14 @@ export default function UsersPage() {
       !formData.identificationType ||
       !identificationNumber ||
       !formData.schoolId ||
-      formData.gradesTaught.length === 0
+      (formRole !== "Jefe de Área" && formData.gradesTaught.length === 0)
     ) {
       toast.error("Por favor, completa todos los campos obligatorios.");
       return;
     }
 
-    if (formRole === "Docente" && !isEditMode && (!formData.email.trim() || !formData.password.trim())) {
-      toast.error("El docente requiere correo y contraseña.");
+    if (isStaffForm && !formData.email.trim()) {
+      toast.error("El correo es obligatorio: allí se envía el enlace de activación.");
       return;
     }
 
@@ -206,11 +228,13 @@ export default function UsersPage() {
         identificationType: formData.identificationType as IdentificationType,
         identificationNumber,
         phoneNumber: formData.phoneNumber.trim() || undefined,
-        schoolId: formData.schoolId,
         gradesTaught: formData.gradesTaught,
       };
-      if (formData.email.trim()) payload.email = formData.email.trim();
-      if (formData.password.trim()) payload.password = formData.password.trim();
+      // El Select de sede queda deshabilitado para el Docente (UserForm): no se envía el campo,
+      // porque el backend rechaza con 403 cualquier intento de un Docente de cambiar la sede,
+      // incluso a su mismo valor actual.
+      if (isAreaLead) payload.schoolId = formData.schoolId;
+      if (formData.email.trim()) payload.email = formData.email.trim().toLowerCase();
       if (formRole === "Estudiante") payload.shiftId = formData.shiftId || null;
 
       const promise = updateMutation.mutateAsync({ userId: selectedUser._id, data: payload });
@@ -224,7 +248,7 @@ export default function UsersPage() {
     }
 
     const payload: NewUser = {
-      role: activeRole,
+      role: formRole,
       firstName: formData.firstName.trim(),
       middleName: formData.middleName.trim() || undefined,
       lastName: formData.lastName.trim(),
@@ -234,8 +258,8 @@ export default function UsersPage() {
       phoneNumber: formData.phoneNumber.trim() || undefined,
       schoolId: formData.schoolId,
       gradesTaught: formData.gradesTaught,
-      ...(activeRole === "Docente"
-        ? { email: formData.email.trim(), password: formData.password.trim() }
+      ...(isStaffForm
+        ? { email: formData.email.trim().toLowerCase() }
         : { shiftId: formData.shiftId || undefined }),
     };
 
@@ -246,10 +270,32 @@ export default function UsersPage() {
       return created;
     });
     toast.promise(promise, {
-      loading: "Creando usuario...",
-      success: <b>¡Usuario creado con éxito!</b>,
+      loading: isStaffForm ? "Creando usuario y enviando invitación..." : "Creando usuario...",
+      success: (created) =>
+        isStaffForm && created.invitationEmailSent ? (
+          <b>Invitación enviada a {created.email}</b>
+        ) : (
+          <b>¡Usuario creado con éxito!</b>
+        ),
       error: (err) => <b>{extractErrorMessage(err, "No se pudo crear el usuario.")}</b>,
     });
+    // El alta se conserva aunque el correo falle: se avisa para que el Jefe de Área reenvíe.
+    promise
+      .then((created) => {
+        if (isStaffForm && !created.invitationEmailSent) {
+          toast(
+            <span>
+              <b>No se pudo enviar la invitación.</b> Usa "Reenviar invitación" en la fila de {created.firstName}.
+            </span>,
+            {
+              duration: 8000,
+              icon: <ExclamationTriangleIcon className="h-5 w-5 shrink-0 text-amber-600" />,
+              style: { background: "#FFFBEB", color: "#78350F" },
+            }
+          );
+        }
+      })
+      .catch(() => undefined);
     handleCloseModals();
   };
 
@@ -259,7 +305,7 @@ export default function UsersPage() {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-semibold text-purple-900">Gestión de Usuarios</h1>
 
-          {canManage && (
+          {canCreate && (
             <button
               onClick={handleOpenCreateModal}
               aria-label="Crear nuevo usuario"
@@ -272,15 +318,15 @@ export default function UsersPage() {
         </div>
 
         <div className="flex items-center gap-4 mb-6">
-          <Tabs value={activeRole} className="w-auto shrink-0">
+          <Tabs value={activeTab} className="w-auto shrink-0">
             <TabsHeader className="bg-purple-50/60 p-1.5">
-              {ROLE_TABS.map(({ value, label, icon: Icon }) => {
-                const isActive = activeRole === value;
+              {visibleRoleTabs.map(({ value, label, icon: Icon }) => {
+                const isActive = activeTab === value;
                 return (
                   <Tab
                     key={value}
                     value={value}
-                    onClick={() => setActiveRole(value)}
+                    onClick={() => setActiveTab(value)}
                     className="px-8 py-2 transition-transform duration-150 active:scale-[0.98]"
                   >
                     <div
@@ -299,10 +345,7 @@ export default function UsersPage() {
 
           <SearchFilterBar
             search={search}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
+            onSearchChange={table.setSearch}
             placeholder="Buscar por nombre o identificación"
             groups={filterGroups}
           />
@@ -314,13 +357,18 @@ export default function UsersPage() {
           users={paginatedUsers}
           currentPage={currentPage}
           totalPages={totalPages}
-          onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+          onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
           isLoading={isLoading}
-          canManage={canManage}
+          canEdit={canEdit}
+          canDelete={canDelete}
           multipleShifts={multipleShifts}
+          isStaffView={isStaffTab}
+          currentUserId={currentUserId}
+          resendingUserId={resendingUserId}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onResendInvitation={handleResendInvitation}
         />
       </div>
 
@@ -337,18 +385,20 @@ export default function UsersPage() {
         open={isFormModalOpen}
         onClose={handleCloseModals}
         onSubmit={handleFormSubmit}
-        title={!isEditMode ? `Nuevo ${activeRole}` : "Editar Usuario"}
-        submitText={!isEditMode ? "Crear Usuario" : "Actualizar"}
+        title={!isEditMode ? `Nuevo ${formRole}` : "Editar Usuario"}
+        submitText={!isEditMode ? (isStaffForm ? "Crear y enviar invitación" : "Crear Usuario") : "Actualizar"}
         isSubmitting={isSubmitting}
         isSubmitDisabled={isSubmitDisabled}
         size="md"
       >
         <UserForm
           role={formRole}
+          onRoleChange={!isEditMode && isStaffTab ? setNewStaffRole : undefined}
           initialData={selectedUser}
           schools={schools}
           shifts={shifts}
           multipleShifts={multipleShifts}
+          isAreaLead={isAreaLead}
           avatarUrl={selectedUser ? selectedUser.avatarUrl : pendingAvatarPreview ?? undefined}
           onAvatarChange={handleAvatarChange}
           isUploadingAvatar={uploadPhotoMutation.isPending}

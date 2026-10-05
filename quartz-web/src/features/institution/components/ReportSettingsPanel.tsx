@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Typography, Checkbox } from "@material-tailwind/react";
 import { DocumentCheckIcon, EnvelopeOpenIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { extractErrorMessage } from "@/api/apiClient";
 
-import { useInstitutionStore } from "../useInstitutionStore";
+import { useInstitutionQuery, useUpdateInstitutionSettingsMutation } from "../queries/useInstitutionQuery";
 import { REPORT_KIND_LABELS, type ReportKind } from "@/types/domain";
 
 const REPORT_OPTIONS: { value: ReportKind; description: string; icon: React.ElementType }[] = [
@@ -20,13 +21,12 @@ const REPORT_OPTIONS: { value: ReportKind; description: string; icon: React.Elem
 ];
 
 export function ReportSettingsPanel() {
-  const { institution, isLoading, isSubmitting, error, fetchInstitution, updateSettings } = useInstitutionStore();
+  const { data: institution, isPending: isLoading, error: queryError } = useInstitutionQuery();
+  const updateMutation = useUpdateInstitutionSettingsMutation();
+  const isSubmitting = updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de la configuración institucional.") : null;
 
   const [enabledReports, setEnabledReports] = useState<ReportKind[]>([]);
-
-  useEffect(() => {
-    fetchInstitution();
-  }, [fetchInstitution]);
 
   useEffect(() => {
     if (institution) {
@@ -53,7 +53,7 @@ export function ReportSettingsPanel() {
       return;
     }
 
-    const promise = updateSettings({ enabledReports });
+    const promise = updateMutation.mutateAsync({ enabledReports });
     toast.promise(promise, {
       loading: "Guardando configuración...",
       success: <b>¡Configuración actualizada con éxito!</b>,

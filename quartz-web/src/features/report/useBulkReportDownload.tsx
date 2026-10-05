@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { pdf } from "@react-pdf/renderer";
-import { useReportStore } from "./useReportStore";
+import { useConsolidatedChecklistMutation, useConsolidatedLetterMutation } from "./queries/useReportQuery";
 import { useInstitutionShieldQuery } from "@/features/institution/queries/useInstitutionShieldQuery";
 import { downloadBlob } from "@/utils/downloadBlob";
 import ChecklistReportBulkDocument from "./components/ChecklistReportBulkDocument";
@@ -38,7 +38,8 @@ function buildFileName(reportKind: ReportKind, meta?: BulkDownloadFileNameMeta):
 
 export function useBulkReportDownload() {
   const [isDownloading, setIsDownloading] = useState(false);
-  const { fetchConsolidatedChecklistReports, fetchConsolidatedCommunicativeLetters } = useReportStore();
+  const { mutateAsync: fetchConsolidatedChecklistReports } = useConsolidatedChecklistMutation();
+  const { mutateAsync: fetchConsolidatedCommunicativeLetters } = useConsolidatedLetterMutation();
   const shield = useInstitutionShieldQuery();
 
   const download = async (

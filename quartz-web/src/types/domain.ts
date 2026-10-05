@@ -1,6 +1,13 @@
+import type { PeriodDto } from '@/features/period/types';
+
 export type UserRole = 'Jefe de Área' | 'Docente' | 'Estudiante';
 
-export type IdentificationType = 'CC' | 'TI' | 'RC';
+// Estado de cuenta de Docente/Jefe de Área (USR-04). Ausente ⇒ Activo.
+export const ACCOUNT_STATUSES = ['Pendiente', 'Activo'] as const;
+export type AccountStatus = typeof ACCOUNT_STATUSES[number];
+
+export const IDENTIFICATION_TYPES = ['CC', 'TI', 'RC'] as const;
+export type IdentificationType = typeof IDENTIFICATION_TYPES[number];
 
 export type GradeLevel = 'Transición' | '1ro' | '2do' | '3ro' | '4to' | '5to' | '6to' | '7mo' | '8vo' | '9no' | '10mo' | '11mo';
 
@@ -35,6 +42,25 @@ export function resolveSubjectAxisLabel(subjects: Pick<Subject, 'type'>[]): Subj
 
 export type SubjectEvaluationMode = 'checklist' | 'description';
 
+export const QUALITATIVE_VALUATION_VALUES = ['Logrado', 'En proceso', 'Con dificultad'] as const;
+export type QualitativeValuation = (typeof QUALITATIVE_VALUATION_VALUES)[number];
+
+/** Hex, no clases Tailwind: Recharts y react-pdf necesitan el valor literal. */
+export const QUALITATIVE_VALUATION_COLORS: Record<QualitativeValuation, string> = {
+  'Logrado': '#16a34a',
+  'En proceso': '#d97706',
+  'Con dificultad': '#dc2626',
+};
+
+export const CHART_PALETTE = {
+  brand: '#620DD1',
+  brandSoft: '#a57cff',
+  brandFaint: '#dbd1ff',
+  accent: '#E1035A',
+  grid: '#eceff1',
+  axis: '#78909c',
+} as const;
+
 export const REPORT_KIND_VALUES = ['checklist', 'communicative-letter'] as const;
 
 export type ReportKind = (typeof REPORT_KIND_VALUES)[number];
@@ -62,12 +88,6 @@ export interface Shift {
   name: string;
 }
 
-export interface ChecklistTemplates {
-    _id: string;
-    periodId: string;
-    name: string;
-  }
-
 export interface User {
   _id: string;
   institutionId: string;
@@ -84,6 +104,8 @@ export interface User {
   avatarUrl?: string; 
 }
 
+// Payload de `/auth/*`: los catálogos se siembran en React Query (`seedSessionCatalogs`) y se
+// descartan; el store solo guarda `user`.
 export interface ISessionData {
   user: Pick<User, 
     '_id' | 
@@ -95,9 +117,8 @@ export interface ISessionData {
     'schoolId' | 
     'avatarUrl'
     >;
-  periods: Period[];
+  periods: PeriodDto[];
   subjects: Subject[];
-  checklistTemplates: ChecklistTemplates[];
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: Shift[];

@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
 import { UserIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IndividualReportsPanel from "../components/IndividualReportsPanel";
 import ConsolidatedReportsPanel from "../components/ConsolidatedReportsPanel";
-import { useReportStore } from "../useReportStore";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
+import { usePermissions } from "../../auth/usePermissions";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
-import type { SchoolDto } from "../../student-valuation/types";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
+import type { UserDto, UserSchool } from "../../users/types";
 import type { GradeLevel } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
@@ -18,21 +20,35 @@ const TABS = [
 
 type ReportsTab = (typeof TABS)[number]["value"];
 
+const NO_USERS: UserDto[] = [];
+// Misma key que `IndividualReportsPanel` y `/evaluacion`: React Query deduplica la request.
+const STUDENTS_QUERY = { role: "Estudiante" } as const;
+
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<ReportsTab>("individual");
-  const { users } = useReportStore();
+  const { data: users = NO_USERS } = useUsersQuery(STUDENTS_QUERY);
+  const { isAreaLead, schoolId } = usePermissions();
 
-  const [search, setSearch] = useState("");
-  const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
-  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
+  // Dueña de la tabla "reports": búsqueda y filtros sobreviven a la navegación (store de UI, en
+  // memoria). `IndividualReportsPanel` lee la página del mismo `TableId`.
+  const table = useTableFilters("reports");
+  const { search, initDefaults } = table;
+  const selectedGrades = table.selectedOf("grade");
+  const selectedSchools = table.selectedOf("school");
 
   const isIndividual = activeTab === "individual";
 
   const schools = useMemo(() => {
-    const bySchoolId = new Map<string, SchoolDto>();
+    const bySchoolId = new Map<string, UserSchool>();
     users.forEach((user) => bySchoolId.set(user.school._id, user.school));
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
+
+  // Default de sede propia del Jefe de Área: una vez por sesión; si la quita, no se re-aplica.
+  useEffect(() => {
+    if (!isAreaLead || !schoolId || schools.length === 0) return;
+    initDefaults(schools.some((s) => s._id === schoolId) ? { school: [schoolId] } : {});
+  }, [isAreaLead, schoolId, schools, initDefaults]);
 
   const filterGroups: FilterGroup[] = [
     {
@@ -40,19 +56,19 @@ export default function ReportsPage() {
       label: "Grado",
       options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
-      onToggle: (value) =>
-        setSelectedGrades((prev) =>
-          prev.includes(value as GradeLevel) ? prev.filter((g) => g !== value) : [...prev, value as GradeLevel]
-        ),
+      onToggle: table.toggle("grade"),
     },
-    {
-      id: "school",
-      label: "Sede",
-      options: schools.map((school) => ({ value: school._id, label: school.name })),
-      selected: selectedSchools,
-      onToggle: (value) =>
-        setSelectedSchools((prev) => (prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value])),
-    },
+    ...(isAreaLead
+      ? [
+          {
+            id: "school",
+            label: "Sede",
+            options: schools.map((school) => ({ value: school._id, label: school.name })),
+            selected: selectedSchools,
+            onToggle: table.toggle("school"),
+          } satisfies FilterGroup,
+        ]
+      : []),
   ];
 
   return (
@@ -101,7 +117,7 @@ export default function ReportsPage() {
             <div className="min-w-[280px]">
               <SearchFilterBar
                 search={search}
-                onSearchChange={setSearch}
+                onSearchChange={table.setSearch}
                 placeholder="Buscar por nombre o identificación"
                 groups={filterGroups}
               />

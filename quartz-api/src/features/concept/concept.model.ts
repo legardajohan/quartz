@@ -17,5 +17,7 @@ const ConceptSchema = new Schema<IConceptDocument>({
 });
 
 ConceptSchema.index({ institutionId: 1 });
+// Soporta los huecos de concepto por dimensión y nivel del dashboard (INF-04).
+ConceptSchema.index({ institutionId: 1, periodId: 1, subjectId: 1, valuationType: 1 });
 
 export const ConceptModel = model<IConceptDocument>('Concept', ConceptSchema);

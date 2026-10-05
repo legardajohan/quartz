@@ -16,7 +16,6 @@ import { UserRole } from '../auth/auth.types';
 import type {
   CreateChecklistTemplateData,
   UpdateChecklistTemplateData,
-  IChecklistTemplateForSession,
   SubjectSnapshotData,
 } from './checklist-template.types';
 import AppError from '../../utils/AppError';
@@ -73,21 +72,6 @@ export async function getChecklistTemplates(
   return populateTemplateDetails(
     findScoped(ChecklistTemplateModel, institutionId, filter)
   ).exec();
-}
-
-export async function getChecklistTemplatesForSession(
-  teacherId: string,
-  institutionId: string
-): Promise<IChecklistTemplateForSession[]> {
-  const templates = await findScoped(ChecklistTemplateModel, institutionId, { teacherId })
-    .select('_id name periodId')
-    .lean();
-
-  return templates.map((t) => ({
-    _id: (t._id as Types.ObjectId).toString(),
-    name: (t as any).name,
-    periodId: (t as any).periodId.toString(),
-  }));
 }
 
 export async function createChecklistTemplate(

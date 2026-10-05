@@ -1,66 +1,60 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
-import { useStudentValuationStore } from "../useStudentValuationStore";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { useStudentValuationQuery, useUpdateValuationMutation } from "../queries/useStudentValuationQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
+import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
+import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
 import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
-import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
+import type { IStudentValuationDTO, StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
-import { ImageCropUploader } from "../../../components/common/ImageCropUploader";
 import toast from "react-hot-toast";
 import { AVATAR_FALLBACK } from "@/constants/assets";
 import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
-import { useUsersQuery, useUploadStudentPhotoMutation } from "../../users/queries/useUsersQuery";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
 
 import { Loading } from "../../../components/ui/Loading";
-
-const PHOTO_UPLOAD_ROLES = ["Jefe de Área", "Docente"];
 
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
     const navigate = useNavigate();
-    const {
-        currentValuation,
-        fetchValuation,
-        updateValuation,
-        clearValuation,
-        isLoading,
-        error
-    } = useStudentValuationStore();
-    const { sessionData } = useAuthStore();
+    const { data: subjects } = useSubjectsQuery();
+    const { isAreaLead } = usePermissions();
+    const activePeriod = useActivePeriod();
+    const { data: serverValuation, isPending, error } = useStudentValuationQuery(studentId, activePeriod?._id);
+    const updateValuation = useUpdateValuationMutation();
 
     const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
-    const [localValuation, setLocalValuation] = useState(currentValuation);
+    // `baseValuation`: versión del servidor sobre la que se editó `localValuation`. Comparar contra
+    // ella (no contra la caché) evita que una revalidación en segundo plano se lea como cambio.
+    const [baseValuation, setBaseValuation] = useState<IStudentValuationDTO | null>(null);
+    const [localValuation, setLocalValuation] = useState<IStudentValuationDTO | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const { data: studentUsers } = useUsersQuery(studentId ? { id: studentId } : undefined);
     const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
-    const uploadPhotoMutation = useUploadStudentPhotoMutation();
-    const canUploadPhoto = Boolean(sessionData?.user.role && PHOTO_UPLOAD_ROLES.includes(sessionData.user.role));
 
-    const handlePhotoUpload = async (blob: Blob) => {
-        if (!studentId) return;
-        await uploadPhotoMutation.mutateAsync({ studentId, blob });
+    const hasChanges =
+        !!localValuation &&
+        !!baseValuation &&
+        (JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(baseValuation.valuationsBySubject) ||
+            (localValuation.observations ?? "") !== (baseValuation.observations ?? ""));
+
+    const syncFromServer = (valuation: IStudentValuationDTO) => {
+        setBaseValuation(valuation);
+        setLocalValuation(valuation);
     };
 
-    useEffect(() => {
-        const activePeriod = sessionData?.periods?.find((p) => p.isActive);
-        if (studentId && activePeriod) {
-            fetchValuation(studentId, activePeriod._id);
-        }
-        return () => {
-            clearValuation();
-        };
-    }, [studentId, sessionData, fetchValuation, clearValuation]);
-
-    useEffect(() => {
-        setLocalValuation(currentValuation);
+    // Ajuste en render (no en effect): adopta la versión del servidor solo si no hay borrador.
+    if (serverValuation && serverValuation !== baseValuation && !hasChanges) {
+        syncFromServer(serverValuation);
         // Open first subject by default if not already open
-        if (currentValuation?.valuationsBySubject?.[0]?.subjectId && !openSubjectId) {
-            setOpenSubjectId(currentValuation.valuationsBySubject[0].subjectId);
+        if (serverValuation.valuationsBySubject[0]?.subjectId && !openSubjectId) {
+            setOpenSubjectId(serverValuation.valuationsBySubject[0].subjectId);
         }
-    }, [currentValuation]);
+    }
 
     // Calculate Global Progress
     const totalLearnings = localValuation?.valuationsBySubject.reduce((acc, subject) => acc + subject.learningValuations.length, 0) || 0;
@@ -93,7 +87,8 @@ export default function StudentValuationDetail() {
                 observations: localValuation.observations ?? "",
             };
 
-            await updateValuation(localValuation._id, payload);
+            const saved = await updateValuation.mutateAsync({ valuationId: localValuation._id, payload });
+            syncFromServer(saved);
             toast.success("Evaluación guardada correctamente");
         } catch (error) {
             toast.error("Error al guardar la Evaluación");
@@ -104,38 +99,54 @@ export default function StudentValuationDetail() {
     };
 
 
-
-    const hasChanges = useCallback(() => {
-        if (!localValuation || !currentValuation) return false;
-        return (
-            JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(currentValuation.valuationsBySubject) ||
-            (localValuation.observations ?? "") !== (currentValuation.observations ?? "")
-        );
-    }, [localValuation, currentValuation]);
-
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) =>
-            hasChanges() && currentLocation.pathname !== nextLocation.pathname
+            hasChanges && currentLocation.pathname !== nextLocation.pathname
     );
 
-    if (isLoading) {
+    if (studentId && activePeriod && isPending) {
         return <Loading message="Cargando valoración..." />;
     }
 
-    if (error) {
+    if (error && !serverValuation) {
         return (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex flex-col items-center justify-center gap-2">
                 <Typography color="red" className="font-medium">
                     No se pudo crear la evaluación
                 </Typography>
                 <Typography variant="small" className="text-gray-600">
-                    {error}
+                    {extractErrorMessage(error, "Error al cargar la valoración.")}
                 </Typography>
                 <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
                     Volver
                 </Button>
             </div>
         )
+    }
+
+    if (!activePeriod) {
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center gap-2 text-center">
+                <Typography variant="h6" color="blue-gray">
+                    No hay un periodo académico activo
+                </Typography>
+                <Typography variant="small" className="text-gray-500">
+                    {isAreaLead
+                        ? "Activa un periodo en Configuración para poder valorar estudiantes."
+                        : "Pide al Jefe de Área que active el periodo académico."}
+                </Typography>
+                <div className="flex gap-2 mt-2">
+                    {isAreaLead && (
+                        <Button color="purple" size="sm" onClick={() => navigate('/gestion/configuracion')}>
+                            Ir a Configuración
+                        </Button>
+                    )}
+                    <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
+                        Volver
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     if (!localValuation) {
@@ -162,18 +173,7 @@ export default function StudentValuationDetail() {
                 </div>
                 <div className="flex w-full items-center justify-between mb-8 border border-gray-200 p-4 rounded-lg">
                     <div className="flex items-center gap-4">
-                        {canUploadPhoto ? (
-                            <ImageCropUploader
-                                currentUrl={studentAvatarUrl}
-                                label="Foto del estudiante"
-                                onUpload={handlePhotoUpload}
-                                isUploading={uploadPhotoMutation.isPending}
-                                shape="circle"
-                                size="lg"
-                            />
-                        ) : (
-                            <Avatar src={studentAvatarUrl || AVATAR_FALLBACK} alt="user_image" size="lg" />
-                        )}
+                        <Avatar src={studentAvatarUrl || AVATAR_FALLBACK} alt="user_image" size="lg" />
                         <div>
                             <h1 className="text-lg font-semibold text-gray-700">
                                 {localValuation.studentName.lastName} {localValuation.studentName.secondLastName}
@@ -235,9 +235,9 @@ export default function StudentValuationDetail() {
                                         : subject.subjectId
                                 )
                             }
-                            // Inject icon based on index in sessionData.subjects
+                            // Inject icon based on index in the subjects catalog
                             icon={(() => {
-                                const subjectIndex = sessionData?.subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
+                                const subjectIndex = subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
                                 if (subjectIndex !== -1) {
                                     return SUBJECT_ICONS[subjectIndex % SUBJECT_ICONS.length];
                                 }
@@ -305,7 +305,7 @@ export default function StudentValuationDetail() {
 
             {/* Conditional Footer for Saving Changes */}
             {/* Sticky Footer for Saving Changes */}
-            <div className={`fixed bottom-6 inset-x-0 mx-auto max-w-3xl z-50 transition-all duration-300 transform ${hasChanges() ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+            <div className={`fixed bottom-6 inset-x-0 mx-auto max-w-3xl z-50 transition-all duration-300 transform ${hasChanges ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
                 <div className="bg-white p-4 rounded-xl shadow-lg flex items-center justify-between px-8 mx-auto container">
                     <div className="flex items-center gap-2">
                         <div className="flex h-2 w-2 relative">
@@ -322,7 +322,7 @@ export default function StudentValuationDetail() {
                             size="sm"
                             color="blue-gray"
                             onClick={() => {
-                                setLocalValuation(currentValuation);
+                                if (serverValuation) syncFromServer(serverValuation);
                             }}
                             className="hover:bg-gray-100"
                         >

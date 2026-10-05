@@ -66,7 +66,7 @@ router.delete(
   '/:valuationId',
   authenticateJWT,
   requireTenant,
-  authorize([UserRole.JEFE_DE_AREA]),
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(studentValuationValidation.deleteValuation),
   asyncHandler(deleteValuationController)
 );

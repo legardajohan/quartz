@@ -1,45 +1,43 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ReportsTable from "./ReportsTable";
 import ChecklistReportModal from "./ChecklistReportModal";
 import CommunicativeLetterModal from "./CommunicativeLetterModal";
-import { useReportStore, ITEMS_PER_PAGE } from "../useReportStore";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { useLetterAvailabilityQuery } from "../queries/useReportQuery";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
+import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
+import { useActivePeriod } from "../../period/useActivePeriod";
+import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
 import { normalizeText } from "../../../utils/normalizeText";
-import type { GradeLevel } from "@/types/domain";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
+import { REPORT_KIND_VALUES, type GradeLevel, type ReportKind } from "@/types/domain";
+import type { UserDto } from "../../users/types";
+
+const NO_USERS: UserDto[] = [];
+const STUDENTS_QUERY = { role: "Estudiante" } as const;
+// Sin ajustes (aún no llegan o falló la request) se asume el default del backend: ambos informes.
+const DEFAULT_ENABLED_REPORTS: ReportKind[] = [...REPORT_KIND_VALUES];
 
 interface IndividualReportsPanelProps {
   search: string;
-  selectedGrades: GradeLevel[];
+  selectedGrades: string[];
   selectedSchools: string[];
 }
 
 export default function IndividualReportsPanel({ search, selectedGrades, selectedSchools }: IndividualReportsPanelProps) {
-  const { users, isLoading, fetchUsers, fetchLetterAvailability, letterAvailability } = useReportStore();
-  const { sessionData } = useAuthStore();
+  const { data: settings } = useInstitutionSettingsQuery();
 
   const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
   const [selectedStudentName, setSelectedStudentName] = useState("");
   const [selectedLetterValuationId, setSelectedLetterValuationId] = useState<string | null>(null);
   const [selectedLetterStudentName, setSelectedLetterStudentName] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const activePeriodId = sessionData?.periods?.find((p) => p.isActive)?._id;
+  const activePeriodId = useActivePeriod()?._id;
+  const { data: users = NO_USERS, isPending: isLoading } = useUsersQuery(STUDENTS_QUERY);
+  const { data: letterAvailability } = useLetterAvailabilityQuery(activePeriodId);
 
-  useEffect(() => {
-    if (sessionData?.user) {
-      fetchUsers({ role: "Estudiante" });
-    }
-  }, [sessionData?.user, fetchUsers]);
-
-  useEffect(() => {
-    if (activePeriodId) {
-      fetchLetterAvailability(activePeriodId);
-    }
-  }, [activePeriodId, fetchLetterAvailability]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, selectedGrades, selectedSchools]);
+  // La página vive en la tabla "reports" (dueña: `ReportsPage`); el store ya la vuelve a 1 al
+  // cambiar búsqueda o filtros.
+  const table = useTableFilters("reports");
 
   const term = normalizeText(search);
   const filteredUsers = users.filter((user) => {
@@ -57,6 +55,8 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  // La página guardada puede quedar fuera de rango si la lista se reduce.
+  const currentPage = Math.min(table.page, totalPages);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
@@ -86,12 +86,12 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
         users={paginatedUsers}
         currentPage={currentPage}
         totalPages={totalPages}
-        onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+        onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
         isLoading={isLoading}
         onViewChecklist={handleViewChecklist}
         onViewLetter={handleViewLetter}
-        enabledReports={sessionData?.enabledReports ?? ['checklist', 'communicative-letter']}
+        enabledReports={settings?.enabledReports ?? DEFAULT_ENABLED_REPORTS}
         isLetterAvailable={letterAvailability?.isAvailable ?? false}
         activePeriodId={activePeriodId}
       />

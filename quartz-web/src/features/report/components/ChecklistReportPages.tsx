@@ -1,16 +1,9 @@
 import { Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
-import type { IReportTemplate, QualitativeValuation } from "../types";
+import type { IReportTemplate } from "../types";
 import { QUARTZ_LOGO_DATA_URI } from "../assets/quartzLogoDataUri";
+import { QUALITATIVE_VALUATION_COLORS as VALUATION_COLORS, QUALITATIVE_VALUATION_VALUES as VALUATION_ORDER } from "@/types/domain";
 
 const QUARTZ_LOGO_ASPECT_RATIO = 2298 / 270;
-
-const VALUATION_COLORS: Record<QualitativeValuation, string> = {
-  Logrado: "#16a34a",
-  "En proceso": "#d97706",
-  "Con dificultad": "#dc2626",
-};
-
-const VALUATION_ORDER: QualitativeValuation[] = ["Logrado", "En proceso", "Con dificultad"];
 
 interface PersonName {
   firstName: string;

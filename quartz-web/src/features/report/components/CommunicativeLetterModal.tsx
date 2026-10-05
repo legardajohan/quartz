@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Dialog, DialogHeader, DialogBody, IconButton, Button, Typography } from "@material-tailwind/react";
 import { XMarkIcon, ArrowDownTrayIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import CommunicativeLetterDocument from "./CommunicativeLetterDocument";
 import { Loading } from "../../../components/ui/Loading";
-import { useReportStore } from "../useReportStore";
+import { useCommunicativeLetterQuery } from "../queries/useReportQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
 import { useReportPdf } from "../useReportPdf";
 import { useInstitutionShieldQuery } from "@/features/institution/queries/useInstitutionShieldQuery";
 
@@ -20,22 +21,16 @@ export default function CommunicativeLetterModal({
   studentName,
   onClose,
 }: CommunicativeLetterModalProps) {
-  const currentLetter = useReportStore((state) => state.currentLetter);
-  const isLetterLoading = useReportStore((state) => state.isLetterLoading);
-  const letterError = useReportStore((state) => state.letterError);
-  const fetchCommunicativeLetter = useReportStore((state) => state.fetchCommunicativeLetter);
-  const clearLetter = useReportStore((state) => state.clearLetter);
+  // Cerrar el modal no descarta la caché: reabrirlo pinta la carta y revalida en segundo plano.
+  const letter = useCommunicativeLetterQuery(valuationId, { enabled: open });
   const shield = useInstitutionShieldQuery();
 
-  useEffect(() => {
-    if (open && valuationId) {
-      fetchCommunicativeLetter(valuationId);
-    }
-    if (!open) {
-      clearLetter();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, valuationId]);
+  const currentLetter = letter.data;
+  const isLetterLoading = letter.isPending;
+  const letterError =
+    letter.error && !currentLetter
+      ? extractErrorMessage(letter.error, "Falló la carga de la Carta Comunicativa.")
+      : null;
 
   // Memoizado para que un re-render del modal no regenere el PDF: `useReportPdf` reacciona a la
   // identidad del elemento, no a su contenido.

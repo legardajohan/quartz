@@ -3,7 +3,7 @@ import { Typography, Select, Option, Textarea, IconButton } from "@material-tail
 import { SquarePen, Check } from "lucide-react";
 import { STATUS_ICON_SVG } from "../statusVisuals";
 import type { ILetterSubjectBlock } from "../types";
-import type { QualitativeValuation } from "../types";
+import type { QualitativeValuation } from "@/types/domain";
 
 const LEVEL_STYLES: Record<QualitativeValuation, { dot: string; text: string; select: "green" | "amber" | "red" }> = {
   "Logrado": { dot: "bg-green-500", text: "text-green-700", select: "green" },

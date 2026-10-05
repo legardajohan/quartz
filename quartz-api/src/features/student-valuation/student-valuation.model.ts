@@ -70,4 +70,7 @@ const studentValuationSchema = new Schema<IStudentValuationDocument>({
 // Compound unique index to ensure one valuation per student per period
 studentValuationSchema.index({ studentId: 1, periodId: 1 }, { unique: true });
 
+// Soporta el $match del $facet del dashboard y la agregación de tendencia (INF-04).
+studentValuationSchema.index({ institutionId: 1, periodId: 1, studentId: 1 });
+
 export const StudentValuationModel = model<IStudentValuationDocument>('StudentValuation', studentValuationSchema, 'studentValuations');

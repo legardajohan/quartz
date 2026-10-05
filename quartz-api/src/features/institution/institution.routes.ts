@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getMyInstitutionController,
   getMyInstitutionBrandingController,
+  getMyInstitutionSettingsController,
   getMyInstitutionShieldController,
   updateMyInstitutionController,
   uploadShieldController,
@@ -31,6 +32,14 @@ router.get(
   requireTenant,
   authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   asyncHandler(getMyInstitutionBrandingController)
+);
+
+router.get(
+  '/me/settings',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  asyncHandler(getMyInstitutionSettingsController)
 );
 
 router.patch(

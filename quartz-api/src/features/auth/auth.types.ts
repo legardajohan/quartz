@@ -1,10 +1,23 @@
-import { SubjectType, SubjectEvaluationMode } from '../subject/subject.types';
+import { ISubjectDTO } from '../subject/subject.types';
+import { IPeriodDTO } from '../period/period.types';
 import { ReportKind, IShiftDTO } from '../institution/institution.types';
 
 export enum UserRole {
   JEFE_DE_AREA = 'Jefe de Área',
   DOCENTE = 'Docente',
   ESTUDIANTE = 'Estudiante',
+}
+
+// Solo aplica a Docente y Jefe de Área. Ausente ⇒ Activo (usuarios previos a USR-04).
+export enum UserAccountStatus {
+  PENDIENTE = 'Pendiente',
+  ACTIVO = 'Activo',
+}
+
+export interface IActivationPreview {
+  email: string;
+  firstName: string;
+  institutionName: string;
 }
 
 export enum IdentificationType {
@@ -37,23 +50,11 @@ export interface ISessionData {
     lastName: string;
     secondLastName?: string;
     schoolId?: string;
+    avatarUrl?: string;
   };
-  periods: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-  }[];
-  subjects: {
-    _id: string;
-    name: string;
-    type: SubjectType;
-    evaluationMode: SubjectEvaluationMode;
-  }[];
-  checklistTemplates: {
-    _id: string;
-    periodId: string;
-    name: string;
-  }[];
+  // Mismo DTO que `GET /periods` y `GET /subjects`: el front siembra su caché con ellos.
+  periods: IPeriodDTO[];
+  subjects: ISubjectDTO[];
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: IShiftDTO[];

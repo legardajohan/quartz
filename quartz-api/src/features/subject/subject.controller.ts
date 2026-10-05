@@ -4,18 +4,8 @@ import {
     createSubject,
     updateSubject,
     deleteSubject,
+    mapSubjectToDTO,
 } from './subject.service';
-import { PlainSubjectObject } from './subject.model';
-import { ISubjectDTO } from './subject.types';
-
-function mapSubjectToDTO(subject: PlainSubjectObject): ISubjectDTO {
-    return {
-        _id: subject._id.toString(),
-        name: subject.name,
-        type: subject.type,
-        evaluationMode: subject.evaluationMode,
-    };
-}
 
 export const getSubjects = async (req: Request, res: Response) => {
     const institutionId = req.user!.institutionId.toString();

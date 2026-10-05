@@ -5,10 +5,12 @@ import { Period } from '../period/period.model';
 import {
     findOneScoped,
     findScoped,
+    findByIdScoped,
     createScoped,
     deleteOneScoped,
 } from '../../repositories/base.repository';
 import { validateAllExist } from '../../services/document-validator.service';
+import { invalidatePrefix } from '../../services/memory-cache.service';
 import {
   StudentValuationCreationData,
   StudentValuationUpdateData,
@@ -19,9 +21,13 @@ import {
   StudentNameFields,
   GlobalValuationStatus,
   QualitativeValuation,
+  RequestorScope,
+  VALUATION_POINTS,
+  CONCEPT_THRESHOLDS,
 } from './student-valuation.types';
 import AppError from '../../utils/AppError';
 import { User } from '../auth/auth.model';
+import { UserRole } from '../auth/auth.types';
 import { Subject } from '../subject/subject.model';
 import { SubjectEvaluationMode } from '../subject/subject.types';
 import { ConceptModel } from '../concept/concept.model';
@@ -34,9 +40,35 @@ import { ConceptModel } from '../concept/concept.model';
  * Umbrales de docs/domain.md §Concepto por dimensión: 80-100 Logrado · 46-79 En proceso · 0-45 Con dificultad.
  */
 export function resolveQualitativeValuation(subjectPercentage: number): QualitativeValuation {
-  if (subjectPercentage >= 80) return QualitativeValuation.ACHIEVED;
-  if (subjectPercentage >= 46) return QualitativeValuation.IN_PROCESS;
+  if (subjectPercentage >= CONCEPT_THRESHOLDS.ACHIEVED) return QualitativeValuation.ACHIEVED;
+  if (subjectPercentage >= CONCEPT_THRESHOLDS.IN_PROCESS) return QualitativeValuation.IN_PROCESS;
   return QualitativeValuation.WITH_DIFICULTY;
+}
+
+/**
+ * Cierra el acceso directo por id: el objetivo debe existir en el inquilino y ser un
+ * Estudiante (para cualquier rol), y si el solicitante es Docente, debe pertenecer a su
+ * propia sede. 404 y no 403 — un 403 confirmaría que ese estudiante/valoración existe en
+ * otra sede (mismo criterio que `uploadUserPhoto`, `users.service.ts:379-384`).
+ */
+async function assertStudentInScope(
+  studentId: Types.ObjectId | string,
+  institutionId: string,
+  scope: RequestorScope
+): Promise<void> {
+  const student = await findByIdScoped(User, institutionId, studentId)
+    .select('role schoolId')
+    .lean();
+
+  if (!student || student.role !== UserRole.ESTUDIANTE) {
+    throw new AppError('Valoración no encontrada.', 404);
+  }
+
+  if (scope.role !== UserRole.DOCENTE) return;
+
+  if (!scope.schoolId || student.schoolId.toString() !== scope.schoolId) {
+    throw new AppError('Valoración no encontrada.', 404);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -241,7 +273,8 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
 
 export async function getStudentValuationById(
   valuationId: string,
-  institutionId: string
+  institutionId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -251,13 +284,18 @@ export async function getStudentValuationById(
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
 
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
   return populateAndMapValuation(valuation);
 }
 
 export async function getStudentValuations(
   studentId: string,
-  institutionId: string
+  institutionId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO[]> {
+  await assertStudentInScope(studentId, institutionId, scope);
+
   const valuations = await findScoped(StudentValuationModel, institutionId, {
     studentId: new Types.ObjectId(studentId),
   });
@@ -270,8 +308,11 @@ export async function initializeStudentValuation(
   studentId: string,
   teacherId: string,
   institutionId: string,
-  periodId: string
+  periodId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
+  await assertStudentInScope(studentId, institutionId, scope);
+
   // Check if a valuation already exists to avoid duplication.
   const existingValuation = await findOneScoped(StudentValuationModel, institutionId, {
     studentId: new Types.ObjectId(studentId),
@@ -283,9 +324,10 @@ export async function initializeStudentValuation(
     return populateAndMapValuation(existingValuation);
   }
 
-  // Validate that related documents exist before creation.
+  // Validate that related documents exist before creation. El estudiante ya lo valida
+  // `assertStudentInScope` (existencia + rol) más arriba.
   try {
-    await validateAllExist([[Period, periodId, 'Periodo'], [User, studentId, 'Estudiante']]);
+    await validateAllExist([[Period, periodId, 'Periodo']]);
   } catch (error: unknown) {
     throw new AppError(error instanceof Error ? error.message : 'Error desconocido', 404);
   }
@@ -350,15 +392,18 @@ export async function initializeStudentValuation(
     }
   }
 
+  invalidatePrefix(`dashboard:${institutionId}`);
+
   // Return the fresh, fully populated document from the database
-  return getStudentValuationById(valuationId, institutionId);
+  return getStudentValuationById(valuationId, institutionId, scope);
 }
 
 
 export async function updateStudentValuation(
   valuationId: string,
   institutionId: string,
-  updateData: StudentValuationUpdateData
+  updateData: StudentValuationUpdateData,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -367,6 +412,8 @@ export async function updateStudentValuation(
   if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
 
   // Use a Map for efficient lookups of the updates.
   const updateMap = new Map(
@@ -405,19 +452,13 @@ export async function updateStudentValuation(
   let totalLearnings = 0;
   let valuatedLearnings = 0;
 
-  const pointsMapping = {
-    [QualitativeValuation.ACHIEVED]: 3,
-    [QualitativeValuation.IN_PROCESS]: 2,
-    [QualitativeValuation.WITH_DIFICULTY]: 1
-  };
-
   valuation.valuationsBySubject.forEach(subject => {
     let totalPoints = 0;
 
     subject.learningValuations.forEach(lv => {
       totalLearnings++;
 
-      const points = lv.qualitativeValuation ? pointsMapping[lv.qualitativeValuation] : 0;
+      const points = lv.qualitativeValuation ? VALUATION_POINTS[lv.qualitativeValuation] : 0;
       lv.pointsObtained = points;
       totalPoints += points;
 
@@ -507,6 +548,7 @@ export async function updateStudentValuation(
   }
 
   await valuation.save();
+  invalidatePrefix(`dashboard:${institutionId}`);
 
   // Directly populate and map the updated document without a second DB query.
   return populateAndMapValuation(valuation);
@@ -515,7 +557,8 @@ export async function updateStudentValuation(
 export async function updateValuationConcepts(
   valuationId: string,
   institutionId: string,
-  data: StudentValuationConceptsUpdateData
+  data: StudentValuationConceptsUpdateData,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -524,6 +567,8 @@ export async function updateValuationConcepts(
   if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
 
   if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
     throw new AppError('La Lista de Chequeo aún no está evaluada completamente.', 409);
@@ -574,16 +619,29 @@ export async function updateValuationConcepts(
   });
 
   await valuation.save();
+  invalidatePrefix(`dashboard:${institutionId}`);
 
   return populateAndMapValuation(valuation);
 }
 
-export async function deleteStudentValuation(valuationId: string, institutionId: string): Promise<void> {
-  const { deletedCount } = await deleteOneScoped(StudentValuationModel, institutionId, {
+export async function deleteStudentValuation(
+  valuationId: string,
+  institutionId: string,
+  scope: RequestorScope
+): Promise<void> {
+  const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
   });
 
-  if (deletedCount === 0) {
+  if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
+  await deleteOneScoped(StudentValuationModel, institutionId, {
+    _id: new Types.ObjectId(valuationId),
+  });
+
+  invalidatePrefix(`dashboard:${institutionId}`);
 }

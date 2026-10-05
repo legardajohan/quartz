@@ -5,6 +5,11 @@ import {
   updateUserController,
   deleteUserController,
   uploadUserPhotoController,
+  getOwnProfileController,
+  updateOwnProfileController,
+  changeOwnPasswordController,
+  uploadOwnPhotoController,
+  resendInvitationController,
 } from './users.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { requireTenant } from '../../middlewares/require-tenant.middleware';
@@ -18,10 +23,55 @@ import {
   updateUserSchema,
   deleteUserSchema,
   uploadUserPhotoSchema,
+  updateOwnProfileSchema,
+  changeOwnPasswordSchema,
+  resendInvitationSchema,
 } from './users.validation';
 import { UserRole } from '../auth/auth.types';
 
 const router = Router();
+
+/**
+ * Mi cuenta (USR-03). Declaradas antes de `/:userId` para que "me" nunca se lea como id.
+ * El usuario objetivo es siempre el del token (`req.user._id`).
+ * Docente: no puede cambiar su correo ni su sede (403 en el service).
+ */
+const OWN_ACCOUNT_ROLES = [UserRole.JEFE_DE_AREA, UserRole.DOCENTE];
+
+router.get(
+  '/me',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  asyncHandler(getOwnProfileController)
+);
+
+router.patch(
+  '/me',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  validate(updateOwnProfileSchema),
+  asyncHandler(updateOwnProfileController)
+);
+
+router.patch(
+  '/me/password',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  validate(changeOwnPasswordSchema),
+  asyncHandler(changeOwnPasswordController)
+);
+
+router.patch(
+  '/me/photo',
+  authenticateJWT,
+  requireTenant,
+  authorize(OWN_ACCOUNT_ROLES),
+  uploadImageSingle,
+  asyncHandler(uploadOwnPhotoController)
+);
 
 /**
  * GET /api/users
@@ -41,7 +91,8 @@ router.get(
 
 /**
  * POST /api/users
- * Crea un Estudiante o Docente. Solo Jefe de Área.
+ * Crea un Estudiante, Docente o Jefe de Área. Solo Jefe de Área.
+ * Docente/Jefe de Área nacen Pendientes y reciben la invitación por correo (USR-04).
  */
 router.post(
   '/',
@@ -54,13 +105,15 @@ router.post(
 
 /**
  * PATCH /api/users/:userId
- * Actualiza datos de un usuario (rol inmutable). Solo Jefe de Área.
+ * Actualiza datos de un usuario (rol inmutable).
+ * Jefe de Área: cualquier usuario del tenant.
+ * Docente: solo estudiantes de su propia sede; no puede cambiar la sede.
  */
 router.patch(
   '/:userId',
   authenticateJWT,
   requireTenant,
-  authorize([UserRole.JEFE_DE_AREA]),
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(updateUserSchema),
   asyncHandler(updateUserController)
 );
@@ -76,6 +129,20 @@ router.delete(
   authorize([UserRole.JEFE_DE_AREA]),
   validate(deleteUserSchema),
   asyncHandler(deleteUserController)
+);
+
+/**
+ * POST /api/users/:userId/invitation
+ * Reenvía la invitación de un Docente/Jefe de Área Pendiente (USR-04). Solo Jefe de Área,
+ * nunca sobre sí mismo. Enfriamiento de 60 s por usuario.
+ */
+router.post(
+  '/:userId/invitation',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA]),
+  validate(resendInvitationSchema),
+  asyncHandler(resendInvitationController)
 );
 
 /**

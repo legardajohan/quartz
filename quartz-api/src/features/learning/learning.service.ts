@@ -1,4 +1,4 @@
-import { FilterQuery, Types, Query } from 'mongoose';
+import { Types, Query } from 'mongoose';
 import {
     findScoped,
     findByIdScoped,
@@ -10,8 +10,9 @@ import { LearningModel, ILearningDocument } from "./learning.model";
 import { Subject } from '../subject/subject.model';
 import { Period } from '../period/period.model';
 import { User } from '../auth/auth.model';
-import type { LearningData, UpdateLearningData } from './learning.types';
+import type { LearningData, UpdateLearningData, ILearningFilter } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
+import { invalidatePrefix } from '../../services/memory-cache.service';
 import AppError from '../../utils/AppError';
 
 // --- Helper Function ---
@@ -36,9 +37,12 @@ function populateLearningDetails<T>(query: Query<T, ILearningDocument>) {
 
 export async function getAllLearnings(
     institutionId: string,
-    filter: FilterQuery<ILearningDocument>
+    filter: ILearningFilter
 ): Promise<ILearningDocument[]> {
-    const query = findScoped(LearningModel, institutionId, filter);
+    const cleanFilter = Object.fromEntries(
+        Object.entries(filter).filter(([, value]) => value !== undefined)
+    );
+    const query = findScoped(LearningModel, institutionId, cleanFilter);
     const learnings = await populateLearningDetails(query).exec();
     return learnings;
 }
@@ -69,6 +73,7 @@ export async function createLearning(
     };
 
     const newLearning = await createScoped(LearningModel, institutionId, payload);
+    invalidatePrefix(`dashboard:${institutionId}`);
 
     const populatedLearning = await populateLearningDetails(
         findByIdScoped(LearningModel, institutionId, newLearning._id as Types.ObjectId)
@@ -114,6 +119,8 @@ export async function updateLearning(
         return null;
     }
 
+    invalidatePrefix(`dashboard:${institutionId}`);
+
     const populatedLearning = await populateLearningDetails(
         findByIdScoped(LearningModel, institutionId, updatedLearning._id as Types.ObjectId)
     ).exec();
@@ -125,7 +132,13 @@ export async function deleteLearning(
     learningId: string,
     institutionId: string
 ): Promise<ILearningDocument | null> {
-    return findOneAndDeleteScoped(LearningModel, institutionId, {
+    const deleted = await findOneAndDeleteScoped(LearningModel, institutionId, {
         _id: new Types.ObjectId(learningId)
     });
+
+    if (deleted) {
+        invalidatePrefix(`dashboard:${institutionId}`);
+    }
+
+    return deleted;
 }
