@@ -9,19 +9,19 @@ Cambios aditivos o de solo lectura sobre lo que deja INF-09: ningún store cambi
 |---|---|
 | crear | `src/stores/useTableFiltersStore.ts` |
 | tocar | `src/features/auth/useAuthStore.ts` (solo `logout`: `+ resetAll()`) |
-| tocar (selectores) | `features/auth/pages/LoginPage.tsx`, `features/checklist-template/pages/ChecklistsPage.tsx`, `features/dashboard/components/DashboardFilters.tsx`, `features/report/components/ConsolidatedReportsPanel.tsx`, `features/student-valuation/components/StudentValuationDetail.tsx` |
-| tocar (selectores + filtros) | `features/learning/pages/LearningsPage.tsx`, `features/concept/pages/ConceptsPage.tsx`, `features/users/pages/UsersPage.tsx`, `features/student-valuation/pages/StudentValuationsPage.tsx`, `features/report/pages/ReportsPage.tsx`, `features/report/components/IndividualReportsPanel.tsx` |
+| tocar (selectores) | `features/auth/pages/LoginPage.tsx`, `features/report/components/ConsolidatedReportsPanel.tsx` |
+| tocar (filtros) | `features/learning/pages/LearningsPage.tsx`, `features/concept/pages/ConceptsPage.tsx`, `features/users/pages/UsersPage.tsx`, `features/student-valuation/pages/StudentValuationsPage.tsx`, `features/report/pages/ReportsPage.tsx`, `features/report/components/IndividualReportsPanel.tsx` |
 | tocar | `quartz-web/CLAUDE.md` (transversales + § "Estado") |
 
-> Las filas "selectores" son las de cuando se redactó el spec, antes de INF-09. Al empezar, se recalculan con `grep -rn "useAuthStore()" src`: los archivos que INF-09 ya migró a hooks de catálogo salen de la lista, y los que aparezcan nuevos entran.
+> Selectores: el resto de los 10 consumidores originales los migró INF-09 a hooks de catálogo y `usePermissions`. Verificar al empezar con `grep -rn "useAuthStore()" src` (esperado: solo esos 2 archivos).
 
 ## Contratos
 
 ### 1. Selectores en `useAuthStore` (sin cambio de comportamiento)
 | Antes | Después |
 |---|---|
-| `const { sessionData } = useAuthStore();` | `const sessionData = useAuthStore((s) => s.sessionData);` |
-| `const { login, isLoading, error, clearError } = useAuthStore();` | `useAuthStore(useShallow((s) => ({ login: s.login, isLoading: s.isLoading, error: s.error, clearError: s.clearError })))` |
+| `LoginPage`: `const { login, isLoading, error, token } = useAuthStore();` | `useAuthStore(useShallow((s) => ({ login: s.login, isLoading: s.isLoading, error: s.error, token: s.token })))` |
+| `ConsolidatedReportsPanel`: `const { sessionData } = useAuthStore();` (solo lee `user.role` y `user.schoolId`) | `const { isTeacher, schoolId } = usePermissions();` y reemplazar `sessionData?.user.role === "Docente"` por `isTeacher` y `sessionData?.user.schoolId` por `schoolId` |
 - Si la página solo usa un campo derivado, seleccionar ese campo (`(s) => s.sessionData?.user.role`), cuidando devolver referencias estables (no `?? []` dentro del selector: el fallback va fuera).
 - `useShallow` desde `zustand/react/shallow` (zustand@5).
 

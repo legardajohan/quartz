@@ -2,19 +2,20 @@
 
 ## Frontend (`quartz-web`)
 ### Selectores (sin cambio de comportamiento)
-- [ ] Verificar que INF-09 está implementado (`sessionData` sin catálogos, sin `setSubjects`/`setPeriods`/`setEnabledReports`/`setShifts`); si no, detenerse
-- [ ] Recalcular consumidores: `grep -rn "useAuthStore()" src` y ajustar las listas de abajo
-- [ ] `LoginPage`, `ChecklistsPage`, `DashboardFilters`, `ConsolidatedReportsPanel`, `StudentValuationDetail` (los que sigan en la lista) — `useAuthStore(selector)` / `useShallow`
-- [ ] `grep -rn "useAuthStore()" src` → 0 resultados (tras completar también el bloque de filtros)
+- [ ] Verificar que la rama base incluye INF-09 (`sessionData` sin catálogos, sin `setSubjects`/`setPeriods`/`setEnabledReports`/`setShifts`); si no, detenerse
+- [ ] Confirmar consumidores sin selector: `grep -rn "useAuthStore()" src` → solo `LoginPage` y `ConsolidatedReportsPanel`
+- [ ] `LoginPage` — `useAuthStore(useShallow(...))` con `login`, `isLoading`, `error`, `token`
+- [ ] `ConsolidatedReportsPanel` — `usePermissions()` (`isTeacher`, `schoolId`) en lugar de `useAuthStore()`
+- [ ] `grep -rn "useAuthStore()" src` → 0 resultados
 
 ### Filtros de tablas
 - [ ] `src/stores/useTableFiltersStore.ts` — tipos, store sin `persist`, acciones inmutables, `EMPTY_FILTERS`/`EMPTY_LIST`, hook `useTableFilters`
 - [ ] `useAuthStore.logout` — añadir `resetAll()` (nada más cambia en el store)
-- [ ] `LearningsPage.tsx` — selector de sesión + `useTableFilters('learnings')` + default de periodo vía `initDefaults`
-- [ ] `ConceptsPage.tsx` — selector de sesión + `useTableFilters('concepts')` + default de periodo
-- [ ] `UsersPage.tsx` — selector de sesión + `'users-students'`/`'users-staff'`; quitar `useEffect` de reset de página
-- [ ] `StudentValuationsPage.tsx` — selector de sesión + `useTableFilters('valuations')` + default de sede
-- [ ] `ReportsPage.tsx` + `IndividualReportsPanel.tsx` — selector de sesión + `useTableFilters('reports')`; quitar `useEffect` de reset
+- [ ] `LearningsPage.tsx` — `useTableFilters('learnings')` + default de periodo vía `initDefaults`
+- [ ] `ConceptsPage.tsx` — `useTableFilters('concepts')` + default de periodo
+- [ ] `UsersPage.tsx` — `'users-students'`/`'users-staff'`; quitar `useEffect` de reset de página
+- [ ] `StudentValuationsPage.tsx` — `useTableFilters('valuations')` + default de sede
+- [ ] `ReportsPage.tsx` + `IndividualReportsPanel.tsx` — `useTableFilters('reports')`; quitar `useEffect` de reset
 - [ ] Página efectiva `Math.min(page, totalPages)` en cada tabla
 
 ### Documentación
