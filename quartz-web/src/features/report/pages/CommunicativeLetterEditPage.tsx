@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar } from "@material-tailwind/react";
 import { ExclamationTriangleIcon, BookmarkSquareIcon } from "@heroicons/react/24/outline";
 import { BookmarkSquareIcon as BookmarkSquareIconSolid } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
-import { useReportStore } from "../useReportStore";
+import { useCommunicativeLetterQuery, useSaveLetterConceptsMutation } from "../queries/useReportQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
 import LetterConceptPicker from "../components/LetterConceptPicker";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { Loading } from "../../../components/ui/Loading";
@@ -25,7 +26,7 @@ function formatFullName(person: PersonName): string {
     .join(" ");
 }
 
-function buildServerSelection(letter: ICommunicativeLetterTemplate | null): Record<string, string> {
+function buildServerSelection(letter: ICommunicativeLetterTemplate | undefined): Record<string, string> {
   const serverSelection: Record<string, string> = {};
   if (!letter) return serverSelection;
   letter.subjects.forEach((subject) => {
@@ -36,7 +37,7 @@ function buildServerSelection(letter: ICommunicativeLetterTemplate | null): Reco
   return serverSelection;
 }
 
-function buildServerConceptText(letter: ICommunicativeLetterTemplate | null): Record<string, string> {
+function buildServerConceptText(letter: ICommunicativeLetterTemplate | undefined): Record<string, string> {
   const serverConceptText: Record<string, string> = {};
   if (!letter) return serverConceptText;
   letter.subjects.forEach((subject) => {
@@ -50,30 +51,18 @@ function buildServerConceptText(letter: ICommunicativeLetterTemplate | null): Re
 export default function CommunicativeLetterEditPage() {
   const { studentId, valuationId } = useParams();
   const navigate = useNavigate();
-  const { currentLetter, isLetterLoading, letterError, fetchCommunicativeLetter, saveLetterConcepts, clearLetter } =
-    useReportStore();
+  const letterQuery = useCommunicativeLetterQuery(valuationId);
+  const { mutateAsync: saveLetterConcepts } = useSaveLetterConceptsMutation();
 
+  // `currentLetter`: versión del servidor sobre la que se construyó el borrador. Comparar contra
+  // ella (no contra la caché) evita que una revalidación en segundo plano se lea como cambio.
+  const [currentLetter, setCurrentLetter] = useState<ICommunicativeLetterTemplate | undefined>(undefined);
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [conceptText, setConceptText] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
   const { data: studentUsers } = useUsersQuery(studentId ? { id: studentId } : undefined);
   const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
-
-  useEffect(() => {
-    if (valuationId) {
-      fetchCommunicativeLetter(valuationId);
-    }
-    return () => {
-      clearLetter();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [valuationId]);
-
-  useEffect(() => {
-    setSelection(buildServerSelection(currentLetter));
-    setConceptText(buildServerConceptText(currentLetter));
-  }, [currentLetter]);
 
   const isDirty = useMemo(() => {
     if (!currentLetter) return false;
@@ -84,6 +73,25 @@ export default function CommunicativeLetterEditPage() {
       return selectionChanged || textChanged;
     });
   }, [currentLetter, selection, conceptText]);
+
+  const syncFromServer = (letter: ICommunicativeLetterTemplate | undefined) => {
+    setCurrentLetter(letter);
+    setSelection(buildServerSelection(letter));
+    setConceptText(buildServerConceptText(letter));
+  };
+
+  // Ajuste en render (no en effect): adopta la carta del servidor solo si no hay borrador, o si
+  // cambió de valoración (misma ruta, otro `:valuationId`).
+  const serverLetter = letterQuery.data;
+  if (serverLetter && serverLetter !== currentLetter && (!isDirty || serverLetter._id !== currentLetter?._id)) {
+    syncFromServer(serverLetter);
+  }
+
+  const isLetterLoading = !!valuationId && letterQuery.isPending;
+  const letterError =
+    letterQuery.error && !serverLetter
+      ? extractErrorMessage(letterQuery.error, "Falló la carga de la Carta Comunicativa.")
+      : null;
 
   const isCoverageError = !!letterError && letterError.toLowerCase().includes("faltan conceptos");
 
@@ -103,8 +111,7 @@ export default function CommunicativeLetterEditPage() {
   };
 
   const handleDiscard = () => {
-    setSelection(buildServerSelection(currentLetter));
-    setConceptText(buildServerConceptText(currentLetter));
+    syncFromServer(serverLetter);
   };
 
   const handleSave = useCallback(async () => {
@@ -121,7 +128,10 @@ export default function CommunicativeLetterEditPage() {
 
     setIsSaving(true);
     try {
-      await saveLetterConcepts(valuationId, assignments);
+      // La mutación resuelve con la carta ya refetcheada; soltar la base hace que el render
+      // siguiente adopte esa versión del servidor.
+      await saveLetterConcepts({ valuationId, assignments });
+      setCurrentLetter(undefined);
       toast.success("Conceptos guardados");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error desconocido";

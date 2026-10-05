@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import StudentValuationTable from "../components/StudentValuationTable";
-import { useStudentValuationStore, ITEMS_PER_PAGE } from "../useStudentValuationStore";
+import { useDeleteValuationMutation } from "../queries/useStudentValuationQuery";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
+import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
+import { extractErrorMessage } from "../../../api/apiClient";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
-import { useReportStore } from "../../report/useReportStore";
+import { useLetterAvailabilityQuery } from "../../report/queries/useReportQuery";
 import StudentValuationDetail from "../components/StudentValuationDetail";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import {
@@ -15,20 +18,25 @@ import {
   type ValuationState,
 } from "../types/domain";
 import { normalizeText } from "../../../utils/normalizeText";
-import type { SchoolDto } from "../types";
+import type { UserDto, UserSchool } from "../../users/types";
 import type { GradeLevel } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
 const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 
+const NO_USERS: UserDto[] = [];
+// Misma key que `UsersPage` (pestaña Estudiantes) e `/informes`: una sola caché compartida.
+const STUDENTS_QUERY = { role: "Estudiante" } as const;
+
 export default function StudentValuationsPage() {
   const { studentId } = useParams();
   const navigate = useNavigate();
-  const { fetchUsers, users } = useStudentValuationStore();
   const { sessionData } = useAuthStore();
   const { isAreaLead, schoolId } = usePermissions();
-  const { fetchLetterAvailability, letterAvailability } = useReportStore();
   const activePeriod = useActivePeriod();
+  const { data: users = NO_USERS, isPending, error } = useUsersQuery(STUDENTS_QUERY);
+  const { data: letterAvailability } = useLetterAvailabilityQuery(activePeriod?._id);
+  const deleteValuation = useDeleteValuationMutation();
 
   const [search, setSearch] = useState("");
   const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
@@ -37,26 +45,8 @@ export default function StudentValuationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const hasInitializedSchoolFilter = useRef(false);
 
-  // Fetch users when component mounts or when navigating back to list
-  useEffect(() => {
-    const user = sessionData?.user;
-    // Only fetch if we are in the list view (no studentId)
-    // allowing the list to be fresh when we return.
-    if (user && !studentId) {
-      fetchUsers({
-        role: "Estudiante",
-      });
-    }
-  }, [sessionData?.user, fetchUsers, studentId]);
-
-  useEffect(() => {
-    if (activePeriod) {
-      fetchLetterAvailability(activePeriod._id);
-    }
-  }, [activePeriod, fetchLetterAvailability]);
-
   const schools = useMemo(() => {
-    const bySchoolId = new Map<string, SchoolDto>();
+    const bySchoolId = new Map<string, UserSchool>();
     users.forEach((user) => bySchoolId.set(user.school._id, user.school));
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
@@ -125,7 +115,8 @@ export default function StudentValuationsPage() {
 
   // Render detail view if a student is selected via URL
   if (studentId) {
-    return <StudentValuationDetail />;
+    // `key`: un cambio de estudiante monta un detalle nuevo, sin arrastrar el borrador anterior.
+    return <StudentValuationDetail key={studentId} />;
   }
 
   // Pagination logic
@@ -161,6 +152,11 @@ export default function StudentValuationsPage() {
 
       <StudentValuationTable
         users={paginatedUsers}
+        isLoading={isPending}
+        error={error ? extractErrorMessage(error, "Falló la carga de usuarios.") : null}
+        onDeleteValuation={async (valuationId) => {
+          await deleteValuation.mutateAsync(valuationId);
+        }}
         onOpenChecklist={handleOpenChecklist}
         onViewLetter={handleViewLetter}
         isLetterEnabled={(sessionData?.enabledReports ?? []).includes("communicative-letter")}

@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
-import { useStudentValuationStore } from "../useStudentValuationStore";
+import { useStudentValuationQuery, useUpdateValuationMutation } from "../queries/useStudentValuationQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { usePermissions } from "../../auth/usePermissions";
 import { useActivePeriod } from "../../period/useActivePeriod";
 import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
-import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
+import type { IStudentValuationDTO, StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
 import toast from "react-hot-toast";
@@ -19,41 +20,41 @@ import { Loading } from "../../../components/ui/Loading";
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
     const navigate = useNavigate();
-    const {
-        currentValuation,
-        fetchValuation,
-        updateValuation,
-        clearValuation,
-        isLoading,
-        error
-    } = useStudentValuationStore();
     const { sessionData } = useAuthStore();
     const { isAreaLead } = usePermissions();
     const activePeriod = useActivePeriod();
+    const { data: serverValuation, isPending, error } = useStudentValuationQuery(studentId, activePeriod?._id);
+    const updateValuation = useUpdateValuationMutation();
 
     const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
-    const [localValuation, setLocalValuation] = useState(currentValuation);
+    // `baseValuation`: versión del servidor sobre la que se editó `localValuation`. Comparar contra
+    // ella (no contra la caché) evita que una revalidación en segundo plano se lea como cambio.
+    const [baseValuation, setBaseValuation] = useState<IStudentValuationDTO | null>(null);
+    const [localValuation, setLocalValuation] = useState<IStudentValuationDTO | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const { data: studentUsers } = useUsersQuery(studentId ? { id: studentId } : undefined);
     const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
 
-    useEffect(() => {
-        if (studentId && activePeriod) {
-            fetchValuation(studentId, activePeriod._id);
-        }
-        return () => {
-            clearValuation();
-        };
-    }, [studentId, activePeriod?._id, fetchValuation, clearValuation]);
+    const hasChanges =
+        !!localValuation &&
+        !!baseValuation &&
+        (JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(baseValuation.valuationsBySubject) ||
+            (localValuation.observations ?? "") !== (baseValuation.observations ?? ""));
 
-    useEffect(() => {
-        setLocalValuation(currentValuation);
+    const syncFromServer = (valuation: IStudentValuationDTO) => {
+        setBaseValuation(valuation);
+        setLocalValuation(valuation);
+    };
+
+    // Ajuste en render (no en effect): adopta la versión del servidor solo si no hay borrador.
+    if (serverValuation && serverValuation !== baseValuation && !hasChanges) {
+        syncFromServer(serverValuation);
         // Open first subject by default if not already open
-        if (currentValuation?.valuationsBySubject?.[0]?.subjectId && !openSubjectId) {
-            setOpenSubjectId(currentValuation.valuationsBySubject[0].subjectId);
+        if (serverValuation.valuationsBySubject[0]?.subjectId && !openSubjectId) {
+            setOpenSubjectId(serverValuation.valuationsBySubject[0].subjectId);
         }
-    }, [currentValuation]);
+    }
 
     // Calculate Global Progress
     const totalLearnings = localValuation?.valuationsBySubject.reduce((acc, subject) => acc + subject.learningValuations.length, 0) || 0;
@@ -86,7 +87,8 @@ export default function StudentValuationDetail() {
                 observations: localValuation.observations ?? "",
             };
 
-            await updateValuation(localValuation._id, payload);
+            const saved = await updateValuation.mutateAsync({ valuationId: localValuation._id, payload });
+            syncFromServer(saved);
             toast.success("Evaluación guardada correctamente");
         } catch (error) {
             toast.error("Error al guardar la Evaluación");
@@ -97,32 +99,23 @@ export default function StudentValuationDetail() {
     };
 
 
-
-    const hasChanges = useCallback(() => {
-        if (!localValuation || !currentValuation) return false;
-        return (
-            JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(currentValuation.valuationsBySubject) ||
-            (localValuation.observations ?? "") !== (currentValuation.observations ?? "")
-        );
-    }, [localValuation, currentValuation]);
-
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) =>
-            hasChanges() && currentLocation.pathname !== nextLocation.pathname
+            hasChanges && currentLocation.pathname !== nextLocation.pathname
     );
 
-    if (isLoading) {
+    if (studentId && activePeriod && isPending) {
         return <Loading message="Cargando valoración..." />;
     }
 
-    if (error) {
+    if (error && !serverValuation) {
         return (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex flex-col items-center justify-center gap-2">
                 <Typography color="red" className="font-medium">
                     No se pudo crear la evaluación
                 </Typography>
                 <Typography variant="small" className="text-gray-600">
-                    {error}
+                    {extractErrorMessage(error, "Error al cargar la valoración.")}
                 </Typography>
                 <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
                     Volver
@@ -312,7 +305,7 @@ export default function StudentValuationDetail() {
 
             {/* Conditional Footer for Saving Changes */}
             {/* Sticky Footer for Saving Changes */}
-            <div className={`fixed bottom-6 inset-x-0 mx-auto max-w-3xl z-50 transition-all duration-300 transform ${hasChanges() ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+            <div className={`fixed bottom-6 inset-x-0 mx-auto max-w-3xl z-50 transition-all duration-300 transform ${hasChanges ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
                 <div className="bg-white p-4 rounded-xl shadow-lg flex items-center justify-between px-8 mx-auto container">
                     <div className="flex items-center gap-2">
                         <div className="flex h-2 w-2 relative">
@@ -329,7 +322,7 @@ export default function StudentValuationDetail() {
                             size="sm"
                             color="blue-gray"
                             onClick={() => {
-                                setLocalValuation(currentValuation);
+                                if (serverValuation) syncFromServer(serverValuation);
                             }}
                             className="hover:bg-gray-100"
                         >

@@ -3,10 +3,10 @@ import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
 import { UserIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IndividualReportsPanel from "../components/IndividualReportsPanel";
 import ConsolidatedReportsPanel from "../components/ConsolidatedReportsPanel";
-import { useReportStore } from "../useReportStore";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
 import { usePermissions } from "../../auth/usePermissions";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
-import type { SchoolDto } from "../../student-valuation/types";
+import type { UserDto, UserSchool } from "../../users/types";
 import type { GradeLevel } from "@/types/domain";
 
 // Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
@@ -19,9 +19,13 @@ const TABS = [
 
 type ReportsTab = (typeof TABS)[number]["value"];
 
+const NO_USERS: UserDto[] = [];
+// Misma key que `IndividualReportsPanel` y `/evaluacion`: React Query deduplica la request.
+const STUDENTS_QUERY = { role: "Estudiante" } as const;
+
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<ReportsTab>("individual");
-  const { users } = useReportStore();
+  const { data: users = NO_USERS } = useUsersQuery(STUDENTS_QUERY);
   const { isAreaLead, schoolId } = usePermissions();
 
   const [search, setSearch] = useState("");
@@ -32,7 +36,7 @@ export default function ReportsPage() {
   const isIndividual = activeTab === "individual";
 
   const schools = useMemo(() => {
-    const bySchoolId = new Map<string, SchoolDto>();
+    const bySchoolId = new Map<string, UserSchool>();
     users.forEach((user) => bySchoolId.set(user.school._id, user.school));
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);

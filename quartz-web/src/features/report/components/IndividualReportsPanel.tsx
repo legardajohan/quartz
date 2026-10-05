@@ -2,11 +2,17 @@ import { useEffect, useState } from "react";
 import ReportsTable from "./ReportsTable";
 import ChecklistReportModal from "./ChecklistReportModal";
 import CommunicativeLetterModal from "./CommunicativeLetterModal";
-import { useReportStore, ITEMS_PER_PAGE } from "../useReportStore";
+import { useLetterAvailabilityQuery } from "../queries/useReportQuery";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
+import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { useAuthStore } from "../../auth/useAuthStore";
 import { useActivePeriod } from "../../period/useActivePeriod";
 import { normalizeText } from "../../../utils/normalizeText";
 import type { GradeLevel } from "@/types/domain";
+import type { UserDto } from "../../users/types";
+
+const NO_USERS: UserDto[] = [];
+const STUDENTS_QUERY = { role: "Estudiante" } as const;
 
 interface IndividualReportsPanelProps {
   search: string;
@@ -15,7 +21,6 @@ interface IndividualReportsPanelProps {
 }
 
 export default function IndividualReportsPanel({ search, selectedGrades, selectedSchools }: IndividualReportsPanelProps) {
-  const { users, isLoading, fetchUsers, fetchLetterAvailability, letterAvailability } = useReportStore();
   const { sessionData } = useAuthStore();
 
   const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
@@ -25,18 +30,8 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
   const [currentPage, setCurrentPage] = useState(1);
 
   const activePeriodId = useActivePeriod()?._id;
-
-  useEffect(() => {
-    if (sessionData?.user) {
-      fetchUsers({ role: "Estudiante" });
-    }
-  }, [sessionData?.user, fetchUsers]);
-
-  useEffect(() => {
-    if (activePeriodId) {
-      fetchLetterAvailability(activePeriodId);
-    }
-  }, [activePeriodId, fetchLetterAvailability]);
+  const { data: users = NO_USERS, isPending: isLoading } = useUsersQuery(STUDENTS_QUERY);
+  const { data: letterAvailability } = useLetterAvailabilityQuery(activePeriodId);
 
   useEffect(() => {
     setCurrentPage(1);

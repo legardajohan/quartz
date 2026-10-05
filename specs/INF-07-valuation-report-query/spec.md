@@ -1,7 +1,7 @@
 ---
 id: INF-07-valuation-report-query
 feature: valuation-report-query
-status: draft
+status: implemented
 created: 2026-09-28
 ---
 
@@ -32,21 +32,21 @@ Migrar `student-valuation` y `report` de Zustand a React Query: una sola lista d
 - Actualizaciones optimistas.
 
 ## Criterios de aceptación (EARS)
-- [ ] Cuando el usuario alterna entre `/evaluacion` e `/informes` dentro de 5 min, el sistema emite como máximo una request `GET /users?role=Estudiante`.
-- [ ] Cuando `ReportsPage` e `IndividualReportsPanel` montan a la vez, el sistema emite una sola request a `/users` (misma key).
-- [ ] Cuando el usuario vuelve de `/evaluacion/:studentId` a `/evaluacion`, el sistema pinta la lista en caché sin spinner.
-- [ ] Cuando el usuario abre la valoración de un estudiante ya visitado, el sistema pinta la valoración en caché al instante y revalida en segundo plano (`STALE_TIME.live`).
-- [ ] Si llega una revalidación mientras el usuario tiene cambios sin guardar en la valoración o en la carta, el sistema no sobrescribe el borrador local.
-- [ ] Cuando se guarda una valoración, el sistema escribe la respuesta en la key de esa valoración e invalida `['users']`, `['dashboard']` y `['report']`.
-- [ ] Cuando se elimina una valoración, el sistema invalida `['users']`, `['dashboard']`, `['report']` y elimina la key de esa valoración.
-- [ ] Cuando se guardan los conceptos de la carta, el sistema invalida la key de esa carta y de `letterAvailability`; la pantalla refleja la carta del servidor.
-- [ ] Mientras `activePeriod` no cambie y la caché tenga < 5 min, el sistema no repite `GET /reports/communicative-letter/availability`.
-- [ ] Cuando se abre `ChecklistReportModal` o `CommunicativeLetterModal`, el sistema consulta el reporte solo si `open && valuationId` (`enabled`); al cerrarlo no se descarta la caché.
-- [ ] Cuando se genera un consolidado, el sistema usa `useMutation` con `timeout: REPORT_REQUEST_TIMEOUT_MS` y no cachea la respuesta.
-- [ ] Si cualquier consulta o mutación falla, el sistema muestra el mismo mensaje que hoy (`extractErrorMessage` + textos actuales).
-- [ ] No existen `useStudentValuationStore.ts`, `useReportStore.ts`, `student-valuation/types/store.ts` ni `report/types/store.ts`; `StudentValuationTable` no importa hooks de datos.
-- [ ] **Aislamiento:** sin cambios de backend; la caché (incluidos datos de informes) se purga en cada cambio de sesión (INF-05); ningún PDF se persiste.
-- [ ] `npm run build && npm run lint` en verde en `quartz-web`.
+- [x] Cuando el usuario alterna entre `/evaluacion` e `/informes` dentro de 5 min, el sistema emite como máximo una request `GET /users?role=Estudiante`.
+- [x] Cuando `ReportsPage` e `IndividualReportsPanel` montan a la vez, el sistema emite una sola request a `/users` (misma key).
+- [x] Cuando el usuario vuelve de `/evaluacion/:studentId` a `/evaluacion`, el sistema pinta la lista en caché sin spinner.
+- [x] Cuando el usuario abre la valoración de un estudiante ya visitado, el sistema pinta la valoración en caché al instante y revalida en segundo plano (`STALE_TIME.live`).
+- [x] Si llega una revalidación mientras el usuario tiene cambios sin guardar en la valoración o en la carta, el sistema no sobrescribe el borrador local.
+- [x] Cuando se guarda una valoración, el sistema escribe la respuesta en la key de esa valoración e invalida `['users']`, `['dashboard']` y `['report']`.
+- [x] Cuando se elimina una valoración, el sistema invalida `['users']`, `['dashboard']`, `['report']` y elimina la key de esa valoración.
+- [x] Cuando se guardan los conceptos de la carta, el sistema invalida la key de esa carta y de `letterAvailability`; la pantalla refleja la carta del servidor.
+- [x] Mientras `activePeriod` no cambie y la caché tenga < 5 min, el sistema no repite `GET /reports/communicative-letter/availability`.
+- [x] Cuando se abre `ChecklistReportModal` o `CommunicativeLetterModal`, el sistema consulta el reporte solo si `open && valuationId` (`enabled`); al cerrarlo no se descarta la caché.
+- [x] Cuando se genera un consolidado, el sistema usa `useMutation` con `timeout: REPORT_REQUEST_TIMEOUT_MS` y no cachea la respuesta.
+- [x] Si cualquier consulta o mutación falla, el sistema muestra el mismo mensaje que hoy (`extractErrorMessage` + textos actuales).
+- [x] No existen `useStudentValuationStore.ts`, `useReportStore.ts`, `student-valuation/types/store.ts` ni `report/types/store.ts`; `StudentValuationTable` no importa hooks de datos.
+- [x] **Aislamiento:** sin cambios de backend; la caché (incluidos datos de informes) se purga en cada cambio de sesión (INF-05); ningún PDF se persiste.
+- [x] `npm run build && npm run lint` en verde en `quartz-web`.
 
 ## Dependencias
 - **Base de rama:** `feat/INF-06-config-catalogs-query` (cadena `INF-05 → INF-06 → INF-07 → INF-09 → INF-08`, cada una desde la anterior, sin pasar por `develop`). El PR a `develop` se abre cuando sus predecesoras estén mergeadas, o su diff las arrastrará.

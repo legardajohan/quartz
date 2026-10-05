@@ -1,8 +1,7 @@
 import { ClipboardCheck, Mail } from "lucide-react";
 import { Avatar, Typography, IconButton, Tooltip } from "@material-tailwind/react";
-import { DataTable, type Column } from "../../../components/common/DataTable";
-import { ITEMS_PER_PAGE } from "../useReportStore";
-import type { UserDto } from "../types";
+import { DataTable, ITEMS_PER_PAGE, type Column } from "../../../components/common/DataTable";
+import type { UserDto } from "../../users/types";
 import type { ReportKind } from "@/types/domain";
 import { AVATAR_FALLBACK } from "@/constants/assets";
 

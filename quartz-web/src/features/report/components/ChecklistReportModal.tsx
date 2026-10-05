@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Dialog, DialogHeader, DialogBody, IconButton, Button, Typography } from "@material-tailwind/react";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import ChecklistReportDocument from "./ChecklistReportDocument";
 import { Loading } from "../../../components/ui/Loading";
-import { useReportStore } from "../useReportStore";
+import { useChecklistReportQuery } from "../queries/useReportQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
 import { useReportPdf } from "../useReportPdf";
 import { useInstitutionShieldQuery } from "@/features/institution/queries/useInstitutionShieldQuery";
 
@@ -20,22 +21,14 @@ export default function ChecklistReportModal({
   studentName,
   onClose,
 }: ChecklistReportModalProps) {
-  const currentReport = useReportStore((state) => state.currentReport);
-  const isReportLoading = useReportStore((state) => state.isReportLoading);
-  const reportError = useReportStore((state) => state.reportError);
-  const fetchChecklistReport = useReportStore((state) => state.fetchChecklistReport);
-  const clearReport = useReportStore((state) => state.clearReport);
+  // Cerrar el modal no descarta la caché: reabrirlo pinta el reporte y revalida en segundo plano.
+  const report = useChecklistReportQuery(valuationId, { enabled: open });
   const shield = useInstitutionShieldQuery();
 
-  useEffect(() => {
-    if (open && valuationId) {
-      fetchChecklistReport(valuationId);
-    }
-    if (!open) {
-      clearReport();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, valuationId]);
+  const currentReport = report.data;
+  const isReportLoading = report.isPending;
+  const reportError =
+    report.error && !currentReport ? extractErrorMessage(report.error, "Falló la carga del informe.") : null;
 
   // Memoizado para que un re-render del modal no regenere el PDF: `useReportPdf` reacciona a la
   // identidad del elemento, no a su contenido.

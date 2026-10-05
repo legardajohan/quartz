@@ -69,6 +69,8 @@ export function useStudentValuationQuery(studentId?: string, periodId?: string) 
 - `StudentValuationDetail`: `localValuation` se sincroniza desde `data` **solo** si `!isDirty` (comparar `localValuation` vs `data`, o flag `isDirty` que se pone en `true` al editar y en `false` al guardar/descartar). Mismo criterio para abrir la primera dimensión.
 - `CommunicativeLetterEditPage`: `setSelection/setConceptText(buildServer…(letter))` solo si `!isDirty` (el `isDirty` memoizado ya existe).
 - Se borran los `clearValuation()` / `clearLetter()` / `clearReport()` de cleanup: la caché por key reemplaza el reset manual.
+- *(Añadido en implementación)* El borrador se compara contra la **versión base** del servidor sobre la que se editó (estado local), no contra la caché: así una revalidación con datos nuevos no se confunde con "cambios sin guardar". La sincronización se hace en render (patrón "ajustar estado al cambiar una prop"), sin `useEffect`.
+- *(Añadido en implementación)* `StudentValuationDetail` se monta con `key={studentId}` y la carta re-sincroniza si cambia `_id`: un cambio de estudiante/valoración en la misma ruta no arrastra el borrador anterior.
 
 ### Consumidores
 - `StudentValuationsPage`: `const { data: users = [], isPending, error } = useUsersQuery({ role: 'Estudiante' })`; `useLetterAvailabilityQuery(activePeriod?._id)`; `useDeleteValuationMutation` → prop `onDeleteValuation` de `StudentValuationTable`. Se borra el `useEffect` de `fetchUsers`.
