@@ -19,7 +19,7 @@
 - [ ] Página efectiva `Math.min(page, totalPages)` en cada tabla
 
 ### Documentación
-- [ ] `quartz-web/CLAUDE.md` — `stores/` en transversales; regla de selectores; ejemplo de rol corregido
+- [ ] `quartz-web/CLAUDE.md` — `stores/` en transversales; regla de selectores; ejemplo de rol corregido; borrar el aviso "Transición" y corregir la fila de paridad de periodos/materias/colegios (decisión del usuario: la doc va en este spec, no en `/sdd-release`)
 
 ## Verificación final
 - [ ] `npm run build && npm run lint` en verde

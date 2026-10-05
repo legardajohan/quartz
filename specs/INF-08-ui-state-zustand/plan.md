@@ -99,6 +99,9 @@ const filterGroups: FilterGroup[] = [
   - Consumir stores siempre con selector y `useShallow` para varias claves.
   - Reemplazar el ejemplo `useAuthStore().sessionData?.user.role` por `useAuthStore((s) => s.sessionData?.user.role)`.
   - Estado de un solo componente/página (modal, borrador) → `useState`.
+  - Borrar el aviso "Transición" (línea 48: `period`, `subject`, `school`, `institution`, `student-valuation` y `report` ya no usan Zustand tras INF-06/07).
+  - Mapa de paridad: fila "Periodos / Materias / Colegios" ya no es "consumidos vía `sessionData`"; ahora tienen `queries/` propias (`period`, `subject`, `school`) y `sessionData` solo guarda identidad (INF-09).
+- **Decisión del usuario:** la documentación entra en este spec, como excepción a la regla de `/sdd-implement` de dejarla para `/sdd-release`.
 
 ## Notas
 - Un solo store con `Record<TableId, …>`: todas las tablas comparten la forma de `FilterGroup`, y el reset en `logout` queda en una línea.

@@ -25,7 +25,7 @@ Dejar Zustand solo para lo que ya hace bien (sesión) y lo que falta (filtros de
 - Selectores atómicos en `LoginPage` (`useShallow`) y `ConsolidatedReportsPanel` (`usePermissions()`): los únicos consumidores de `useAuthStore()` sin selector tras INF-09 (mismo dato y mismo comportamiento, menos renders).
 - Store transversal `src/stores/useTableFiltersStore.ts` (en memoria, sin `persist`) para búsqueda, filtros y página de: `LearningsPage`, `ConceptsPage`, `UsersPage` (por pestaña), `StudentValuationsPage`, `ReportsPage`/`IndividualReportsPanel`.
 - `logout()` reinicia los filtros (una línea, sin tocar el resto de su lógica).
-- `quartz-web/CLAUDE.md`: regla de selectores y cuándo va algo en `src/stores/` frente a `useState`.
+- `quartz-web/CLAUDE.md`: regla de selectores, cuándo va algo en `src/stores/` frente a `useState`, y limpieza de lo que INF-06/07/09 dejaron obsoleto (aviso "Transición", fila de paridad).
 
 **Fuera (se conserva tal cual):**
 - Estructura, `persist`, `partialize`, clave de storage y acciones de `useAuthStore` tal como quedan tras INF-09 (la reducción de `sessionData` y la siembra de catálogos son de INF-09, no de este spec).
