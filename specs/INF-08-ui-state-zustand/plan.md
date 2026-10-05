@@ -108,6 +108,13 @@ const filterGroups: FilterGroup[] = [
 - Modales en Zustand descartado: su vida es la de la página y globalizarlos añade estado que hay que limpiar sin ningún beneficio.
 - Los selectores son la mejora de Zustand con mejor relación riesgo/beneficio: mismo dato, menos renders, y el diff es mecánico.
 
+## Ajustes durante la implementación
+- **Hook:** las acciones se memorizan por `id` (`useMemo`) y se separan de los datos, para que `initDefaults` sea estable en las deps de `useEffect` (exhaustive-deps) sin re-ejecutar el efecto en cada cambio de filtro.
+- **Default sin periodo activo:** se llama `initDefaults({})` en cuanto llegan los periodos (o las sedes), aunque no haya default que aplicar. Replica el `useRef` anterior: la tabla queda inicializada y un periodo activo que aparezca después no pisa la elección del usuario.
+- **Página efectiva** en Aprendizajes/Conceptos: `Math.max(1, Math.min(page, totalPages))`, porque ahí `totalPages` puede ser 0 con la lista vacía.
+- **`ConsolidatedReportsPanel`:** `schoolId` de `usePermissions()` se renombra a `ownSchoolId` porque el panel ya tiene un `useState` `schoolId` (la sede elegida).
+- **`StudentValuationsPage`:** antes, los filtros de grado/estado/sede no volvían a la página 1 (solo la búsqueda); ahora sí, por el store. Es lo que pide el criterio EARS.
+
 ## Verificación
 - `cd quartz-web && npm run build && npm run lint`
 - `npm run dev`: cero errores en consola.

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import StudentValuationTable from "../components/StudentValuationTable";
 import { useDeleteValuationMutation } from "../queries/useStudentValuationQuery";
@@ -15,9 +15,9 @@ import {
   getValuationState,
   VALUATION_STATE_ORDER,
   VALUATION_STATE_LABELS,
-  type ValuationState,
 } from "../types/domain";
 import { normalizeText } from "../../../utils/normalizeText";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
 import type { UserDto, UserSchool } from "../../users/types";
 import type { GradeLevel } from "@/types/domain";
 
@@ -38,12 +38,12 @@ export default function StudentValuationsPage() {
   const { data: letterAvailability } = useLetterAvailabilityQuery(activePeriod?._id);
   const deleteValuation = useDeleteValuationMutation();
 
-  const [search, setSearch] = useState("");
-  const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
-  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const [selectedStates, setSelectedStates] = useState<ValuationState[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const hasInitializedSchoolFilter = useRef(false);
+  // Búsqueda, filtros y página sobreviven a la navegación (store de UI, en memoria).
+  const table = useTableFilters("valuations");
+  const { search, initDefaults } = table;
+  const selectedGrades = table.selectedOf("grade");
+  const selectedSchools = table.selectedOf("school");
+  const selectedStates = table.selectedOf("state");
 
   const schools = useMemo(() => {
     const bySchoolId = new Map<string, UserSchool>();
@@ -51,11 +51,11 @@ export default function StudentValuationsPage() {
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
 
+  // Default de sede propia del Jefe de Área: una vez por sesión; si la quita, no se re-aplica.
   useEffect(() => {
-    if (hasInitializedSchoolFilter.current || !isAreaLead || !schoolId || schools.length === 0) return;
-    if (schools.some((s) => s._id === schoolId)) setSelectedSchools([schoolId]);
-    hasInitializedSchoolFilter.current = true;
-  }, [isAreaLead, schoolId, schools]);
+    if (!isAreaLead || !schoolId || schools.length === 0) return;
+    initDefaults(schools.some((s) => s._id === schoolId) ? { school: [schoolId] } : {});
+  }, [isAreaLead, schoolId, schools, initDefaults]);
 
   const filteredUsers = useMemo(() => {
     const term = normalizeText(search);
@@ -82,20 +82,14 @@ export default function StudentValuationsPage() {
       label: "Grado",
       options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
-      onToggle: (value) =>
-        setSelectedGrades((prev) =>
-          prev.includes(value as GradeLevel) ? prev.filter((g) => g !== value) : [...prev, value as GradeLevel]
-        ),
+      onToggle: table.toggle("grade"),
     },
     {
       id: "state",
       label: "Estado",
       options: VALUATION_STATE_ORDER.map((state) => ({ value: state, label: VALUATION_STATE_LABELS[state] })),
       selected: selectedStates,
-      onToggle: (value) =>
-        setSelectedStates((prev) =>
-          prev.includes(value as ValuationState) ? prev.filter((s) => s !== value) : [...prev, value as ValuationState]
-        ),
+      onToggle: table.toggle("state"),
     },
     ...(isAreaLead
       ? [
@@ -104,10 +98,7 @@ export default function StudentValuationsPage() {
             label: "Sede",
             options: schools.map((school) => ({ value: school._id, label: school.name })),
             selected: selectedSchools,
-            onToggle: (value) =>
-              setSelectedSchools((prev) =>
-                prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value]
-              ),
+            onToggle: table.toggle("school"),
           } satisfies FilterGroup,
         ]
       : []),
@@ -121,6 +112,8 @@ export default function StudentValuationsPage() {
 
   // Pagination logic
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  // La página guardada puede quedar fuera de rango si la lista se reduce.
+  const currentPage = Math.min(table.page, totalPages);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
@@ -141,10 +134,7 @@ export default function StudentValuationsPage() {
       <div className="flex">
         <SearchFilterBar
           search={search}
-          onSearchChange={(value) => {
-            setSearch(value);
-            setCurrentPage(1);
-          }}
+          onSearchChange={table.setSearch}
           placeholder="Buscar por nombre o identificación"
           groups={filterGroups}
         />
@@ -163,8 +153,8 @@ export default function StudentValuationsPage() {
         isLetterAvailable={letterAvailability?.isAvailable ?? false}
         currentPage={currentPage}
         totalPages={totalPages}
-        onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+        onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
 import { UserIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IndividualReportsPanel from "../components/IndividualReportsPanel";
@@ -6,6 +6,7 @@ import ConsolidatedReportsPanel from "../components/ConsolidatedReportsPanel";
 import { useUsersQuery } from "../../users/queries/useUsersQuery";
 import { usePermissions } from "../../auth/usePermissions";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
 import type { UserDto, UserSchool } from "../../users/types";
 import type { GradeLevel } from "@/types/domain";
 
@@ -28,10 +29,12 @@ export default function ReportsPage() {
   const { data: users = NO_USERS } = useUsersQuery(STUDENTS_QUERY);
   const { isAreaLead, schoolId } = usePermissions();
 
-  const [search, setSearch] = useState("");
-  const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
-  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const hasInitializedSchoolFilter = useRef(false);
+  // Dueña de la tabla "reports": búsqueda y filtros sobreviven a la navegación (store de UI, en
+  // memoria). `IndividualReportsPanel` lee la página del mismo `TableId`.
+  const table = useTableFilters("reports");
+  const { search, initDefaults } = table;
+  const selectedGrades = table.selectedOf("grade");
+  const selectedSchools = table.selectedOf("school");
 
   const isIndividual = activeTab === "individual";
 
@@ -41,11 +44,11 @@ export default function ReportsPage() {
     return Array.from(bySchoolId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [users]);
 
+  // Default de sede propia del Jefe de Área: una vez por sesión; si la quita, no se re-aplica.
   useEffect(() => {
-    if (hasInitializedSchoolFilter.current || !isAreaLead || !schoolId || schools.length === 0) return;
-    if (schools.some((s) => s._id === schoolId)) setSelectedSchools([schoolId]);
-    hasInitializedSchoolFilter.current = true;
-  }, [isAreaLead, schoolId, schools]);
+    if (!isAreaLead || !schoolId || schools.length === 0) return;
+    initDefaults(schools.some((s) => s._id === schoolId) ? { school: [schoolId] } : {});
+  }, [isAreaLead, schoolId, schools, initDefaults]);
 
   const filterGroups: FilterGroup[] = [
     {
@@ -53,10 +56,7 @@ export default function ReportsPage() {
       label: "Grado",
       options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
-      onToggle: (value) =>
-        setSelectedGrades((prev) =>
-          prev.includes(value as GradeLevel) ? prev.filter((g) => g !== value) : [...prev, value as GradeLevel]
-        ),
+      onToggle: table.toggle("grade"),
     },
     ...(isAreaLead
       ? [
@@ -65,10 +65,7 @@ export default function ReportsPage() {
             label: "Sede",
             options: schools.map((school) => ({ value: school._id, label: school.name })),
             selected: selectedSchools,
-            onToggle: (value) =>
-              setSelectedSchools((prev) =>
-                prev.includes(value) ? prev.filter((id) => id !== value) : [...prev, value]
-              ),
+            onToggle: table.toggle("school"),
           } satisfies FilterGroup,
         ]
       : []),
@@ -120,7 +117,7 @@ export default function ReportsPage() {
             <div className="min-w-[280px]">
               <SearchFilterBar
                 search={search}
-                onSearchChange={setSearch}
+                onSearchChange={table.setSearch}
                 placeholder="Buscar por nombre o identificación"
                 groups={filterGroups}
               />

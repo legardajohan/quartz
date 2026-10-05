@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/apiClient';
 import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
 import { queryClient } from '../../lib/queryClient';
+import { useTableFiltersStore } from '../../stores/useTableFiltersStore';
 import { seedSessionCatalogs } from './seedSessionCatalogs';
 import type {
   AuthState,
@@ -72,6 +73,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         purgeAllShieldCacheEntries();
         queryClient.clear();
+        useTableFiltersStore.getState().resetAll();
         set({
           token: null,
           sessionData: null,

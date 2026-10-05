@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
 import { PlusIcon, AcademicCapIcon, BriefcaseIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
@@ -11,6 +11,7 @@ import { ConfirmationModal } from "@/components/common/ConfirmationModal";
 import { FormModal } from "@/components/common/FormModal";
 import { ITEMS_PER_PAGE } from "@/components/common/DataTable";
 import SearchFilterBar, { type FilterGroup } from "@/components/common/SearchFilterBar";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
 import {
   useUsersQuery,
   useCreateUserMutation,
@@ -64,10 +65,11 @@ export default function UsersPage() {
   const uploadPhotoMutation = useUploadStudentPhotoMutation();
   const resendInvitationMutation = useResendInvitationMutation();
 
-  const [search, setSearch] = useState("");
-  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const [selectedGrades, setSelectedGrades] = useState<GradeLevel[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Cada pestaña conserva su búsqueda, filtros y página (store de UI, en memoria).
+  const table = useTableFilters(isStaffTab ? "users-staff" : "users-students");
+  const { search } = table;
+  const selectedSchools = table.selectedOf("school");
+  const selectedGrades = table.selectedOf("grade");
 
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -77,10 +79,6 @@ export default function UsersPage() {
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [pendingAvatarBlob, setPendingAvatarBlob] = useState<Blob | null>(null);
   const [pendingAvatarPreview, setPendingAvatarPreview] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
 
   const handleOpenCreateModal = () => {
     setSelectedUser(null);
@@ -137,20 +135,6 @@ export default function UsersPage() {
     setPendingAvatarPreview(URL.createObjectURL(blob));
   };
 
-  const toggleSchoolFilter = (schoolId: string) => {
-    setSelectedSchools((prev) =>
-      prev.includes(schoolId) ? prev.filter((id) => id !== schoolId) : [...prev, schoolId]
-    );
-    setCurrentPage(1);
-  };
-
-  const toggleGradeFilter = (grade: GradeLevel) => {
-    setSelectedGrades((prev) =>
-      prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]
-    );
-    setCurrentPage(1);
-  };
-
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
     return users.filter((user) => {
@@ -173,7 +157,7 @@ export default function UsersPage() {
             label: "Sede",
             options: schools.map((school) => ({ value: school._id, label: school.name })),
             selected: selectedSchools,
-            onToggle: toggleSchoolFilter,
+            onToggle: table.toggle("school"),
           } satisfies FilterGroup,
         ]
       : []),
@@ -182,11 +166,13 @@ export default function UsersPage() {
       label: "Grado",
       options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
-      onToggle: (value) => toggleGradeFilter(value as GradeLevel),
+      onToggle: table.toggle("grade"),
     },
   ];
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  // La página guardada puede quedar fuera de rango si la lista se reduce (p. ej. tras eliminar).
+  const currentPage = Math.min(table.page, totalPages);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -359,10 +345,7 @@ export default function UsersPage() {
 
           <SearchFilterBar
             search={search}
-            onSearchChange={(value) => {
-              setSearch(value);
-              setCurrentPage(1);
-            }}
+            onSearchChange={table.setSearch}
             placeholder="Buscar por nombre o identificación"
             groups={filterGroups}
           />
@@ -374,8 +357,8 @@ export default function UsersPage() {
           users={paginatedUsers}
           currentPage={currentPage}
           totalPages={totalPages}
-          onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+          onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
           isLoading={isLoading}
           canEdit={canEdit}
           canDelete={canDelete}

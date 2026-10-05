@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ReportsTable from "./ReportsTable";
 import ChecklistReportModal from "./ChecklistReportModal";
 import CommunicativeLetterModal from "./CommunicativeLetterModal";
@@ -8,6 +8,7 @@ import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { useActivePeriod } from "../../period/useActivePeriod";
 import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
 import { normalizeText } from "../../../utils/normalizeText";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
 import { REPORT_KIND_VALUES, type GradeLevel, type ReportKind } from "@/types/domain";
 import type { UserDto } from "../../users/types";
 
@@ -18,7 +19,7 @@ const DEFAULT_ENABLED_REPORTS: ReportKind[] = [...REPORT_KIND_VALUES];
 
 interface IndividualReportsPanelProps {
   search: string;
-  selectedGrades: GradeLevel[];
+  selectedGrades: string[];
   selectedSchools: string[];
 }
 
@@ -29,15 +30,14 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
   const [selectedStudentName, setSelectedStudentName] = useState("");
   const [selectedLetterValuationId, setSelectedLetterValuationId] = useState<string | null>(null);
   const [selectedLetterStudentName, setSelectedLetterStudentName] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
   const activePeriodId = useActivePeriod()?._id;
   const { data: users = NO_USERS, isPending: isLoading } = useUsersQuery(STUDENTS_QUERY);
   const { data: letterAvailability } = useLetterAvailabilityQuery(activePeriodId);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, selectedGrades, selectedSchools]);
+  // La página vive en la tabla "reports" (dueña: `ReportsPage`); el store ya la vuelve a 1 al
+  // cambiar búsqueda o filtros.
+  const table = useTableFilters("reports");
 
   const term = normalizeText(search);
   const filteredUsers = users.filter((user) => {
@@ -55,6 +55,8 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  // La página guardada puede quedar fuera de rango si la lista se reduce.
+  const currentPage = Math.min(table.page, totalPages);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
@@ -84,8 +86,8 @@ export default function IndividualReportsPanel({ search, selectedGrades, selecte
         users={paginatedUsers}
         currentPage={currentPage}
         totalPages={totalPages}
-        onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+        onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
         isLoading={isLoading}
         onViewChecklist={handleViewChecklist}
         onViewLetter={handleViewLetter}

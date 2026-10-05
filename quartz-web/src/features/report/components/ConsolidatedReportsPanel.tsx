@@ -4,7 +4,7 @@ import { ClipboardCheck, Mail, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { SpinnerIcon } from "@/components/icons/SpinnerIcon";
 import { extractErrorMessage } from "@/api/apiClient";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { usePermissions } from "../../auth/usePermissions";
 import { useSchoolsQuery } from "../../school/queries/useSchoolsQuery";
 import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
 import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
@@ -33,19 +33,18 @@ const REPORT_OPTIONS: { value: ReportKind; description: string; icon: React.Elem
 ];
 
 export default function ConsolidatedReportsPanel() {
-  const { sessionData } = useAuthStore();
+  const { isTeacher, schoolId: ownSchoolId } = usePermissions();
   const { data: schools = [] } = useSchoolsQuery();
   const { download, isDownloading } = useBulkReportDownload();
   const { data: periods = NO_PERIODS } = usePeriodsQuery();
   const { data: settings } = useInstitutionSettingsQuery();
 
-  const isDocente = sessionData?.user.role === "Docente";
   const multipleShifts = settings?.multipleShifts ?? false;
   const shifts = settings?.shifts ?? NO_SHIFTS;
   // Sin ajustes (fallo de la request) se asume el default del backend: ambos informes.
   const enabledReports: readonly ReportKind[] = settings?.enabledReports ?? REPORT_KIND_VALUES;
 
-  const [schoolId, setSchoolId] = useState(isDocente ? sessionData?.user.schoolId ?? "" : "");
+  const [schoolId, setSchoolId] = useState(isTeacher ? ownSchoolId ?? "" : "");
   const [grade, setGrade] = useState<GradeLevel | "">(GRADE_LEVELS.length === 1 ? GRADE_LEVELS[0] : "");
   const [shiftId, setShiftId] = useState("");
   const [periodId, setPeriodId] = useState("");
@@ -64,10 +63,10 @@ export default function ConsolidatedReportsPanel() {
       : reportOptions[0]?.value ?? null;
 
   const ownSchoolName = useMemo(
-    () => schools.find((s) => s._id === sessionData?.user.schoolId)?.name ?? "",
-    [schools, sessionData?.user.schoolId]
+    () => schools.find((s) => s._id === ownSchoolId)?.name ?? "",
+    [schools, ownSchoolId]
   );
-  const selectedSchoolLabel = isDocente
+  const selectedSchoolLabel = isTeacher
     ? ownSchoolName
     : schools.find((s) => s._id === schoolId)?.name ?? ALL_SCHOOLS_LABEL;
   const selectedPeriodLabel = periods.find((p) => p._id === periodId)?.name ?? "";
@@ -120,14 +119,14 @@ export default function ConsolidatedReportsPanel() {
         <Select
           color="purple"
           label="Sede"
-          value={isDocente ? sessionData?.user.schoolId ?? "" : schoolId}
+          value={isTeacher ? ownSchoolId ?? "" : schoolId}
           onChange={(val) => setSchoolId(val ?? "")}
-          disabled={isDocente}
+          disabled={isTeacher}
           menuProps={{ placement: "bottom", className: "max-h-[60vh] overflow-y-auto" }}
-          key={isDocente ? "docente" : schools.length}
+          key={isTeacher ? "docente" : schools.length}
         >
-          {isDocente ? (
-            <Option value={sessionData?.user.schoolId ?? ""}>{ownSchoolName}</Option>
+          {isTeacher ? (
+            <Option value={ownSchoolId ?? ""}>{ownSchoolName}</Option>
           ) : (
             [
               <Option key="all" value="">{ALL_SCHOOLS_LABEL}</Option>,

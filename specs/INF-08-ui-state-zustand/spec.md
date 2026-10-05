@@ -1,7 +1,7 @@
 ---
 id: INF-08-ui-state-zustand
 feature: ui-state-zustand
-status: draft
+status: implemented
 created: 2026-09-28
 ---
 
@@ -35,18 +35,18 @@ Dejar Zustand solo para lo que ya hace bien (sesión) y lo que falta (filtros de
 - Filtros en la URL y persistencia de filtros en `localStorage`/`sessionStorage`.
 
 ## Criterios de aceptación (EARS)
-- [ ] Ningún componente llama `useAuthStore()` sin selector; cada consumidor lee solo lo que usa (`useAuthStore((s) => s.sessionData)`, o `useShallow` si toma varias claves).
-- [ ] Cuando cambia `isLoading`/`error` de `useAuthStore` (p. ej. durante el login), `ConsolidatedReportsPanel` no re-renderiza; `LoginPage` solo re-renderiza por las claves que usa (`login`, `isLoading`, `error`, `token`).
-- [ ] `useAuthStore` conserva exactamente el estado, las acciones, el `persist` (`quartz-session`) y el `partialize` que dejó INF-09 (solo se añade `resetAll()` de filtros en `logout`); una sesión guardada antes de este cambio se sigue leyendo sin re-login.
-- [ ] Cuando el usuario cambia búsqueda, filtros o página de una tabla, navega a otra sección y vuelve, el sistema restaura esos valores.
-- [ ] Cuando una tabla se visita por primera vez en la sesión, el sistema aplica su default una sola vez (periodo activo en aprendizajes/conceptos; sede propia del Jefe de Área en evaluación/informes); si el usuario lo quita, no se re-aplica al volver.
-- [ ] Cuando cambia la búsqueda o un filtro, el sistema vuelve la página de esa tabla a 1 (comportamiento actual).
-- [ ] En `UsersPage`, cada pestaña (Estudiantes / Equipo docente) conserva sus propios filtros.
-- [ ] Cuando el usuario recarga (F5) o cierra sesión, los filtros vuelven a sus defaults.
-- [ ] Los modales, formularios, borradores y toasts se comportan igual que antes de este spec.
-- [ ] `useTableFiltersStore` no contiene datos de servidor ni importa `apiClient` ni nada de `features/`.
-- [ ] **Aislamiento:** los filtros (que pueden llevar `_id` de sedes/periodos del inquilino) no se escriben en storage y se reinician en `logout()`.
-- [ ] `npm run build && npm run lint` en verde en `quartz-web`.
+- [x] Ningún componente llama `useAuthStore()` sin selector; cada consumidor lee solo lo que usa (`useAuthStore((s) => s.sessionData)`, o `useShallow` si toma varias claves).
+- [x] Cuando cambia `isLoading`/`error` de `useAuthStore` (p. ej. durante el login), `ConsolidatedReportsPanel` no re-renderiza; `LoginPage` solo re-renderiza por las claves que usa (`login`, `isLoading`, `error`, `token`).
+- [x] `useAuthStore` conserva exactamente el estado, las acciones, el `persist` (`quartz-session`) y el `partialize` que dejó INF-09 (solo se añade `resetAll()` de filtros en `logout`); una sesión guardada antes de este cambio se sigue leyendo sin re-login.
+- [x] Cuando el usuario cambia búsqueda, filtros o página de una tabla, navega a otra sección y vuelve, el sistema restaura esos valores.
+- [x] Cuando una tabla se visita por primera vez en la sesión, el sistema aplica su default una sola vez (periodo activo en aprendizajes/conceptos; sede propia del Jefe de Área en evaluación/informes); si el usuario lo quita, no se re-aplica al volver.
+- [x] Cuando cambia la búsqueda o un filtro, el sistema vuelve la página de esa tabla a 1 (comportamiento actual).
+- [x] En `UsersPage`, cada pestaña (Estudiantes / Equipo docente) conserva sus propios filtros.
+- [x] Cuando el usuario recarga (F5) o cierra sesión, los filtros vuelven a sus defaults.
+- [x] Los modales, formularios, borradores y toasts se comportan igual que antes de este spec.
+- [x] `useTableFiltersStore` no contiene datos de servidor ni importa `apiClient` ni nada de `features/`.
+- [x] **Aislamiento:** los filtros (que pueden llevar `_id` de sedes/periodos del inquilino) no se escriben en storage y se reinician en `logout()`.
+- [x] `npm run build && npm run lint` en verde en `quartz-web`.
 
 ## Dependencias
 - **Base de rama:** `feat/INF-09-session-identity-only` (cadena `INF-05 → INF-06 → INF-07 → INF-09 → INF-08`, cada una desde la anterior, sin pasar por `develop`). El PR a `develop` se abre cuando sus predecesoras estén mergeadas, o su diff las arrastrará.

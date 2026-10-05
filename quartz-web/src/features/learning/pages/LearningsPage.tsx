@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Typography } from "@material-tailwind/react";
 import { PlusIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
@@ -25,6 +25,7 @@ import { LearningForm } from "../components/LearningForm";
 import { LearningsTable } from "../components/LearningsTable";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { normalizeText } from "../../../utils/normalizeText";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
 
 const NO_LEARNINGS: Learning[] = [];
 const NO_PERIODS: PeriodDto[] = [];
@@ -52,24 +53,18 @@ export default function LearningsPage() {
   const [learningToDelete, setLearningToDelete] = useState<Learning | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
 
-  // Filters
-  const [search, setSearch] = useState("");
-  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  // Búsqueda, filtros y página sobreviven a la navegación (store de UI, en memoria).
+  const table = useTableFilters("learnings");
+  const { search, initDefaults } = table;
+  const selectedPeriods = table.selectedOf("period");
+  const selectedSubjects = table.selectedOf("subject");
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const hasInitializedFilter = useRef(false);
-
-  // Set default active period filter
+  // Default de periodo activo: una vez por sesión; si el usuario lo quita, no se re-aplica.
   useEffect(() => {
-    if (!hasInitializedFilter.current && periods.length > 0) {
-      if (activePeriod) {
-        setSelectedPeriods([activePeriod._id]);
-      }
-      hasInitializedFilter.current = true;
+    if (periods.length > 0) {
+      initDefaults(activePeriod ? { period: [activePeriod._id] } : {});
     }
-  }, [periods, activePeriod]);
+  }, [periods, activePeriod, initDefaults]);
 
   const handleOpenCreateModal = () => {
     setSelectedLearning(null);
@@ -145,29 +140,6 @@ export default function LearningsPage() {
     handleCloseModals();
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setCurrentPage(1);
-  };
-
-  const togglePeriodFilter = (periodId: string) => {
-    setSelectedPeriods(prev =>
-      prev.includes(periodId)
-        ? prev.filter(id => id !== periodId)
-        : [...prev, periodId]
-    );
-    setCurrentPage(1);
-  };
-
-  const toggleSubjectFilter = (subjectId: string) => {
-    setSelectedSubjects(prev =>
-      prev.includes(subjectId)
-        ? prev.filter(id => id !== subjectId)
-        : [...prev, subjectId]
-    );
-    setCurrentPage(1);
-  };
-
   const filteredLearnings = useMemo(() => {
     const term = normalizeText(search);
     return learnings.filter(learning => {
@@ -184,18 +156,20 @@ export default function LearningsPage() {
       label: "Periodo",
       options: periods.map((period) => ({ value: period._id, label: period.name })),
       selected: selectedPeriods,
-      onToggle: togglePeriodFilter,
+      onToggle: table.toggle("period"),
     },
     {
       id: "subject",
       label: axis.plural,
       options: subjects.map((subject) => ({ value: subject._id, label: subject.name })),
       selected: selectedSubjects,
-      onToggle: toggleSubjectFilter,
+      onToggle: table.toggle("subject"),
     },
   ];
 
   const totalPages = Math.ceil(filteredLearnings.length / ITEMS_PER_PAGE);
+  // La página guardada puede quedar fuera de rango si la lista se reduce (p. ej. tras eliminar).
+  const currentPage = Math.max(1, Math.min(table.page, totalPages));
   const paginatedLearnings = filteredLearnings.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -233,7 +207,7 @@ export default function LearningsPage() {
         <div className="mb-6 flex">
           <SearchFilterBar
             search={search}
-            onSearchChange={handleSearchChange}
+            onSearchChange={table.setSearch}
             placeholder="Buscar aprendizaje"
             groups={learningFilterGroups}
           />
@@ -258,8 +232,8 @@ export default function LearningsPage() {
             learnings={paginatedLearnings}
             currentPage={currentPage}
             totalPages={totalPages}
-            onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
+            onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+            onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
             isLoading={isLoading}
             canManage={isAreaLead}
             onEdit={handleEdit}
