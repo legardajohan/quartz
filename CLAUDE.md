@@ -4,7 +4,7 @@
 > **Idioma:** responde **siempre en español**. Única excepción: los **mensajes de commit van en inglés** (ver skill `commit-changes`).
 
 ## 1. Qué es Quartz
-Sistema de **gestión académica** para la **evaluación cualitativa** de estudiantes de **Grado Transición**, conforme a los lineamientos del MEN (Colombia). SaaS **multi-institución**. 
+Sistema de **gestión académica** para la **evaluación cualitativa** de estudiantes de **Preescolar** (Prejardín, Jardín, Transición; cada institución elige los que ofrece), conforme a los lineamientos del MEN (Colombia). SaaS **multi-institución**. 
 
 **Conceptos de negocio clave:**
 - **Roles:** `Jefe de Área` (admin), `Docente`, `Estudiante` (sin acciones en esta fase).

@@ -4,6 +4,7 @@ import { ArrowDownTrayIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@he
 import toast from "react-hot-toast";
 
 import { extractErrorMessage } from "@/api/apiClient";
+import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
 import {
   downloadImportTemplate,
   usePreviewImportMutation,
@@ -24,6 +25,12 @@ const KIND_LABEL: Record<ImportKind, string> = { students: "Estudiantes", staff:
 const REQUIRED_COLUMNS: Record<ImportKind, string> = {
   students: "Primer nombre, Primer apellido, Tipo y Número de identificación y Sede",
   staff: "Rol, Primer nombre, Primer apellido, Tipo y Número de identificación, Correo y Sede",
+};
+
+// Solo con varios niveles ofertados la plantilla trae columna de nivel; con uno, se asigna solo.
+const LEVEL_COLUMN_HINT: Record<ImportKind, string> = {
+  students: "La columna Nivel es obligatoria.",
+  staff: "En Niveles escribe uno o varios separados por coma; es obligatoria para Docente.",
 };
 
 function SkippedRowsTable({ rows }: { rows: ImportRowError[] }) {
@@ -56,6 +63,7 @@ function SkippedRowsTable({ rows }: { rows: ImportRowError[] }) {
 }
 
 export default function UserImportModal({ open, kind, onClose }: UserImportModalProps) {
+  const { isSingle: isSingleLevel } = useOfferedLevels();
   const [step, setStep] = useState<ImportStep>("select");
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -139,8 +147,8 @@ export default function UserImportModal({ open, kind, onClose }: UserImportModal
           <>
             <p className="text-sm text-gray-700">
               Descarga la plantilla, diligénciala y súbela en formato <b>.xlsx</b> (máximo 1 MB). Columnas
-              obligatorias: {REQUIRED_COLUMNS[kind]}. Solo se crean las filas válidas; las demás se informan con su
-              motivo.
+              obligatorias: {REQUIRED_COLUMNS[kind]}.{!isSingleLevel && ` ${LEVEL_COLUMN_HINT[kind]}`} Solo se crean las
+              filas válidas; las demás se informan con su motivo.
             </p>
 
             <Button

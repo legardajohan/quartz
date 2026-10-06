@@ -20,15 +20,15 @@ import { normalizeText } from "../../../utils/normalizeText";
 import { useTableFilters } from "@/stores/useTableFiltersStore";
 import type { UserDto, UserSchool } from "../../users/types";
 import type { GradeLevel } from "@/types/domain";
+import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
 
-// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
-const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 
 const NO_USERS: UserDto[] = [];
 // Misma key que `UsersPage` (pestaña Estudiantes) e `/informes`: una sola caché compartida.
 const STUDENTS_QUERY = { role: "Estudiante" } as const;
 
 export default function StudentValuationsPage() {
+  const { levels: offeredLevels } = useOfferedLevels();
   const { studentId } = useParams();
   const navigate = useNavigate();
   const { data: settings } = useInstitutionSettingsQuery();
@@ -80,7 +80,7 @@ export default function StudentValuationsPage() {
     {
       id: "grade",
       label: "Grado",
-      options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
+      options: offeredLevels.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
       onToggle: table.toggle("grade"),
     },

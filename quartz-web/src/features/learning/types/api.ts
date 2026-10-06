@@ -1,3 +1,5 @@
+import type { GradeLevel } from '@/types/domain';
+
 export interface Learning {
   _id: string;
   description: string;
@@ -6,7 +8,7 @@ export interface Learning {
     name: string;
     role: string;
   };
-  grade: string;
+  grade: GradeLevel;
   subject: {
     _id: string;
     name: string;
@@ -24,7 +26,7 @@ export interface NewLearning {
     subjectId: string;
     periodId: string;
     description: string;
-    grade: string;
+    grade: GradeLevel;
 }
 
 export type UpdateLearning = Partial<NewLearning> & { version: number };

@@ -69,6 +69,15 @@ Sin rutas nuevas: `PATCH /api/institutions/me` y `GET /api/institutions/me/setti
 - Docente: `gradesTaught` ⊂ `offeredLevels`; "Cursos a cargo" ofrece solo los ofertados.
 - El filtro de grado del dashboard sigue opcional ("Todos los grados").
 
+## Desvíos durante la implementación
+- Migración en `quartz-api/scripts/migrate-grade-levels.js` (JS, como `migrate-period-year.js`; se corre con `node`).
+- `learning/components/LearningForm.tsx` + `learning/types/api.ts`: el formulario no tenía campo de grado; ahora lleva el selector "Nivel" (oculto con un único nivel) y `Learning.grade`/`NewLearning.grade` son `GradeLevel`.
+- `src/lib/diffChanges.ts`: `diffLearning` reporta cambio de nivel en el aviso de conflicto.
+- Zod de `offeredLevels` sin `.min(1)`: el vacío llega al service y responde `422` (como pide el spec), no `400`.
+- Cargue masivo (antes fuera de alcance → USR-06): `users-import.service.ts` (columna de nivel condicional, `gradeReasons` en preview y confirm), `ImportRowDTO.gradesTaught` en API/web, `importRowSchema` y texto de ayuda en `UserImportModal`.
+- `institution.service.ts → assertLevelNotInUse`: el 409 cuenta también aprendizajes y plantillas de chequeo (`findScoped`), no solo usuarios.
+- `dev/data_base/insert-db.js` está en `.gitignore`: se corrigió en disco (Jefes de Área con `gradesTaught: []`, institución con `offeredLevels`), pero no entra al commit.
+
 ## Verificación
 - `cd quartz-api && npx tsc --noEmit`
 - `cd quartz-web && npm run build && npm run lint` (12 problemas preexistentes ajenos)

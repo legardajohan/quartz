@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ReportKind } from './institution.types';
+import { GradeLevel } from '../auth/auth.types';
 
 const objectId = (message: string) =>
   z.string().regex(/^[0-9a-fA-F]{24}$/, { message });
@@ -16,6 +17,11 @@ export const updateInstitutionSettingsSchema = z.object({
       enabledReports: z.array(z.nativeEnum(ReportKind)).optional(),
       multipleShifts: z.boolean().optional(),
       shifts: z.array(shiftInputSchema).max(10).optional(),
+      // Vacío también llega al service (422); duplicados o valores fuera del enum son 400.
+      offeredLevels: z
+        .array(z.nativeEnum(GradeLevel))
+        .refine((levels) => new Set(levels).size === levels.length, 'Hay niveles repetidos.')
+        .optional(),
     }).strict(),
   }),
 });

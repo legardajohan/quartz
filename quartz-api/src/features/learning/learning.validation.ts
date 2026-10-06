@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { GradeLevel } from '../auth/auth.types';
 
 export const createLearningSchema = z.object({
   body: z.object({
@@ -9,7 +10,7 @@ export const createLearningSchema = z.object({
       message: 'El ID del período no es un ObjectId válido.',
     }),
     description: z.string().min(1, { message:'La descripción es obligatoria y no puede estar vacía.' }),
-    grade: z.string().min(1, { message: 'El grado es obligatorio y no puede estar vacío.' }),
+    grade: z.nativeEnum(GradeLevel, { message: 'El grado no es un nivel válido.' }),
   }).strict(),
 });
 
@@ -27,7 +28,7 @@ export const updateLearningSchema = z.object({
         message: 'El ID del período no es un ObjectId válido.',
     }).optional(),
     description: z.string().min(1, { message: 'La descripción no puede estar vacía.' }).optional(),
-    grade: z.string().min(1, { message: 'El grado no puede estar vacío.' }).optional(),
+    grade: z.nativeEnum(GradeLevel, { message: 'El grado no es un nivel válido.' }).optional(),
     version: z.number().int().nonnegative(),
   }),
 });
@@ -51,6 +52,6 @@ export const getAllLearningsSchema = z.object({
     userId: z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
         message: 'El ID del usuario no es un ObjectId válido.',
     }).optional(),
-    grade: z.string().min(1, { message: 'El grado no puede estar vacío.' }).optional(),
+    grade: z.nativeEnum(GradeLevel, { message: 'El grado no es un nivel válido.' }).optional(),
   }).strict(),
 });

@@ -82,6 +82,7 @@ export interface ImportRowDto {
   schoolId: string;
   schoolName: string;
   shiftId?: string;
+  gradesTaught: GradeLevel[];
 }
 
 export interface ImportRowError {

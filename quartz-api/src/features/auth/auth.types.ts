@@ -26,20 +26,19 @@ export enum IdentificationType {
   RC = 'RC',
 }
 
+// Niveles de Preescolar (Decreto 2247/97). Grados 1°–11° quedan fuera de alcance.
 export enum GradeLevel {
+  PREJARDIN = 'Prejardín',
+  JARDIN = 'Jardín',
   TRANSICION = 'Transición',
-  PRIMERO = '1ro',
-  SEGUNDO = '2do',
-  TERCERO = '3ro',
-  CUARTO = '4to',
-  QUINTO = '5to',
-  SEXTO = '6to',
-  SEPTIMO = '7mo',
-  OCTAVO = '8vo',
-  NOVENO = '9no',
-  DECIMO = '10mo',
-  ONCEMO = '11mo',
 }
+
+// Orden canónico 3→5 años: los listados de la UI lo respetan.
+export const GRADE_LEVELS: readonly GradeLevel[] = [
+  GradeLevel.PREJARDIN,
+  GradeLevel.JARDIN,
+  GradeLevel.TRANSICION,
+];
 
 export interface ISessionData {
   user: {
@@ -58,4 +57,5 @@ export interface ISessionData {
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: IShiftDTO[];
+  offeredLevels: GradeLevel[];
 }

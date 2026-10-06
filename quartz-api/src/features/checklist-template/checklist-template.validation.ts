@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { GradeLevel } from '../auth/auth.types';
 import { SubjectEvaluationMode } from '../subject/subject.types';
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
@@ -36,7 +37,7 @@ export const createTemplateSchema = z.object({
     periodId: z.string().refine((val) => objectIdRegex.test(val), {
       message: 'El ID del período no es un ObjectId válido.',
     }),
-    grade: z.string().min(1, { message: 'El grado es obligatorio.' }),
+    grade: z.nativeEnum(GradeLevel, { message: 'El grado no es un nivel válido.' }),
   }).strict(),
 });
 

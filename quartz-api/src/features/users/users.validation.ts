@@ -149,6 +149,7 @@ const importRowSchema = z.object({
   schoolId: objectId('El ID de la sede no es un ObjectId válido.'),
   schoolName: z.string().optional(),
   shiftId: objectId('El ID de la jornada no es un ObjectId válido.').optional(),
+  gradesTaught: z.array(z.nativeEnum(GradeLevel)).max(Object.values(GradeLevel).length),
 }).strict();
 
 export const confirmImportSchema = z.object({

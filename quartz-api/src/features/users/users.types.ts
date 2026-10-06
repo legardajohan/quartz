@@ -129,6 +129,7 @@ export interface ImportRowDTO {
     schoolId: string;
     schoolName: string; // Solo para mostrar en la preview.
     shiftId?: string; // Solo Estudiante.
+    gradesTaught: GradeLevel[]; // Estudiante: uno; Docente: ≥ 1; Jefe de Área: opcional.
 }
 
 export interface ImportRowError {

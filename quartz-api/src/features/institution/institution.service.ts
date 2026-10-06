@@ -1,6 +1,10 @@
 import { Types } from 'mongoose';
 import { Institution } from './institution.model';
 import { User } from '../auth/auth.model';
+import { LearningModel } from '../learning/learning.model';
+import { ChecklistTemplateModel } from '../checklist-template/checklist-template.model';
+import { GradeLevel, GRADE_LEVELS } from '../auth/auth.types';
+import { findScoped } from '../../repositories/base.repository';
 import {
   IInstitutionDTO,
   IInstitutionBrandingDTO,
@@ -16,6 +20,16 @@ import { webpToJpeg } from '../../utils/webpToJpeg';
 import { uploadImage, deleteImage, getImage, keyFromPublicUrl } from '../../services/r2.service';
 
 const DEFAULT_ENABLED_REPORTS: ReportKind[] = [ReportKind.CHECKLIST, ReportKind.COMMUNICATIVE_LETTER];
+const DEFAULT_OFFERED_LEVELS: GradeLevel[] = [GradeLevel.TRANSICION];
+
+// Persistido en el orden en que llegó: se normaliza al canónico 3→5 años para la UI.
+function sortLevels(levels: GradeLevel[]): GradeLevel[] {
+  return GRADE_LEVELS.filter((level) => levels.includes(level));
+}
+
+function resolveOfferedLevels(levels?: GradeLevel[]): GradeLevel[] {
+  return levels && levels.length > 0 ? sortLevels(levels) : DEFAULT_OFFERED_LEVELS;
+}
 
 const SHIELD_VERSION_RE = /shield-(\d+)\.jpg$/;
 
@@ -38,7 +52,12 @@ function mapInstitutionToDTO(institution: {
   phoneNumber?: string;
   email: string;
   isActive: boolean;
-  settings?: Partial<{ enabledReports: ReportKind[]; multipleShifts: boolean; shifts: PersistedShift[] }>;
+  settings?: Partial<{
+    enabledReports: ReportKind[];
+    multipleShifts: boolean;
+    shifts: PersistedShift[];
+    offeredLevels: GradeLevel[];
+  }>;
   shieldUrl?: string;
 }): IInstitutionDTO {
   return {
@@ -54,6 +73,7 @@ function mapInstitutionToDTO(institution: {
       enabledReports: institution.settings?.enabledReports ?? DEFAULT_ENABLED_REPORTS,
       multipleShifts: institution.settings?.multipleShifts ?? false,
       shifts: (institution.settings?.shifts ?? []).map(mapShiftToDTO),
+      offeredLevels: resolveOfferedLevels(institution.settings?.offeredLevels),
     },
     shieldUrl: institution.shieldUrl,
   };
@@ -75,14 +95,20 @@ export const getShiftSettings = async (institutionId: string): Promise<IShiftSet
   };
 };
 
-// Ajustes transversales (informes habilitados + jornadas): el Docente los necesita y no puede
-// leer `getInstitutionById`, que expone datos administrativos.
+export const getOfferedLevels = async (institutionId: string): Promise<GradeLevel[]> => {
+  const institution = await Institution.findById(institutionId).select('settings.offeredLevels').lean();
+  return resolveOfferedLevels(institution?.settings?.offeredLevels);
+};
+
+// Ajustes transversales (informes habilitados + jornadas + niveles): el Docente los necesita y no
+// puede leer `getInstitutionById`, que expone datos administrativos.
 export const getInstitutionSettings = async (institutionId: string): Promise<IInstitutionSettings> => {
-  const [enabledReports, shiftSettings] = await Promise.all([
+  const [enabledReports, shiftSettings, offeredLevels] = await Promise.all([
     getEnabledReports(institutionId),
     getShiftSettings(institutionId),
+    getOfferedLevels(institutionId),
   ]);
-  return { enabledReports, ...shiftSettings };
+  return { enabledReports, ...shiftSettings, offeredLevels };
 };
 
 // Versión mínima de `getInstitutionById` para consumo transversal (p. ej. el sidebar):
@@ -130,6 +156,25 @@ export const getInstitutionById = async (institutionId: string): Promise<IInstit
   return mapInstitutionToDTO(institution);
 };
 
+// Un nivel quitado dejaría usuarios, aprendizajes o plantillas fuera de los niveles ofertados.
+async function assertLevelNotInUse(institutionId: string, level: GradeLevel): Promise<void> {
+  const [users, learnings, templates] = await Promise.all([
+    findScoped(User, institutionId, { gradesTaught: level }).countDocuments(),
+    findScoped(LearningModel, institutionId, { grade: level }).countDocuments(),
+    findScoped(ChecklistTemplateModel, institutionId, { grade: level }).countDocuments(),
+  ]);
+
+  const usages = [
+    users > 0 ? `${users} usuario(s)` : null,
+    learnings > 0 ? `${learnings} aprendizaje(s)` : null,
+    templates > 0 ? `${templates} plantilla(s) de chequeo` : null,
+  ].filter((usage): usage is string => usage !== null);
+
+  if (usages.length > 0) {
+    throw new AppError(`El nivel «${level}» está en uso: ${usages.join(', ')}.`, 409);
+  }
+}
+
 export const updateInstitutionSettings = async (
   institutionId: string,
   data: UpdateInstitutionSettingsData
@@ -138,8 +183,12 @@ export const updateInstitutionSettings = async (
     throw new AppError('Debe habilitarse al menos un informe.', 422);
   }
 
+  if (data.offeredLevels && data.offeredLevels.length === 0) {
+    throw new AppError('Selecciona al menos un nivel.', 422);
+  }
+
   const current = await Institution.findById(institutionId)
-    .select('settings.multipleShifts settings.shifts')
+    .select('settings.multipleShifts settings.shifts settings.offeredLevels')
     .lean();
 
   if (!current) {
@@ -206,6 +255,16 @@ export const updateInstitutionSettings = async (
     }
   }
 
+  if (data.offeredLevels !== undefined) {
+    const nextLevels = new Set(data.offeredLevels);
+    const removedLevels = resolveOfferedLevels(current.settings?.offeredLevels)
+      .filter((level) => !nextLevels.has(level));
+
+    for (const removed of removedLevels) {
+      await assertLevelNotInUse(institutionId, removed);
+    }
+  }
+
   const setPayload: Record<string, unknown> = {};
   if (data.enabledReports !== undefined) {
     setPayload['settings.enabledReports'] = data.enabledReports;
@@ -215,6 +274,9 @@ export const updateInstitutionSettings = async (
   }
   if (nextShiftsPersisted !== undefined) {
     setPayload['settings.shifts'] = nextShiftsPersisted;
+  }
+  if (data.offeredLevels !== undefined) {
+    setPayload['settings.offeredLevels'] = sortLevels(data.offeredLevels);
   }
 
   const institution = await Institution.findByIdAndUpdate(

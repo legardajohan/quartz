@@ -11,6 +11,9 @@ export function diffLearning(base: Learning, current: Learning): ConflictChange[
   if (base.period._id !== current.period._id) {
     changes.push({ label: 'Periodo', from: base.period.name, to: current.period.name });
   }
+  if (base.grade !== current.grade) {
+    changes.push({ label: 'Nivel', from: base.grade, to: current.grade });
+  }
   if (base.description !== current.description) {
     changes.push({ label: 'Descripción', detail: current.description });
   }

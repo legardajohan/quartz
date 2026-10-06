@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { User } from '../auth/auth.model';
 import { GradeLevel, IdentificationType, UserAccountStatus, UserRole } from '../auth/auth.types';
 import { SchoolModel } from '../school/school.model';
-import { getShiftSettings } from '../institution/institution.service';
+import { getShiftSettings, getOfferedLevels } from '../institution/institution.service';
 import { findScoped, insertManyScoped } from '../../repositories/base.repository';
 import { buildWorkbook, readSheetRows } from '../../services/spreadsheet.service';
 import AppError from '../../utils/AppError';
@@ -30,7 +30,8 @@ type ImportField =
   | 'email'
   | 'phoneNumber'
   | 'school'
-  | 'shift';
+  | 'shift'
+  | 'grade';
 
 interface ImportColumn {
   field: ImportField;
@@ -42,6 +43,7 @@ interface ImportContext {
   schools: Map<string, { _id: string; name: string }>; // Clave: nombre normalizado.
   shifts: Map<string, { _id: string; name: string }>; // Vacío si la institución no usa jornadas.
   multipleShifts: boolean;
+  offeredLevels: GradeLevel[];
 }
 
 // Lo mínimo para detectar duplicados; `hasErrors` evita que una fila ya inválida "reserve" el valor.
@@ -73,7 +75,9 @@ function normalize(value: string): string {
   return value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-function buildColumns(kind: ImportKind, multipleShifts: boolean): ImportColumn[] {
+// Con un único nivel ofertado no hay columna: se asigna ese nivel (ver `resolveDefaultGrades`).
+function buildColumns(kind: ImportKind, ctx: ImportContext): ImportColumn[] {
+  const hasLevelChoice = ctx.offeredLevels.length > 1;
   const person: ImportColumn[] = [
     { field: 'firstName', label: 'Primer nombre', required: true },
     { field: 'middleName', label: 'Segundo nombre', required: false },
@@ -90,6 +94,8 @@ function buildColumns(kind: ImportKind, multipleShifts: boolean): ImportColumn[]
       { field: 'email', label: 'Correo', required: true },
       { field: 'phoneNumber', label: 'Teléfono', required: false },
       { field: 'school', label: 'Sede', required: true },
+      // Varios niveles separados por coma; obligatorio para Docente (se valida por fila).
+      ...(hasLevelChoice ? [{ field: 'grade' as const, label: 'Niveles', required: false }] : []),
     ];
   }
 
@@ -97,16 +103,32 @@ function buildColumns(kind: ImportKind, multipleShifts: boolean): ImportColumn[]
     ...person,
     { field: 'phoneNumber', label: 'Teléfono', required: false },
     { field: 'school', label: 'Sede', required: true },
-    ...(multipleShifts ? [{ field: 'shift' as const, label: 'Jornada', required: false }] : []),
+    ...(ctx.multipleShifts ? [{ field: 'shift' as const, label: 'Jornada', required: false }] : []),
+    ...(hasLevelChoice ? [{ field: 'grade' as const, label: 'Nivel', required: true }] : []),
   ];
+}
+
+function resolveDefaultGrades(role: WritableUserRole, offeredLevels: GradeLevel[]): GradeLevel[] {
+  return role !== UserRole.JEFE_DE_AREA && offeredLevels.length === 1 ? [...offeredLevels] : [];
+}
+
+// Valida niveles contra los ofertados por el inquilino; vale tanto para el archivo como para el confirm.
+function gradeReasons(role: WritableUserRole, grades: GradeLevel[], offeredLevels: GradeLevel[]): string[] {
+  const reasons: string[] = [];
+  const notOffered = grades.filter((g) => !offeredLevels.includes(g));
+  if (notOffered.length > 0) reasons.push(`La institución no ofrece el nivel: ${notOffered.join(', ')}.`);
+  if (role === UserRole.ESTUDIANTE && grades.length !== 1) reasons.push('El estudiante debe tener exactamente un nivel.');
+  if (role === UserRole.DOCENTE && grades.length === 0) reasons.push('El docente debe tener al menos un nivel.');
+  return reasons;
 }
 
 const headerOf = (column: ImportColumn): string => (column.required ? `${column.label}*` : column.label);
 
 async function loadImportContext(institutionId: string): Promise<ImportContext> {
-  const [schools, shiftSettings] = await Promise.all([
+  const [schools, shiftSettings, offeredLevels] = await Promise.all([
     findScoped(SchoolModel, institutionId).select('_id name').lean(),
     getShiftSettings(institutionId),
+    getOfferedLevels(institutionId),
   ]);
 
   const toEntry = (s: { _id: unknown; name: string }) => [
@@ -118,6 +140,7 @@ async function loadImportContext(institutionId: string): Promise<ImportContext> 
     schools: new Map(schools.map(toEntry)),
     shifts: new Map(shiftSettings.multipleShifts ? shiftSettings.shifts.map(toEntry) : []),
     multipleShifts: shiftSettings.multipleShifts,
+    offeredLevels,
   };
 }
 
@@ -134,6 +157,9 @@ export async function buildImportTemplate(institutionId: string, kind: ImportKin
         return IDENTIFICATION_TYPES;
       case 'role':
         return STAFF_ROLE_LABELS;
+      // Lista solo para Estudiante: el Equipo docente puede escribir varios niveles separados por coma.
+      case 'grade':
+        return kind === 'students' ? ctx.offeredLevels : undefined;
       default:
         return undefined;
     }
@@ -141,7 +167,7 @@ export async function buildImportTemplate(institutionId: string, kind: ImportKin
 
   return buildWorkbook({
     name: KIND_LABEL[kind],
-    columns: buildColumns(kind, ctx.multipleShifts).map((column) => ({
+    columns: buildColumns(kind, ctx).map((column) => ({
       header: headerOf(column),
       list: listFor(column.field),
     })),
@@ -217,6 +243,23 @@ function parseRawRow(
     else reasons.push('"Jornada" no es un valor permitido.');
   }
 
+  let gradesTaught: GradeLevel[] = [];
+  if (role) {
+    const gradeText = raw('grade');
+    const gradeColumn = columns.find((c) => c.field === 'grade');
+    if (gradeColumn) {
+      const tokens = [...new Set(gradeText.split(/[,;]/).map((t) => t.trim()).filter((t) => t !== ''))];
+      const unknown = tokens.filter((t) => !ctx.offeredLevels.some((l) => normalize(l) === normalize(t)));
+      if (unknown.length > 0) reasons.push(`La institución no ofrece el nivel: ${unknown.join(', ')}.`);
+      gradesTaught = ctx.offeredLevels.filter((l) => tokens.some((t) => normalize(t) === normalize(l)));
+      // Celda obligatoria vacía: ya se reportó arriba como "es obligatorio".
+      const alreadyReported = gradeColumn.required && gradeText === '';
+      if (unknown.length === 0 && !alreadyReported) reasons.push(...gradeReasons(role, gradesTaught, ctx.offeredLevels));
+    } else {
+      gradesTaught = resolveDefaultGrades(role, ctx.offeredLevels);
+    }
+  }
+
   const probe: DuplicateProbe = { row, identificationNumber, email, hasErrors: reasons.length > 0 };
   if (reasons.length > 0 || !role || !identificationType || identificationNumber === undefined || !school) {
     return { reasons, probe };
@@ -236,6 +279,7 @@ function parseRawRow(
     schoolId: school._id,
     schoolName: school.name,
     shiftId,
+    gradesTaught,
   };
   return { dto, reasons, probe };
 }
@@ -299,7 +343,7 @@ export async function previewImport(
   buffer: Buffer
 ): Promise<ImportPreview> {
   const ctx = await loadImportContext(institutionId);
-  const columns = buildColumns(kind, ctx.multipleShifts);
+  const columns = buildColumns(kind, ctx);
 
   const sheetRows = await readSheetRows(
     buffer,
@@ -344,6 +388,8 @@ function revalidateRow(row: ImportRowDTO, kind: ImportKind, ctx: ImportContext):
     if (!shiftAllowed) reasons.push('"Jornada" no es un valor permitido.');
   }
 
+  reasons.push(...gradeReasons(row.role, row.gradesTaught, ctx.offeredLevels));
+
   if (kind === 'staff') {
     if (!row.email) reasons.push('"Correo" es obligatorio.');
     else if (!emailSchema.safeParse(row.email).success) reasons.push('El correo no es válido.');
@@ -364,7 +410,7 @@ function buildUserDoc(row: ImportRowDTO) {
     identificationNumber: row.identificationNumber,
     phoneNumber: row.phoneNumber,
     schoolId: new Types.ObjectId(row.schoolId),
-    gradesTaught: row.role === UserRole.JEFE_DE_AREA ? [] : [GradeLevel.TRANSICION],
+    gradesTaught: row.gradesTaught,
     ...(row.shiftId ? { shiftId: new Types.ObjectId(row.shiftId) } : {}),
     // Sin contraseña: la crea el propio usuario desde el enlace de invitación (USR-04).
     ...(isStaff ? { email: normalizeEmail(row.email as string), accountStatus: UserAccountStatus.PENDIENTE } : {}),

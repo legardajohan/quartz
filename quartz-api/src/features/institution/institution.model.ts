@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { ReportKind, IInstitutionSettings } from './institution.types';
+import { GradeLevel } from '../auth/auth.types';
 
 export interface IShiftDocument extends Document {
   _id: Types.ObjectId;
@@ -35,6 +36,11 @@ const InstitutionSettingsSchema = new Schema<IInstitutionSettings>(
     },
     multipleShifts: { type: Boolean, default: false },
     shifts: { type: [ShiftSchema], default: [] },
+    offeredLevels: {
+      type: [String],
+      enum: Object.values(GradeLevel),
+      default: [GradeLevel.TRANSICION],
+    },
   },
   { _id: false }
 );

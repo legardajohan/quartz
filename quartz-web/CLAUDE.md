@@ -1,6 +1,6 @@
 # quartz-web
 
-> **Sistema:** Quartz — Gestión académica para la **evaluación cualitativa** de estudiantes del grado **Transición**.
+> **Sistema:** Quartz — Gestión académica para la **evaluación cualitativa** de estudiantes de **Preescolar** (Prejardín · Jardín · Transición, según `settings.offeredLevels` de la institución).
 
 ## Arquitectura
 **Frontend:** **SPA desacoplada** que consume la API solo por REST.

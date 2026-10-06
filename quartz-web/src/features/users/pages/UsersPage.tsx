@@ -26,6 +26,7 @@ import type { UserDto, NewUser, UpdateUser, WritableUserRole, StaffRole, GetUser
 import { UsersTable } from "../components/UsersTable";
 import { UserForm, type UserFormData } from "../components/UserForm";
 import UserImportModal from "../components/UserImportModal";
+import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
 
 type UsersTab = "students" | "staff";
 
@@ -40,11 +41,10 @@ const TAB_QUERY: Record<UsersTab, GetUsersQuery> = {
   staff: { roles: STAFF_ROLES },
 };
 
-// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
-const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 const NO_SHIFTS: Shift[] = [];
 
 export default function UsersPage() {
+  const { levels: offeredLevels } = useOfferedLevels();
   const { isAreaLead, userId: currentUserId } = usePermissions();
   const canCreate = isAreaLead;
   const canDelete = isAreaLead;
@@ -166,7 +166,7 @@ export default function UsersPage() {
     {
       id: "grade",
       label: "Grado",
-      options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
+      options: offeredLevels.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
       onToggle: table.toggle("grade"),
     },

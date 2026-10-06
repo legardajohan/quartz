@@ -3,12 +3,9 @@ import { Input, Select, Option, Checkbox, Typography } from "@material-tailwind/
 import { ImageCropUploader } from "@/components/common/ImageCropUploader";
 import { IDENTIFICATION_TYPES } from "@/types/domain";
 import type { IdentificationType, GradeLevel, Shift } from "@/types/domain";
+import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
 import { STAFF_ROLES } from "../types";
 import type { StaffRole, UserDto, UserSchool, WritableUserRole } from "../types";
-
-const GRADE_LEVELS: GradeLevel[] = [
-  "Transición"
-];
 
 export interface UserFormData {
   firstName: string;
@@ -85,10 +82,17 @@ export function UserForm({
   const [formData, setFormData] = useState<UserFormData>(EMPTY_FORM);
   const isStaff = role !== "Estudiante";
   const isAreaLeadRole = role === "Jefe de Área";
+  const { levels: offeredLevels, isSingle: isSingleLevel } = useOfferedLevels();
+  // Con un único nivel ofertado el alta lo trae preseleccionado (opcional para Jefe de Área).
+  const defaultGrade = isSingleLevel && !isAreaLeadRole ? offeredLevels[0] : undefined;
 
   useEffect(() => {
-    setFormData(initialData ? formDataFromUser(initialData) : EMPTY_FORM);
-  }, [initialData]);
+    if (initialData) {
+      setFormData(formDataFromUser(initialData));
+      return;
+    }
+    setFormData({ ...EMPTY_FORM, gradesTaught: defaultGrade ? [defaultGrade] : [] });
+  }, [initialData, defaultGrade]);
 
   useEffect(() => {
     const initial = initialData ? formDataFromUser(initialData) : EMPTY_FORM;
@@ -236,7 +240,7 @@ export function UserForm({
             selected={() => formData.gradesTaught.join(", ")}
             onChange={() => {}}
           >
-            {GRADE_LEVELS.map((grade) => (
+            {offeredLevels.map((grade) => (
               <Option key={grade} value={grade} className="p-0">
                 <label
                   htmlFor={`grade-taught-${grade}`}
@@ -285,7 +289,7 @@ export function UserForm({
               onChange={(val) => update("gradesTaught", val ? [val as GradeLevel] : [])}
               key={initialData?._id ? `grade-${initialData._id}` : "grade-new"}
             >
-              {GRADE_LEVELS.map((grade) => (
+              {offeredLevels.map((grade) => (
                 <Option key={grade} value={grade}>
                   {grade}
                 </Option>

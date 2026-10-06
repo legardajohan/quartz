@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Subject, Period } from '@/types/domain';
+import { Subject, Period, type GradeLevel } from '@/types/domain';
 import { useSubjectAxisLabel } from '../../subject/useSubjectAxisLabel';
-import { Learning } from '../types';
+import { useOfferedLevels } from '../../institution/queries/useOfferedLevels';
+import { Learning, NewLearning } from '../types';
 import {
     Textarea,
     Select,
@@ -12,24 +13,35 @@ interface LearningFormProps {
     subjects: Subject[];
     periods: Period[];
     initialData?: Learning | null;
-    onFormChange: (formData: { subjectId: string; periodId: string; description: string }, isDirty: boolean) => void;
+    onFormChange: (formData: LearningFormData, isDirty: boolean) => void;
 }
+
+export type LearningFormData = Omit<NewLearning, 'grade'> & { grade: GradeLevel | '' };
 
 export const LearningForm = ({ subjects, periods, initialData, onFormChange }: LearningFormProps) => {
     const axis = useSubjectAxisLabel();
     const [subjectId, setSubjectId] = useState('');
     const [periodId, setPeriodId] = useState('');
     const [description, setDescription] = useState('');
+    const [pickedGrade, setPickedGrade] = useState<GradeLevel | ''>('');
+    const { levels: offeredLevels, isSingle: isSingleLevel } = useOfferedLevels();
+
+    // Con un único nivel ofertado no hay selector: el aprendizaje toma ese nivel.
+    const grade: GradeLevel | '' = isSingleLevel
+        ? offeredLevels[0]
+        : pickedGrade && offeredLevels.includes(pickedGrade) ? pickedGrade : '';
 
     useEffect(() => {
         if (initialData) {
             setSubjectId(initialData.subject._id);
             setPeriodId(initialData.period._id);
             setDescription(initialData.description);
+            setPickedGrade(initialData.grade);
         } else {
             setSubjectId('');
             setPeriodId('');
             setDescription('');
+            setPickedGrade('');
         }
     }, [initialData]);
 
@@ -37,10 +49,11 @@ export const LearningForm = ({ subjects, periods, initialData, onFormChange }: L
         const isDirty = !initialData ||
             initialData.subject._id !== subjectId ||
             initialData.period._id !== periodId ||
-            initialData.description !== description;
+            initialData.description !== description ||
+            initialData.grade !== grade;
 
-        onFormChange({ subjectId, periodId, description }, isDirty);
-    }, [subjectId, periodId, description, initialData, onFormChange]);
+        onFormChange({ subjectId, periodId, description, grade }, isDirty);
+    }, [subjectId, periodId, description, grade, initialData, onFormChange]);
 
     return (
         <div className="space-y-6">
@@ -73,6 +86,23 @@ export const LearningForm = ({ subjects, periods, initialData, onFormChange }: L
                     </Option>
                 ))}
             </Select>
+
+            {!isSingleLevel && (
+                <Select
+                    name="grade"
+                    color="purple"
+                    label="Nivel"
+                    value={grade}
+                    onChange={(val) => setPickedGrade((val as GradeLevel) || '')}
+                    key={initialData?._id ? `grade-${initialData._id}` : 'grade-new'}
+                >
+                    {offeredLevels.map((level) => (
+                        <Option key={level} value={level}>
+                            {level}
+                        </Option>
+                    ))}
+                </Select>
+            )}
 
             <Textarea
                 name="description"

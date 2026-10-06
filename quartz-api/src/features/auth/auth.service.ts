@@ -45,6 +45,7 @@ export async function getSessionData(user: SafeUser): Promise<ISessionData> {
         enabledReports: settings.enabledReports,
         multipleShifts: settings.multipleShifts,
         shifts: settings.shifts,
+        offeredLevels: settings.offeredLevels,
     };
 
     return sessionData;

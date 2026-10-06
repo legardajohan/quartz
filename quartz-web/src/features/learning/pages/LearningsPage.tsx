@@ -26,7 +26,7 @@ import { ConfirmationModal } from "../../../components/common/ConfirmationModal"
 import { FormModal } from "../../../components/common/FormModal";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import { Learning, NewLearning, UpdateLearning } from "../types";
-import { LearningForm } from "../components/LearningForm";
+import { LearningForm, type LearningFormData } from "../components/LearningForm";
 import { LearningsTable } from "../components/LearningsTable";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { normalizeText } from "../../../utils/normalizeText";
@@ -59,7 +59,7 @@ export default function LearningsPage() {
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
-  const [learningFormData, setLearningFormData] = useState<Omit<NewLearning, 'grade'> | null>(null);
+  const [learningFormData, setLearningFormData] = useState<LearningFormData | null>(null);
   const [selectedLearning, setSelectedLearning] = useState<Learning | null>(null);
   const [learningToDelete, setLearningToDelete] = useState<Learning | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
@@ -119,7 +119,7 @@ export default function LearningsPage() {
     handleCloseModals();
   };
 
-  const handleFormChange = useCallback((formData: Omit<NewLearning, 'grade'>, isDirty: boolean) => {
+  const handleFormChange = useCallback((formData: LearningFormData, isDirty: boolean) => {
     setLearningFormData(formData);
     setIsFormDirty(isDirty);
   }, []);
@@ -127,9 +127,9 @@ export default function LearningsPage() {
   // Guarda la edición sobre la `version` de `base`. Un conflicto no cierra el modal ni muestra
   // toast de error: deja el borrador intacto y abre el aviso en línea.
   const saveEdit = async (base: Learning, successMessage: string) => {
-    if (!learningFormData) return;
+    if (!learningFormData || !learningFormData.grade) return;
     const toastId = toast.loading("Actualizando aprendizaje...");
-    const data: UpdateLearning = { ...learningFormData, version: base.version };
+    const data: UpdateLearning = { ...learningFormData, grade: learningFormData.grade, version: base.version };
     try {
       await updateMutation.mutateAsync({ id: base._id, data });
       toast.success(successMessage, { id: toastId });
@@ -171,7 +171,7 @@ export default function LearningsPage() {
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!learningFormData || !learningFormData.subjectId || !learningFormData.periodId || !learningFormData.description) {
+    if (!learningFormData || !learningFormData.subjectId || !learningFormData.periodId || !learningFormData.description || !learningFormData.grade) {
       toast.error("Por favor, completa todos los campos del formulario.");
       return;
     }
@@ -183,7 +183,7 @@ export default function LearningsPage() {
 
     const learningToCreate: NewLearning = {
       ...learningFormData,
-      grade: "Transición",
+      grade: learningFormData.grade,
     };
     const promise = createMutation.mutateAsync(learningToCreate);
     toast.promise(promise, {

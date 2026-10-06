@@ -1,7 +1,7 @@
 import { FilterQuery, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { IUser, IUserDocument, User, SafeUser } from '../auth/auth.model';
-import { UserAccountStatus, UserRole } from '../auth/auth.types';
+import { GradeLevel, UserAccountStatus, UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
 import {
   UserWithValuations,
@@ -20,7 +20,7 @@ import {
 } from './users.types';
 import { Institution } from '../institution/institution.model';
 import { SchoolModel, ISchoolDocument } from '../school/school.model';
-import { getShiftSettings } from '../institution/institution.service';
+import { getShiftSettings, getOfferedLevels } from '../institution/institution.service';
 import {
   findScoped,
   findOneScoped,
@@ -193,6 +193,16 @@ async function assertAssignableShift(institutionId: string, shiftId: string): Pr
   return found;
 }
 
+// Los niveles válidos son los del inquilino del token, nunca los que traiga el body.
+async function assertOfferedGrades(institutionId: string, grades: GradeLevel[]): Promise<void> {
+  if (grades.length === 0) return;
+  const offeredLevels = await getOfferedLevels(institutionId);
+  const notOffered = grades.filter((grade) => !offeredLevels.includes(grade));
+  if (notOffered.length > 0) {
+    throw new AppError(`La institución no ofrece el nivel: ${notOffered.join(', ')}.`, 422);
+  }
+}
+
 export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserWithValuations[]> => {
   try {
     const targetRoles: UserRole[] = filters.roles?.length
@@ -329,6 +339,8 @@ export const createUser = async (
     throw new AppError('Ya existe un usuario con esa identificación en la institución.', 409);
   }
 
+  await assertOfferedGrades(institutionId, data.gradesTaught ?? []);
+
   const userData: Record<string, unknown> = {
     role: data.role,
     firstName: data.firstName,
@@ -452,6 +464,12 @@ export const updateUser = async (
 
   if (existing.role === UserRole.DOCENTE && data.gradesTaught?.length === 0) {
     throw new AppError('El docente debe tener al menos un grado.', 400);
+  }
+  if (existing.role === UserRole.ESTUDIANTE && data.gradesTaught !== undefined && data.gradesTaught.length !== 1) {
+    throw new AppError('El estudiante debe tener exactamente un grado.', 400);
+  }
+  if (data.gradesTaught !== undefined) {
+    await assertOfferedGrades(institutionId, data.gradesTaught);
   }
 
   const email = data.email !== undefined ? normalizeEmail(data.email) : undefined;
