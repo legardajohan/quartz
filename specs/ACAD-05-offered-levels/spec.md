@@ -1,7 +1,7 @@
 ---
 id: ACAD-05-offered-levels
 feature: offered-levels
-status: implemented        # draft | approved | implemented | released
+status: approved        # draft | approved | implemented | released — reabierto 2026-10-06: enmienda "Quitar un nivel"
 created: 2026-10-06
 ---
 
@@ -37,12 +37,19 @@ Que la app opere sobre los niveles de **Preescolar** (Prejardín 3 años · Jard
 - [x] Cuando el Jefe de Área abre `/gestion/configuracion`, el sistema muestra la tab "Niveles" (sexto paso; el texto de cabecera dice "seis pasos").
 - [x] La tab "Niveles" lista los 3 niveles con casilla y el rango de edad; guarda con `PATCH /institutions/me` (`settings.offeredLevels`) y muestra toast de éxito/error.
 - [x] Si el Jefe de Área intenta guardar sin ningún nivel, el sistema responde `422` y el botón "Guardar" se deshabilita en la UI.
-- [x] Si se quita un nivel que algún usuario del inquilino tiene en `gradesTaught`, o que usa algún aprendizaje o plantilla de chequeo, el sistema responde `409` con el nombre del nivel y el conteo por tipo.
 - [x] Si `offeredLevels` trae duplicados o valores fuera del enum, el sistema responde `400`.
+
+**Quitar un nivel (enmienda)**
+- [ ] Si se quita un nivel que algún **Estudiante** del inquilino tiene en `gradesTaught`, el sistema responde `409` "El nivel «<nivel>» tiene N estudiante(s). Cámbialos de nivel antes." y no guarda nada.
+- [ ] Docentes, Jefes de Área, aprendizajes y plantillas de chequeo **no** bloquean el cambio.
+- [ ] Cuando se guarda sin el nivel, el sistema lo retira del `gradesTaught` de los Docentes del inquilino; si un Docente queda sin niveles, recibe todos los niveles que siguen ofertados.
+- [ ] El `gradesTaught` de los Jefes de Área no se modifica.
+- [ ] Los aprendizajes y plantillas de chequeo del nivel quitado se conservan en BD, pero `GET /api/learnings` y `GET /api/checklist-templates` solo devuelven los de niveles ofertados; si el nivel se vuelve a ofrecer, reaparecen sin cambios.
+- [ ] El toast de éxito de la tab "Niveles" indica cuántos docentes se ajustaron (si alguno).
 
 **Uso en la app**
 - [x] Los selectores y filtros de grado de Usuarios, Dashboard, Informes, Valoraciones y Aprendizajes muestran solo los niveles ofertados.
-- [x] Si la institución ofrece un único nivel, los formularios lo preseleccionan y los filtros de grado no se muestran donde hoy se autoseleccionan (`ConsolidatedReportsPanel`).
+- [x] Si la institución ofrece un único nivel, los formularios lo asignan sin mostrar selector y el selector de grado de `ConsolidatedReportsPanel` no se muestra (usa ese nivel).
 - [x] La creación/edición de plantillas de chequeo y aprendizajes envía un nivel ofertado (selector si hay más de uno).
 - [x] Si se crea/edita un usuario con un grado no ofertado por su institución, el sistema responde `422`.
 - [x] Si se edita un Estudiante, el sistema exige exactamente un grado en `gradesTaught`.
@@ -64,8 +71,8 @@ Que la app opere sobre los niveles de **Preescolar** (Prejardín 3 años · Jard
 
 ## Dependencias
 - ACAD-04 (patrón de `settings` y `PATCH /institutions/me`), USR-01.
-- Rama base: `feat/USR-05-bulk-user-import` (la más actual; aún no fusionada en `develop`). ACAD-05 parte de ella, no de `develop`.
-- Requisito previo: el trabajo de USR-05 debe estar **commiteado** en esa rama (hoy está sin commit en el árbol de trabajo).
+- Rama base: `feat/USR-05-bulk-user-import` (aún no fusionada en `develop`). ACAD-05 parte de ella, no de `develop`.
+- La enmienda "Quitar un nivel" se implementa en la misma rama `feat/ACAD-05-offered-levels` (sobre `f254a30`).
 
 ## Trazabilidad
 - Backend:  `quartz-api/src/features/{auth,institution,users,checklist-template,learning}/`
