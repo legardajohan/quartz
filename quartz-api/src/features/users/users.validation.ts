@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { UserRole, IdentificationType, GradeLevel } from '../auth/auth.types';
 import { strongPasswordSchema } from '../auth/auth.validation';
-import { STAFF_ROLES } from './users.types';
+import { STAFF_ROLES, IMPORT_KINDS, IMPORT_MAX_ROWS } from './users.types';
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
@@ -124,4 +124,39 @@ export const resendInvitationSchema = z.object({
   params: z.object({
     userId: objectId('El ID del usuario no es un ObjectId válido.'),
   }).strict(),
+});
+
+// ─── Cargue masivo (USR-05) ──────────────────────────────────────────────────
+
+const importKindQuery = z.object({ kind: z.enum(IMPORT_KINDS) });
+
+export const importTemplateSchema = z.object({ query: importKindQuery });
+
+export const previewImportSchema = z.object({ query: importKindQuery });
+
+// `schoolName` solo sirve para mostrar la preview: el confirm re-resuelve la sede por `schoolId`.
+const importRowSchema = z.object({
+  row: z.number().int().min(2),
+  role: z.enum([UserRole.ESTUDIANTE, UserRole.DOCENTE, UserRole.JEFE_DE_AREA]),
+  firstName: z.string().trim().min(1),
+  middleName: z.string().optional(),
+  lastName: z.string().trim().min(1),
+  secondLastName: z.string().optional(),
+  identificationType: z.nativeEnum(IdentificationType),
+  identificationNumber: z.number().int().positive(),
+  phoneNumber: z.string().optional(),
+  email: z.string().trim().email().optional(),
+  schoolId: objectId('El ID de la sede no es un ObjectId válido.'),
+  schoolName: z.string().optional(),
+  shiftId: objectId('El ID de la jornada no es un ObjectId válido.').optional(),
+}).strict();
+
+export const confirmImportSchema = z.object({
+  body: z.object({
+    kind: z.enum(IMPORT_KINDS),
+    rows: z.array(importRowSchema).min(1).max(Math.max(...Object.values(IMPORT_MAX_ROWS))),
+  }).strict().refine((b) => b.rows.length <= IMPORT_MAX_ROWS[b.kind], {
+    message: 'Se superó el máximo de filas permitido para este tipo de cargue.',
+    path: ['rows'],
+  }),
 });

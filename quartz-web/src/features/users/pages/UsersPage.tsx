@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
-import { PlusIcon, AcademicCapIcon, BriefcaseIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, ArrowUpTrayIcon, AcademicCapIcon, BriefcaseIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { extractErrorMessage } from "@/api/apiClient";
@@ -25,6 +25,7 @@ import { STAFF_ROLES } from "../types";
 import type { UserDto, NewUser, UpdateUser, WritableUserRole, StaffRole, GetUsersQuery } from "../types";
 import { UsersTable } from "../components/UsersTable";
 import { UserForm, type UserFormData } from "../components/UserForm";
+import UserImportModal from "../components/UserImportModal";
 
 type UsersTab = "students" | "staff";
 
@@ -73,6 +74,7 @@ export default function UsersPage() {
 
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserDto | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserDto | null>(null);
   const [formData, setFormData] = useState<UserFormData | null>(null);
@@ -306,14 +308,24 @@ export default function UsersPage() {
           <h1 className="text-2xl font-semibold text-purple-900">Gestión de Usuarios</h1>
 
           {canCreate && (
-            <button
-              onClick={handleOpenCreateModal}
-              aria-label="Crear nuevo usuario"
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
-            >
-              <PlusIcon className="h-6 w-6" strokeWidth={2} />
-              Crear
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setImportModalOpen(true)}
+                aria-label="Cargue masivo de usuarios"
+                className="flex items-center gap-2 border-2 border-purple-600 text-purple-700 hover:bg-purple-50 font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
+              >
+                <ArrowUpTrayIcon className="h-6 w-6" strokeWidth={2} />
+                Cargue masivo
+              </button>
+              <button
+                onClick={handleOpenCreateModal}
+                aria-label="Crear nuevo usuario"
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
+              >
+                <PlusIcon className="h-6 w-6" strokeWidth={2} />
+                Crear
+              </button>
+            </div>
           )}
         </div>
 
@@ -371,6 +383,12 @@ export default function UsersPage() {
           onResendInvitation={handleResendInvitation}
         />
       </div>
+
+      <UserImportModal
+        open={isImportModalOpen}
+        kind={isStaffTab ? "staff" : "students"}
+        onClose={() => setImportModalOpen(false)}
+      />
 
       <ConfirmationModal
         open={isDeleteModalOpen}

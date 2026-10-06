@@ -44,6 +44,20 @@ export async function createScoped<T extends Document>(
   return doc.save() as unknown as Promise<T>;
 }
 
+// Inserción masiva: `ordered: false` continúa tras un error de unicidad; el llamador
+// maneja el MongoBulkWriteError para saber qué documentos no entraron.
+export function insertManyScoped<T>(
+  model: Model<T>,
+  institutionId: TenantId,
+  docs: Record<string, any>[],
+  options: Record<string, any> = {}
+) {
+  return model.insertMany(
+    docs.map((d) => ({ ...d, institutionId })),
+    { ordered: false, ...options }
+  );
+}
+
 // ─── Updates / Deletes tenant-safe ───────────────────────────────────────────
 
 export function findOneAndUpdateScoped<T>(

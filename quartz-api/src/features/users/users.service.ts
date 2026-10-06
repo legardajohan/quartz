@@ -91,7 +91,7 @@ function mapInvitationFields(
   };
 }
 
-function isStaffRole(role: UserRole): role is StaffRole {
+export function isStaffRole(role: UserRole): role is StaffRole {
   return (STAFF_ROLES as readonly UserRole[]).includes(role);
 }
 
@@ -103,7 +103,7 @@ function assertNotSelf(userId: string, requestorId: string): void {
 }
 
 // El login busca el correo en minúsculas (`useAuthStore.login`): se guarda igual o el usuario queda fuera.
-function normalizeEmail(email: string): string {
+export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
@@ -114,7 +114,7 @@ function buildActivationUrl(token: string): string {
 
 // Emite un token nuevo (invalida el anterior), lo persiste y envía el correo. El token se
 // guarda antes del envío: si el SMTP falla, el reenvío emite otro.
-async function issueInvitation(institutionId: string, userId: string): Promise<void> {
+export async function issueInvitation(institutionId: string, userId: string): Promise<void> {
   const { token, tokenHash, expiresAt } = generateActivationToken();
 
   const user = await findOneAndUpdateScoped(
