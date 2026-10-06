@@ -20,6 +20,7 @@ interface LetterConceptPickerProps {
   conceptText: Record<string, string>;
   onTextChange: (subjectId: string, text: string) => void;
   disabled?: boolean;
+  externallyUpdatedIds?: ReadonlySet<string>;
 }
 
 export default function LetterConceptPicker({
@@ -29,6 +30,7 @@ export default function LetterConceptPicker({
   conceptText,
   onTextChange,
   disabled,
+  externallyUpdatedIds,
 }: LetterConceptPickerProps) {
   const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
 
@@ -65,13 +67,18 @@ export default function LetterConceptPicker({
                 <Typography variant="small" color="blue-gray" className="font-bold">
                   Dimensión {subject.subjectName}
                 </Typography>
+                {externallyUpdatedIds?.has(subject.subjectId) && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                    Actualizado por otra persona
+                  </span>
+                )}
                 <IconButton
                   variant="text"
                   size="sm"
                   color="blue-gray"
                   disabled={disabled}
                   onClick={() => setEditingSubjectId(isEditing ? null : subject.subjectId)}
-                  className="shrink-0"
+                  className="ml-auto shrink-0"
                 >
                   {isEditing ? <Check className="h-4 w-4" /> : <SquarePen className="h-4 w-4" />}
                 </IconButton>

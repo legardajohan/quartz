@@ -86,6 +86,7 @@ export interface IStudentValuationDTO {
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubjectDTO[];
   observations: string | null;
+  version: number;
 }
 
 
@@ -95,7 +96,7 @@ export interface IStudentValuationDTO {
  */
 export type IStudentValuationLean = Pick<
   IStudentValuationDocument,
-  '_id' | 'institutionId' | 'studentId' | 'teacherId' | 'checklistTemplateId' | 'periodId' | 'globalStatus' | 'valuationsBySubject' | 'observations'
+  '_id' | 'institutionId' | 'studentId' | 'teacherId' | 'checklistTemplateId' | 'periodId' | 'globalStatus' | 'valuationsBySubject' | 'observations' | '__v'
 >;
 
 // -----------------------------------------------------------------------------
@@ -143,6 +144,7 @@ type ValuationBySubjectUpdate = {
 export type StudentValuationUpdateData = {
   valuationsBySubject: ValuationBySubjectUpdate[];
   observations?: string | null;
+  version: number;
 };
 
 export type ConceptAssignmentUpdate = {
@@ -153,4 +155,5 @@ export type ConceptAssignmentUpdate = {
 
 export type StudentValuationConceptsUpdateData = {
   assignments: ConceptAssignmentUpdate[];
+  version: number;
 };

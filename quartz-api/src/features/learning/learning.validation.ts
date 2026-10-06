@@ -28,6 +28,7 @@ export const updateLearningSchema = z.object({
     }).optional(),
     description: z.string().min(1, { message: 'La descripción no puede estar vacía.' }).optional(),
     grade: z.string().min(1, { message: 'El grado no puede estar vacío.' }).optional(),
+    version: z.number().int().nonnegative(),
   }),
 });
 

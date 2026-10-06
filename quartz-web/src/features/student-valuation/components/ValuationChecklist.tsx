@@ -50,6 +50,8 @@ type ValuationChecklistProps = {
   onChange?: (learningId: string, qualitativeValuation: string | null) => void;
   onDescriptionChange?: (subjectId: string, value: string) => void;
   icon?: React.ElementType; // New prop for icon injection
+  isExternallyUpdated?: boolean;
+  updatedItemIds?: ReadonlySet<string>;
 };
 
 function IconCheck() {
@@ -92,6 +94,8 @@ export default function ValuationChecklist({
   onChange,
   onDescriptionChange,
   icon: Icon = BookOpenIcon, // Default fallback
+  isExternallyUpdated = false,
+  updatedItemIds,
 }: ValuationChecklistProps) {
   const subjectTypeLabel = useSubjectTypeLabel(subject?.subjectId);
   const [selections, setSelections] = React.useState<Record<string, string | null>>(initialSelections || {});
@@ -182,6 +186,11 @@ export default function ValuationChecklist({
                 <Typography variant="h6" color="blue-gray" className="font-bold leading-tight">
                   {subjectTypeLabel} {subject?.subjectName ?? ""}
                 </Typography>
+                {isExternallyUpdated && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                    Actualizado por otra persona
+                  </span>
+                )}
                 <div className="w-full flex items-center gap-3">
                   <Progress
                     value={completionPercentage}
@@ -241,6 +250,11 @@ export default function ValuationChecklist({
                           <Typography variant="small" color="blue-gray" className="font-medium text-gray-700">
                             {l.learningDescription ?? ""}
                           </Typography>
+                          {updatedItemIds?.has(l.learningId) && (
+                            <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                              Actualizado por otra persona
+                            </span>
+                          )}
                         </td>
                         <td className={`${classes} text-center`}>
                           <Radio

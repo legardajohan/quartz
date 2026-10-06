@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiPost, apiPatch, apiDelete } from '@/api/apiClient';
-import { withErrorMessage } from '@/api/withErrorMessage';
+import { withErrorMessage, isNotFound, isVersionConflict } from '@/api/withErrorMessage';
 import { STALE_TIME } from '@/lib/queryClient';
 import type { IStudentValuationDTO, StudentValuationUpdateData } from '../types';
 
@@ -44,6 +44,12 @@ export function useUpdateValuationMutation() {
     onSuccess: (data) => {
       queryClient.setQueryData(valuationKeys.detail(data.studentId, data.periodId), data);
       invalidateDependents();
+    },
+    // Se espera el refetch: la pantalla lee la versión vigente de la caché al resolver el error.
+    onError: (err) => {
+      if (isVersionConflict(err) || isNotFound(err)) {
+        return queryClient.invalidateQueries({ queryKey: valuationKeys.all });
+      }
     },
   });
 }

@@ -1,7 +1,12 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
-import { useStudentValuationQuery, useUpdateValuationMutation } from "../queries/useStudentValuationQuery";
+import { useStudentValuationQuery, useUpdateValuationMutation, valuationKeys } from "../queries/useStudentValuationQuery";
+import { isNotFound, isVersionConflict } from "@/api/withErrorMessage";
+import ConflictNotice from "@/components/common/ConflictNotice";
+import { EmptyState } from "@/components/common/EmptyState";
+import { diffValuationItems, type ValuationDiff } from "@/lib/diffChanges";
 import { extractErrorMessage } from "../../../api/apiClient";
 import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
 import { usePermissions } from "../../auth/usePermissions";
@@ -13,13 +18,19 @@ import PerformanceTextarea from "../../../components/common/PerformanceTextarea"
 import toast from "react-hot-toast";
 import { AVATAR_FALLBACK } from "@/constants/assets";
 import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useUsersQuery } from "../../users/queries/useUsersQuery";
 
 import { Loading } from "../../../components/ui/Loading";
 
+interface ValuationConflict extends ValuationDiff {
+    current: IStudentValuationDTO;
+}
+
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { data: subjects } = useSubjectsQuery();
     const { isAreaLead } = usePermissions();
     const activePeriod = useActivePeriod();
@@ -32,6 +43,8 @@ export default function StudentValuationDetail() {
     const [baseValuation, setBaseValuation] = useState<IStudentValuationDTO | null>(null);
     const [localValuation, setLocalValuation] = useState<IStudentValuationDTO | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [conflict, setConflict] = useState<ValuationConflict | null>(null);
+    const [isGone, setIsGone] = useState(false);
 
     const { data: studentUsers } = useUsersQuery(studentId ? { id: studentId } : undefined);
     const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
@@ -64,8 +77,10 @@ export default function StudentValuationDetail() {
     const globalProgress = totalLearnings > 0 ? (totalValued / totalLearnings) * 100 : 0;
 
 
-    const handleSave = async () => {
-        if (!localValuation) return;
+    // `base`: valoración cuya `version` se envía. Normalmente la de la edición; tras un aviso, la vigente.
+    // Devuelve si el guardado se completó.
+    const handleSave = async (base: IStudentValuationDTO | null = baseValuation): Promise<boolean> => {
+        if (!localValuation || !base) return false;
         setIsSaving(true);
         try {
             const payload: StudentValuationUpdateData = {
@@ -85,17 +100,54 @@ export default function StudentValuationDetail() {
                             : {}),
                     })),
                 observations: localValuation.observations ?? "",
+                version: base.version,
             };
 
             const saved = await updateValuation.mutateAsync({ valuationId: localValuation._id, payload });
             syncFromServer(saved);
-            toast.success("Evaluación guardada correctamente");
+            toast.success(conflict ? "Cambios guardados" : "Evaluación guardada correctamente");
+            setConflict(null);
+            return true;
         } catch (error) {
+            if (isVersionConflict(error)) {
+                const current = queryClient.getQueryData<IStudentValuationDTO>(
+                    valuationKeys.detail(localValuation.studentId, localValuation.periodId),
+                );
+                if (current) {
+                    const diff = diffValuationItems(base, current);
+                    setConflict({ current, ...diff });
+                    // Abre una dimensión afectada si la abierta no lo está.
+                    if (!openSubjectId || !diff.subjectIds.has(openSubjectId)) {
+                        const first = [...diff.subjectIds][0];
+                        if (first) setOpenSubjectId(first);
+                    }
+                    return false;
+                }
+            }
+            if (isNotFound(error)) {
+                setIsGone(true);
+                return false;
+            }
             toast.error("Error al guardar la Evaluación");
             console.error(error);
+            return false;
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleKeepMine = () => {
+        if (!conflict) return;
+        const { current } = conflict;
+        setBaseValuation(current);
+        void handleSave(current);
+    };
+
+    const handleUseCurrent = () => {
+        if (!conflict) return;
+        syncFromServer(conflict.current);
+        setConflict(null);
+        toast.success("Se cargó la versión actual");
     };
 
 
@@ -103,6 +155,22 @@ export default function StudentValuationDetail() {
         ({ currentLocation, nextLocation }) =>
             hasChanges && currentLocation.pathname !== nextLocation.pathname
     );
+
+    if (isGone) {
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                <EmptyState
+                    icon={ExclamationTriangleIcon}
+                    title="Esta evaluación fue eliminada por otra persona."
+                    action={
+                        <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
+                            Volver a Evaluación
+                        </Button>
+                    }
+                />
+            </div>
+        );
+    }
 
     if (studentId && activePeriod && isPending) {
         return <Loading message="Cargando valoración..." />;
@@ -201,8 +269,8 @@ export default function StudentValuationDetail() {
                     open={true}
                     onClose={() => blocker.reset()}
                     onConfirm={async () => {
-                        await handleSave();
-                        blocker.proceed();
+                        if (await handleSave()) blocker.proceed();
+                        else blocker.reset();
                     }}
                     onDiscard={() => blocker.proceed()}
                     title="¿Deseas guardar los cambios?"
@@ -222,11 +290,26 @@ export default function StudentValuationDetail() {
                 />
             ) : null}
 
+            {conflict && (
+                <div className="mb-4">
+                    <ConflictNotice
+                        title="Esta evaluación cambió mientras la editabas"
+                        summary={conflict.summary || undefined}
+                        changes={[]}
+                        isSaving={isSaving}
+                        onKeepMine={handleKeepMine}
+                        onUseCurrent={handleUseCurrent}
+                    />
+                </div>
+            )}
+
             <div className="space-y-4">
                 {localValuation.valuationsBySubject.map((subject) => (
                     <div key={subject.subjectId}>
                         <ValuationChecklist
                             subject={subject}
+                            isExternallyUpdated={conflict?.subjectIds.has(subject.subjectId) ?? false}
+                            updatedItemIds={conflict?.itemIds}
                             open={openSubjectId === subject.subjectId}
                             onToggle={() =>
                                 setOpenSubjectId(
@@ -323,22 +406,25 @@ export default function StudentValuationDetail() {
                             color="blue-gray"
                             onClick={() => {
                                 if (serverValuation) syncFromServer(serverValuation);
+                                setConflict(null);
                             }}
                             className="hover:bg-gray-100"
                         >
                             Deshacer cambios
                         </Button>
-                        <Button
-                            variant="gradient"
-                            color="purple"
-                            size="sm"
-                            loading={isSaving}
-                            onClick={handleSave}
-                            className="flex items-center gap-2 shadow-purple-500/20 hover:shadow-purple-500/40"
-                        >
-                            <BookmarkSquareIcon className="w-4 h-4" />
-                            Guardar
-                        </Button>
+                        {!conflict && (
+                            <Button
+                                variant="gradient"
+                                color="purple"
+                                size="sm"
+                                loading={isSaving}
+                                onClick={() => void handleSave()}
+                                className="flex items-center gap-2 shadow-purple-500/20 hover:shadow-purple-500/40"
+                            >
+                                <BookmarkSquareIcon className="w-4 h-4" />
+                                Guardar
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

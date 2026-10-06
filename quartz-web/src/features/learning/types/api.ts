@@ -15,6 +15,7 @@ export interface Learning {
     _id: string;
     name: string;
   };
+  version: number;
 }
 
 export type LearningsResponse = Learning[];
@@ -26,4 +27,4 @@ export interface NewLearning {
     grade: string;
 }
 
-export type UpdateLearning = Partial<NewLearning>;
+export type UpdateLearning = Partial<NewLearning> & { version: number };

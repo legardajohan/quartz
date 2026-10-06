@@ -41,6 +41,15 @@ export default withMT({
         },
         // green: '#0eaf5c',
       },
+      keyframes: {
+        'notice-in': {
+          from: { opacity: '0', transform: 'translateY(-4px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'notice-in': 'notice-in 160ms cubic-bezier(0.23, 1, 0.32, 1)',
+      },
       fontFamily: {
         space: ['SpaceAge', 'sans-serif'],
         nico: ['NicoMoji', 'sans-serif'],

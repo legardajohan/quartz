@@ -92,6 +92,7 @@ export interface ICommunicativeLetterTemplate {
     student: IStudent;
     subjects: ILetterSubjectBlock[];
     observations: string | null;
+    version: number;
     generatedAt: string;
 }
 

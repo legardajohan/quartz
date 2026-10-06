@@ -15,6 +15,7 @@ export interface ILearningResponse {
     _id: string;
     name: string;
   };
+  version: number;
 }
 
 export type LearningData = {
@@ -24,7 +25,7 @@ export type LearningData = {
   grade: string;
 };
 
-export type UpdateLearningData = Partial<LearningData>;
+export type UpdateLearningData = Partial<LearningData> & { version: number };
 
 export interface ILearningFilter {
   subjectId?: string;

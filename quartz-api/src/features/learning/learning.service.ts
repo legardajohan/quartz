@@ -13,7 +13,7 @@ import { User } from '../auth/auth.model';
 import type { LearningData, UpdateLearningData, ILearningFilter } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
 import { invalidatePrefix } from '../../services/memory-cache.service';
-import AppError from '../../utils/AppError';
+import AppError, { VERSION_CONFLICT } from '../../utils/AppError';
 
 // --- Helper Function ---
 function populateLearningDetails<T>(query: Query<T, ILearningDocument>) {
@@ -89,7 +89,7 @@ export async function createLearning(
 export async function updateLearning(
     learningId: string,
     institutionId: string,
-    updateData: UpdateLearningData
+    { version, ...updateData }: UpdateLearningData
 ): Promise<ILearningDocument | null> {
 
     const validations: Parameters<typeof validateAllExist>[0] = [];
@@ -110,13 +110,19 @@ export async function updateLearning(
     const updatedLearning = await findOneAndUpdateScoped(
         LearningModel,
         institutionId,
-        { _id: new Types.ObjectId(learningId) },
-        updateData,
+        { _id: new Types.ObjectId(learningId), __v: version },
+        { $set: updateData, $inc: { __v: 1 } },
         { new: true }
     );
 
     if (!updatedLearning) {
-        return null;
+        const exists = await findByIdScoped(LearningModel, institutionId, learningId)
+            .select('_id')
+            .lean();
+        if (!exists) {
+            return null;
+        }
+        throw new AppError('Otro usuario modificó este aprendizaje.', 409, VERSION_CONFLICT);
     }
 
     invalidatePrefix(`dashboard:${institutionId}`);

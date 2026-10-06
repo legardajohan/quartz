@@ -4,6 +4,7 @@ import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/ap
 import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
 import { queryClient } from '../../lib/queryClient';
 import { useTableFiltersStore } from '../../stores/useTableFiltersStore';
+import { useDashboardFiltersStore } from '../../stores/useDashboardFiltersStore';
 import { seedSessionCatalogs } from './seedSessionCatalogs';
 import type {
   AuthState,
@@ -74,6 +75,7 @@ export const useAuthStore = create<AuthState>()(
         purgeAllShieldCacheEntries();
         queryClient.clear();
         useTableFiltersStore.getState().resetAll();
+        useDashboardFiltersStore.getState().reset();
         set({
           token: null,
           sessionData: null,

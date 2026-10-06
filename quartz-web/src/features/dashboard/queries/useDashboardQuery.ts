@@ -9,7 +9,6 @@ export function useDashboardQuery(params?: GetDashboardQuery) {
     queryKey: dashboardQueryKey(params),
     queryFn: () => apiGet<IDashboardResponse>("/dashboard", { params }),
     staleTime: 60_000,
-    gcTime: 5 * 60_000,
     refetchOnWindowFocus: true,
     placeholderData: keepPreviousData,
   });

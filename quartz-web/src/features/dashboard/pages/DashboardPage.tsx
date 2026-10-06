@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Typography } from "@material-tailwind/react";
 import {
@@ -21,7 +21,7 @@ import { DashboardHeader } from "../components/DashboardHeader";
 import { DashboardSkeleton } from "../components/DashboardSkeleton";
 import { ChartCard } from "../components/ChartCard";
 import { StatTile } from "../components/StatTile";
-import type { DashboardFilterValues } from "../components/DashboardFilters";
+import { useDashboardFiltersStore } from "@/stores/useDashboardFiltersStore";
 import { SubjectPerformanceChart } from "../components/charts/SubjectPerformanceChart";
 import { ValuationStatusDonut } from "../components/charts/ValuationStatusDonut";
 import { SubjectConceptChart } from "../components/charts/SubjectConceptChart";
@@ -36,12 +36,15 @@ export default function DashboardPage() {
   const { isAreaLead } = usePermissions();
   const activePeriod = useActivePeriod();
 
-  const [filters, setFilters] = useState<DashboardFilterValues>({
-    periodId: activePeriod?._id ?? "",
-    schoolId: "",
-    shiftId: "",
-    grade: "",
-  });
+  // Los filtros viven en el store (sobreviven a la navegación). Tras F5 los periodos llegan después
+  // del montaje: el periodo activo se aplica como default una sola vez.
+  const filters = useDashboardFiltersStore((s) => s.filters);
+  const setFilters = useDashboardFiltersStore((s) => s.setFilters);
+  const initDefaults = useDashboardFiltersStore((s) => s.initDefaults);
+
+  useEffect(() => {
+    if (activePeriod) initDefaults(activePeriod._id);
+  }, [activePeriod, initDefaults]);
 
   const query = useMemo<GetDashboardQuery>(
     () => ({

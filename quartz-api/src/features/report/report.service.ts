@@ -339,6 +339,7 @@ export async function getCommunicativeLetterReport(
     student,
     subjects: buildLetterSubjectBlocks(valuation.valuationsBySubject, conceptsByKey),
     observations: valuation.observations,
+    version: valuation.version,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -526,6 +527,7 @@ export async function getBulkCommunicativeLetterReport(
       student,
       subjects: buildLetterSubjectBlocks(valuation.valuationsBySubject, conceptsByKey),
       observations: valuation.observations,
+      version: valuation.version,
       generatedAt: new Date().toISOString(),
     });
   });
