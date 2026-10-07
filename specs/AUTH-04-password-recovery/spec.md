@@ -1,7 +1,7 @@
 ---
 id: AUTH-04-password-recovery
 feature: password-recovery
-status: implemented        # draft | approved | implemented | released
+status: released           # draft | approved | implemented | released
 created: 2026-10-07
 ---
 

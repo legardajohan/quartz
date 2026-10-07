@@ -1,7 +1,7 @@
 ---
 id: INF-11-production-readiness
 feature: production-readiness
-status: implemented       # draft | approved | implemented | released
+status: released          # draft | approved | implemented | released
 created: 2026-10-07
 ---
 

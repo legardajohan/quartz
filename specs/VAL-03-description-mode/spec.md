@@ -1,7 +1,7 @@
 ---
 id: VAL-03-description-mode
 feature: description-mode
-status: implemented
+status: released
 created: 2026-07-15
 ---
 

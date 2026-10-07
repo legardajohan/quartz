@@ -1,7 +1,7 @@
 ---
 id: USR-05-bulk-user-import
 feature: bulk-user-import
-status: implemented  # draft | approved | implemented | released
+status: released     # draft | approved | implemented | released
 created: 2026-10-06
 ---
 

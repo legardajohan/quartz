@@ -1,7 +1,7 @@
 ---
 id: INF-08-ui-state-zustand
 feature: ui-state-zustand
-status: implemented
+status: released
 created: 2026-09-28
 ---
 

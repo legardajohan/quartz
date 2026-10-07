@@ -1,7 +1,7 @@
 ---
 id: ACAD-02-period-settings
 feature: period-settings
-status: implemented
+status: released
 created: 2026-07-15
 ---
 

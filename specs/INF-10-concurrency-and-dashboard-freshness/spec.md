@@ -1,7 +1,7 @@
 ---
 id: INF-10-concurrency-and-dashboard-freshness
 feature: concurrency-and-dashboard-freshness
-status: implemented
+status: released
 created: 2026-10-06
 ---
 

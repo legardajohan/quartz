@@ -1,7 +1,7 @@
 ---
 id: RPT-03-communicative-letter-ux
 feature: communicative-letter-ux
-status: implemented
+status: released
 created: 2026-08-13
 ---
 

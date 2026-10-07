@@ -1,7 +1,7 @@
 ---
 id: RPT-07-bulk-report-download
 feature: bulk-report-download
-status: implemented
+status: released
 created: 2026-09-09
 ---
 

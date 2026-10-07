@@ -1,7 +1,7 @@
 ---
 id: USR-04-user-invitation
 feature: user-invitation
-status: implemented
+status: released
 created: 2026-09-22
 ---
 

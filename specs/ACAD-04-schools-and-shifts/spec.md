@@ -1,7 +1,7 @@
 ---
 id: ACAD-04-schools-and-shifts
 feature: schools-and-shifts
-status: implemented
+status: released
 created: 2026-08-04
 ---
 

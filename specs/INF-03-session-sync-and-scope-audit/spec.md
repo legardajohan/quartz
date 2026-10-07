@@ -1,7 +1,7 @@
 ---
 id: INF-03-session-sync-and-scope-audit
 feature: session-sync-and-scope-audit
-status: implemented
+status: released
 created: 2026-09-17
 ---
 

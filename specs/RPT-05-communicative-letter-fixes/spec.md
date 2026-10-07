@@ -1,7 +1,7 @@
 ---
 id: RPT-05-communicative-letter-fixes
 feature: communicative-letter-fixes
-status: implemented
+status: released
 created: 2026-09-08
 ---
 

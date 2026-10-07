@@ -1,7 +1,7 @@
 ---
 id: INF-01-search-and-report-polish
 feature: search-and-report-polish
-status: implemented
+status: released
 created: 2026-08-03
 ---
 

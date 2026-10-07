@@ -1,7 +1,7 @@
 ---
 id: RPT-02-communicative-letter
 feature: communicative-letter
-status: implemented
+status: released
 created: 2026-08-05
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: AUTH-03-compact-password-requirements
 feature: compact-password-requirements
-status: implemented        # draft | approved | implemented | released
+status: released           # draft | approved | implemented | released
 created: 2026-10-06
 ---
 

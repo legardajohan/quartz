@@ -1,7 +1,7 @@
 ---
 id: RPT-06-pdf-asset-pipeline
 feature: pdf-asset-pipeline
-status: implemented
+status: released
 created: 2026-09-08
 ---
 

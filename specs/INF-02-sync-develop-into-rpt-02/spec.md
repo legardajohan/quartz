@@ -1,7 +1,7 @@
 ---
 id: INF-02-sync-develop-into-rpt-02
 feature: sync-develop-into-rpt-02
-status: implemented
+status: released
 created: 2026-08-13
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: INF-05-server-state-foundation
 feature: server-state-foundation
-status: implemented
+status: released
 created: 2026-09-28
 ---
 

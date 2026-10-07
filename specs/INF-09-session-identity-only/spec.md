@@ -1,7 +1,7 @@
 ---
 id: INF-09-session-identity-only
 feature: session-identity-only
-status: implemented
+status: released
 created: 2026-10-05
 ---
 

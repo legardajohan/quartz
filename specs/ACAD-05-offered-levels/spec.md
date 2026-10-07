@@ -1,7 +1,7 @@
 ---
 id: ACAD-05-offered-levels
 feature: offered-levels
-status: implemented     # draft | approved | implemented | released — enmienda "Quitar un nivel" (2026-10-06) implementada
+status: released        # draft | approved | implemented | released — enmienda "Quitar un nivel" (2026-10-06) implementada
 created: 2026-10-06
 ---
 

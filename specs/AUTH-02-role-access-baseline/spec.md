@@ -1,7 +1,7 @@
 ---
 id: AUTH-02-role-access-baseline
 feature: role-access-baseline
-status: implemented
+status: released
 created: 2026-09-15
 ---
 

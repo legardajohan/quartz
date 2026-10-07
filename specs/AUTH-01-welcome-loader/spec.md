@@ -1,7 +1,7 @@
 ---
 id: AUTH-01-welcome-loader
 feature: welcome-loader
-status: implemented  # draft | approved | implemented | released
+status: released     # draft | approved | implemented | released
 created: 2026-08-05
 ---
 

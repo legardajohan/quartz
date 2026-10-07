@@ -1,7 +1,7 @@
 ---
 id: USR-02-teacher-ui-permissions
 feature: teacher-ui-permissions
-status: implemented
+status: released
 created: 2026-09-15
 ---
 

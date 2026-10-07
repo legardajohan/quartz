@@ -1,7 +1,7 @@
 ---
 id: VAL-04-teacher-valuation-scope
 feature: teacher-valuation-scope
-status: implemented
+status: released
 created: 2026-09-15
 ---
 

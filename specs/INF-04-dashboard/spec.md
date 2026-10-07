@@ -1,7 +1,7 @@
 ---
 id: INF-04-dashboard
 feature: dashboard
-status: implemented
+status: released
 created: 2026-09-21
 ---
 

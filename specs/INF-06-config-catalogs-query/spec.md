@@ -1,7 +1,7 @@
 ---
 id: INF-06-config-catalogs-query
 feature: config-catalogs-query
-status: implemented
+status: released
 created: 2026-09-28
 ---
 

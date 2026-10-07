@@ -1,7 +1,7 @@
 ---
 id: RPT-04-letter-concept-snapshot-and-status-icons
 feature: letter-concept-snapshot-and-status-icons
-status: implemented
+status: released
 created: 2026-08-13
 ---
 

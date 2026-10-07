@@ -1,7 +1,7 @@
 ---
 id: INF-07-valuation-report-query
 feature: valuation-report-query
-status: implemented
+status: released
 created: 2026-09-28
 ---
 

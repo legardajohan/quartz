@@ -1,7 +1,7 @@
 ---
 id: USR-01-user-management
 feature: user-management
-status: implemented        # draft | approved | implemented | released
+status: released           # draft | approved | implemented | released
 created: 2026-07-17
 ---
 

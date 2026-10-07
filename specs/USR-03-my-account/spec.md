@@ -1,7 +1,7 @@
 ---
 id: USR-03-my-account
 feature: my-account
-status: implemented
+status: released
 created: 2026-09-22
 ---
 
