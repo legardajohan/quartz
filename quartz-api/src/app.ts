@@ -24,6 +24,10 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+// Health check for the host (public, no tenant data)
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 // Routes for authentication
 app.use('/api/auth', authRoutes);
 // Routes for expected learning
@@ -58,6 +62,11 @@ if (!MONGODB_URI || !API_USER || !API_PASSWORD) {
   process.exit(1);
 }
 
+if (!process.env.JWT_SECRET) {
+  console.error('Falta la variable de entorno JWT_SECRET');
+  process.exit(1);
+}
+
 const mongoUri = MONGODB_URI.replace('<user>', encodeURIComponent(API_USER)).replace('<password>', encodeURIComponent(API_PASSWORD));
 
 mongoose.connect(mongoUri)
@@ -70,4 +79,5 @@ mongoose.connect(mongoUri)
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
+    process.exit(1);
   });

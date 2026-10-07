@@ -14,11 +14,10 @@ import { buildPasswordResetEmail } from '../../services/password-reset-email.tem
 import { issueInvitation, normalizeEmail } from '../users/users.service';
 import { STAFF_ROLES } from '../users/users.types';
 import AppError from '../../utils/AppError';
+import { getJwtSecret } from '../../utils/jwtSecret';
 import { getPeriodsByInstitution, mapPeriodToDTO } from '../period/period.service';
 import { getSubjectsByInstitution, mapSubjectToDTO } from '../subject/subject.service';
 import { getInstitutionSettings } from '../institution/institution.service';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 
 const PENDING_ACCOUNT_MESSAGE =
     'Tu cuenta aún no está activada. Revisa el correo de invitación o pide a tu Jefe de Área un nuevo enlace.';
@@ -102,7 +101,7 @@ export function generateJWT(user: SafeUser) {
   };
   return jwt.sign(
     payload,
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '8h' }
   );
 }
