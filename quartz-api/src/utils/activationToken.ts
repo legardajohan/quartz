@@ -3,6 +3,9 @@ import { randomBytes, createHash } from 'crypto';
 export const INVITATION_TTL_DAYS = 15;
 export const INVITATION_RESEND_COOLDOWN_MS = 60_000;
 
+export const PASSWORD_RESET_TTL_MS = 60 * 60_000;
+export const PASSWORD_RESET_COOLDOWN_MS = 60_000;
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface ActivationToken {
@@ -17,11 +20,19 @@ export function hashActivationToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-export function generateActivationToken(): ActivationToken {
+export function generateSecureToken(ttlMs: number): ActivationToken {
   const token = randomBytes(32).toString('base64url');
   return {
     token,
     tokenHash: hashActivationToken(token),
-    expiresAt: new Date(Date.now() + INVITATION_TTL_DAYS * DAY_MS),
+    expiresAt: new Date(Date.now() + ttlMs),
   };
+}
+
+export function generateActivationToken(): ActivationToken {
+  return generateSecureToken(INVITATION_TTL_DAYS * DAY_MS);
+}
+
+export function generatePasswordResetToken(): ActivationToken {
+  return generateSecureToken(PASSWORD_RESET_TTL_MS);
 }
