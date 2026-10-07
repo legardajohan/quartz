@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useRef } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
 import ActivateAccountPage from './features/auth/pages/ActivateAccountPage';
+import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
+import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 import { useAuthStore } from './features/auth/useAuthStore';
 import { WelcomeLoader } from './features/auth/components/WelcomeLoader';
 import { ProtectedRoute } from './components/router/ProtectedRoute';
@@ -78,6 +80,8 @@ export const router = createBrowserRouter(
       {/* RUTAS PÚBLICAS */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/activar-cuenta" element={<ActivateAccountPage />} />
+      <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
+      <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
 
       {/* RUTAS PROTEGIDAS CON LAYOUT */}
       <Route element={<ProtectedRoute />}>

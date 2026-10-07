@@ -28,3 +28,29 @@ export interface ActivateAccountRequest {
   password: string;
   confirmPassword: string;
 }
+
+// Recuperación de contraseña (AUTH-04).
+export interface PasswordResetPreview {
+  email: string;
+  firstName: string;
+}
+
+export interface RequestPasswordResetRequest {
+  email: string;
+}
+
+export interface RequestPasswordResetResponse {
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}
+
+// `location.state` con el que se navega a `/login` (aviso tras restablecer) y a `/recuperar-contrasena`.
+export interface AuthLocationState {
+  notice?: string;
+  email?: string;
+}

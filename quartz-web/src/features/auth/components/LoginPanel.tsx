@@ -5,6 +5,7 @@ interface LoginPanelProps {
   formData: { email: string; password: string };
   isLoading: boolean;
   error: string | null;
+  notice?: string | null;
   showPassword: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
@@ -16,6 +17,7 @@ export function LoginPanel({
   formData,
   isLoading,
   error,
+  notice,
   showPassword,
   handleInputChange,
   handleSubmit,
@@ -68,6 +70,12 @@ export function LoginPanel({
               </button>
             }
           />
+
+          {notice && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3" role="status">
+              <p className="text-sm text-green-700">{notice}</p>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
