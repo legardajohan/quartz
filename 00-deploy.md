@@ -27,11 +27,11 @@ La arquitectura ya decidida en `dev/deploy.md` y `dev/01-deploy-architecture.md`
 3. **Si falla la conexión a Mongo, el proceso queda vivo sin escuchar.** El `.catch` en `src/app.ts:71` necesita `process.exit(1)` para que Render reinicie el servicio.
 4. **Health check:** agregar `GET /api/health → 200` en `app.ts` para usarlo en Render.
 5. **SPA en Vercel:** crear `quartz-web/vercel.json` con un rewrite `/(.*) → /index.html`. Sin esto, recargar `/evaluacion/...` o abrir el enlace del correo `/activar-cuenta?token=...` devuelve 404.
-6. **Hay credenciales en claro en el repo.** `quartz-api/scripts/generate-hash.js` contiene contraseñas reales. Hay que cambiarlas, dejar el script leyendo la contraseña desde un argumento y considerar limpiar el historial.
+6. **Había credenciales en claro en el repo.** `quartz-api/scripts/generate-hash.js` se eliminó en INF-11, pero sigue en el historial desde `30b1284`: hay que rotar esas contraseñas.
 7. Seguir SDD: abrir un spec corto (por ejemplo `INF-11-production-readiness`) con estos cambios y verificar con `npx tsc --noEmit` en `quartz-api` y `npm run build && npm run lint` en `quartz-web`.
 
 ## Fase 1: release
-- `main` va muy por detrás de `develop` y no hay tags. Hay que mergear las ramas pendientes a `develop` por PR y luego correr `/sdd-release` para crear la versión, el `CHANGELOG`, el tag y el merge a `main`.
+- `main` va muy por detrás de `develop` y no hay tags. Todas las ramas `feat/*` ya están en `develop` (verificado el 2026-10-07). Tras mergear INF-11 por PR, correr `/sdd-release` para crear la versión, el `CHANGELOG`, el tag y el merge a `main`.
 - Producción se despliega **solo desde `main`**. Opcionalmente, `develop` puede generar previews en Vercel.
 
 ## Fase 2: infraestructura
@@ -72,7 +72,7 @@ La arquitectura ya decidida en `dev/deploy.md` y `dev/01-deploy-architecture.md`
 ## Fase 5: datos iniciales
 - **No existe endpoint para crear instituciones ni el primer Jefe de Área.** Hay que insertarlos a mano en Atlas (Data Explorer o `mongosh`):
   - un documento en `institutions`;
-  - un usuario admin con su `institutionId`, rol de Jefe de Área y `password` como hash bcrypt generado en local.
+  - un usuario admin con su `institutionId`, rol de Jefe de Área y `password` como hash bcrypt generado en local desde `quartz-api/`: `node -e "console.log(require('bcryptjs').hashSync(process.argv[1], 10))" '<password>'`.
   - Los campos exactos se toman de `institution.model.ts` y del modelo de usuarios.
 - Los demás usuarios se crean desde la app: invitación o carga masiva.
 - Los scripts `migrate-*.js` solo aplican si se migran datos existentes; una BD nueva no los necesita.

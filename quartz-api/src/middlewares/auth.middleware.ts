@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User, SafeUser } from '../features/auth/auth.model';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
+import { getJwtSecret } from '../utils/jwtSecret';
 
 interface JwtPayload {
   sub: string;
@@ -19,7 +19,7 @@ export const authenticateJWT = async (req: Request, res: Response, next: NextFun
   
   try {
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload;
 
     if (!decoded.sub) {
       return res.status(401).json({ message: 'Token inválido, formato incorrecto.' });
