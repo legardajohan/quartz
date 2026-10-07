@@ -1,5 +1,5 @@
-import { Button, Input } from '../../../components/ui/index';
-import { EyeIcon, EyeSlashIcon } from '../../../components/icons/index';
+import { Input, Button } from '@material-tailwind/react';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface LoginPanelProps {
   formData: { email: string; password: string };
@@ -22,75 +22,77 @@ export function LoginPanel({
   handleForgotPassword,
   setShowPassword,
 }: LoginPanelProps) {
+  const ToggleIcon = showPassword ? EyeOff : Eye;
+
   return (
     <div className="flex-1 flex items-center justify-center p-10 bg-white">
       <div className="w-full max-w-[400px]">
-        {/* Welcome Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl text-purple-800 font-bold mb-4">
-            Bienvenido
-          </h1>
-          <div className="w-[200px] h-1 bg-pink-500 mx-auto mb-6"></div>
-          <p className="text-xl text-gray-800">
-            ¡Explora un mundo totalmente nuevo!
-          </p>
+        <div className="mb-10 text-center">
+          <h1 className="mb-4 text-4xl font-bold text-purple-800 [text-wrap:balance]">Bienvenido</h1>
+          <div className="mx-auto mb-6 h-1 w-[120px] bg-pink-500" />
+          <p className="text-lg text-gray-800 [text-wrap:pretty]">¡Explora un mundo totalmente nuevo!</p>
         </div>
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Input
+            color="purple"
             label="Correo"
             type="email"
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full"
+            autoComplete="username"
+            crossOrigin="anonymous"
             required
             disabled={isLoading}
           />
-          <div className="relative">
-            <Input
-              label="Contraseña"
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="w-full pr-12"
-              required
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-purple-600 focus:outline-none p-1 transition-all duration-200 ease-in-out active:scale-[0.8]"
-              disabled={isLoading}
-              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-            >
-              {showPassword ? (
-                <EyeSlashIcon className="w-6 h-6" />
-              ) : (
-                <EyeIcon className="w-6 h-6" />
-              )}
-            </button>
-          </div>
+          <Input
+            color="purple"
+            label="Contraseña"
+            type={showPassword ? 'text' : 'password'}
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
+            autoComplete="current-password"
+            crossOrigin="anonymous"
+            required
+            disabled={isLoading}
+            icon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-pressed={showPassword}
+                className="-m-1.5 rounded-md p-1.5 text-gray-500 transition-colors duration-150 hover:text-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-500"
+              >
+                <ToggleIcon className="h-4 w-4" aria-hidden />
+              </button>
+            }
+          />
+
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
+
           <Button
-            isLoading={isLoading}
-            loadingText="Ingresando..."
             type="submit"
+            variant="gradient"
+            color="purple"
+            fullWidth
+            loading={isLoading}
             disabled={isLoading || !formData.email.trim() || !formData.password.trim()}
+            className="active:scale-[0.97] transition-transform duration-150"
           >
-            Ingresar
+            {isLoading ? 'Ingresando…' : 'Ingresar'}
           </Button>
-          <div className="text-center text-gray-400 text-base">
-            Olvidaste tu contraseña? 
+
+          <div className="text-center text-sm text-gray-500">
+            ¿Olvidaste tu contraseña?{' '}
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="font-bold text-pink-500 ml-2 hover:text-pink-600 focus:outline-none focus:underline transition-colors"
+              className="font-semibold text-pink-600 hover:text-pink-700 focus:outline-none focus:underline transition-colors"
               disabled={isLoading}
             >
               Recuperar

@@ -23,15 +23,39 @@ El usuario pidió además revisar el tamaño de texto de los `Input`/`Select`/`T
 Tailwind en toda la app (percibidos como grandes frente al resto de la UI compactada en AUTH-03).
 No hay spec propio para esto; se implementó en la misma rama a petición explícita.
 
-- Archivo nuevo: `quartz-web/src/lib/materialTheme.ts` — `customTheme` para `ThemeProvider`
-  (único punto de verdad, en vez de tocar los ~9 formularios uno por uno).
-- `quartz-web/src/main.tsx` — `<ThemeProvider value={materialTheme}>`.
-- Solo se tocó `fontSize` en el tamaño `md` (el único usado en la app): `text-sm` → `text-xs`
-  en el texto escrito/label en reposo de `Input`, `Select` y `Textarea`. No se tocaron alturas,
-  paddings ni `lineHeight` (riesgo de descentrar el label sin poder verificarlo visualmente;
-  la verificación visual queda para el usuario, según `quartz-web/CLAUDE.md`).
-- Valores de origen confirmados contra el paquete publicado `@material-tailwind/react@2.1.10`
-  (no se pudo leer `node_modules` localmente por permisos del sandbox).
+- Primer intento: `quartz-web/src/lib/materialTheme.ts` — `customTheme` para `ThemeProvider`,
+  bajando `fontSize` de `md` (único tamaño usado en la app) de `text-sm` a `text-xs` en
+  `Input`/`Select`/`Textarea`. **Revertido**: el usuario probó la app y reportó que el texto
+  quedó "muy pequeño". Se eliminó `materialTheme.ts` y se devolvió `main.tsx` a
+  `<ThemeProvider>` sin `value`, es decir, texto `text-sm` (14px, el default de la librería)
+  en todos los `Input`/`Select`/`Textarea` de la app — el tamaño que ya tenían antes de esta
+  spec. El problema real de "inputs grandes" resultó ser el `Input`/`Button` propios de
+  `/login` (ver más abajo), no el default de Material Tailwind.
+- Primer intento: ajustar solo tipografía de `quartz-web/src/components/ui/Input.tsx` (usado solo
+  por `/login`). Insuficiente — el usuario reportó que `/login` seguía "raro": ese `Input` y el
+  `Button` de `components/ui/` **no son** de Material Tailwind (son `<input>`/`<label>`/`<button>`
+  a mano), con proporciones completamente distintas al resto de la app (`h-12`, `text-xl`,
+  `rounded-3xl`, sin `uppercase`/`font-bold`) — el tema de `ThemeProvider` no los alcanza y nunca
+  los alcanzaría por mucho que se ajustara solo el `fontSize`.
+- Solución definitiva: `LoginPanel.tsx` reescrito para usar `Input`/`Button` **de Material
+  Tailwind** (mismo patrón que `ActivateAccountForm.tsx`/`PasswordField.tsx`: `color="purple"`,
+  ícono de ojo inline igual que `PasswordField`, `Button variant="gradient" color="purple"
+  fullWidth loading`). Encabezado (`text-4xl`/barra rosa/`text-lg`) alineado al de
+  `ActivateAccountForm.tsx` para que ambas pantallas del flujo de auth luzcan consistentes.
+- `components/ui/Input.tsx` quedó sin consumidores tras el cambio → eliminado, junto con
+  `components/icons/EyeIcon.tsx`/`EyeSlashIcon.tsx` (solo los usaba `LoginPanel.tsx`) y sus
+  exports en los barrels (`components/ui/index.tsx`, `components/icons/index.tsx`).
+  `components/ui/Button.tsx` **no** se tocó ni se eliminó: `ActivateAccountForm.tsx` lo sigue
+  usando y no estaba en el alcance pedido (solo `/login`); queda con la misma desproporción
+  (`text-xl`, `h-12`, `rounded-3xl`) por si se decide alinearlo después.
+- `LoginPage.tsx`: con el formulario ya compacto, el `min-h-[600px]` original de la tarjeta
+  (`flex flex-col md:flex-row ...`) quedaba muy por encima de lo que el contenido necesita
+  (~450px) y estiraba también el panel izquierdo (`PresentationPanel`, `flex-1`) a esa misma
+  altura en todos los tamaños de pantalla — incluido móvil, donde no había prefijo `md:` y el
+  panel de imagen se forzaba a 600px incluso apilado. Cambiado a `md:min-h-[480px]
+  md:max-h-[560px]` (sin restricción en móvil, donde el contenido manda). El fondo del panel
+  (`bg-cover bg-center`) ya recorta/ajusta automáticamente a cualquier alto de contenedor, así
+  que no requirió cambios propios.
 
 ## Notas
 - Con 4 reglas + 1 extra, la rejilla de 2 columnas deja la última fila con 1 elemento; es aceptable (orden de lectura por filas, reglas primero).

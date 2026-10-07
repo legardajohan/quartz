@@ -8,8 +8,16 @@
 - [x] `components/common/PasswordRequirements.tsx` — `ul` en rejilla (1 col móvil / 2 col ≥ `sm`), `li` `text-xs gap-1.5`, icono `h-3 w-3`; conservar `aria-live`, `sr-only` y colores
 
 ## Adición fuera del plan (a pedido del usuario)
-- [x] `src/lib/materialTheme.ts` — `customTheme` para Input/Select/Textarea (`md`, `fontSize` `text-xs`)
-- [x] `main.tsx` — `<ThemeProvider value={materialTheme}>`
+- [x] ~~`src/lib/materialTheme.ts` — `customTheme` para Input/Select/Textarea (`fontSize` `text-xs`)~~
+      revertido: el usuario lo probó y pidió aumentar el tamaño de nuevo → archivo eliminado,
+      `main.tsx` vuelve a `<ThemeProvider>` sin `value` (texto `text-sm`, el default)
+- [x] `features/auth/components/LoginPanel.tsx` reescrito con `Input`/`Button` de Material
+      Tailwind (el `Input`/`Button` propios de `components/ui/` no eran alcanzables por el tema
+      y tenían proporciones muy distintas: `h-12`, `text-xl`, `rounded-3xl`); encabezado alineado
+      con `ActivateAccountForm.tsx`
+- [x] Eliminados `components/ui/Input.tsx`, `components/icons/EyeIcon.tsx`,
+      `components/icons/EyeSlashIcon.tsx` (sin consumidores tras el cambio) y sus exports en
+      los barrels
 
 ## Verificación final
 - [x] `npm run build && npm run lint` sin errores nuevos (`quartz-web`)

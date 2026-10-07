@@ -41,7 +41,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center">
-      <div className="flex flex-col md:flex-row rounded-3xl shadow-2xl bg-white/90 overflow-hidden max-w-5xl w-full min-h-[600px]">
+      <div className="flex flex-col md:flex-row rounded-3xl shadow-2xl bg-white/90 overflow-hidden max-w-5xl w-full md:min-h-[520px] md:max-h-[600px]">
         <PresentationPanel />
         <LoginPanel
           formData={formData}
