@@ -12,12 +12,22 @@ import {
 } from "../queries/useUserImportQuery";
 import type { ImportKind, ImportPreview, ImportResult, ImportRowError } from "../types";
 
-type ImportStep = "select" | "preview" | "result";
+type ImportStep = "select" | "preview";
 
 interface UserImportModalProps {
   open: boolean;
   kind: ImportKind;
   onClose: () => void;
+  onCompleted: (result: ImportResult, kind: ImportKind) => void;
+}
+
+function Spinner() {
+  return (
+    <svg className="-ml-1 mr-2 h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  );
 }
 
 const KIND_LABEL: Record<ImportKind, string> = { students: "Estudiantes", staff: "Equipo docente" };
@@ -62,13 +72,12 @@ function SkippedRowsTable({ rows }: { rows: ImportRowError[] }) {
   );
 }
 
-export default function UserImportModal({ open, kind, onClose }: UserImportModalProps) {
+export default function UserImportModal({ open, kind, onClose, onCompleted }: UserImportModalProps) {
   const { isSingle: isSingleLevel } = useOfferedLevels();
   const [step, setStep] = useState<ImportStep>("select");
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
-  const [result, setResult] = useState<ImportResult | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,7 +90,6 @@ export default function UserImportModal({ open, kind, onClose }: UserImportModal
     setFile(null);
     setFileError(null);
     setPreview(null);
-    setResult(null);
     previewMutation.reset();
     confirmMutation.reset();
   };
@@ -117,8 +125,10 @@ export default function UserImportModal({ open, kind, onClose }: UserImportModal
   const handleConfirm = async () => {
     if (!preview || preview.valid.length === 0) return;
     try {
-      setResult(await confirmMutation.mutateAsync({ kind, rows: preview.valid }));
-      setStep("result");
+      const result = await confirmMutation.mutateAsync({ kind, rows: preview.valid });
+      onClose();
+      resetState();
+      onCompleted(result, kind);
     } catch (err) {
       toast.error(extractErrorMessage(err, "No se pudieron crear los usuarios."));
     }
@@ -204,36 +214,6 @@ export default function UserImportModal({ open, kind, onClose }: UserImportModal
             )}
           </>
         )}
-
-        {step === "result" && result && (
-          <>
-            <p className="flex items-center gap-2 text-base font-semibold text-purple-900">
-              <CheckCircleIcon className="h-6 w-6 text-green-600" />
-              {result.created} {result.created === 1 ? "usuario creado" : "usuarios creados"}
-            </p>
-            {result.skipped.length > 0 && (
-              <>
-                <p className="text-sm text-amber-800">
-                  {result.skipped.length} {result.skipped.length === 1 ? "fila omitida" : "filas omitidas"}:
-                </p>
-                <SkippedRowsTable rows={result.skipped} />
-              </>
-            )}
-            {result.invitationsFailed.length > 0 && (
-              <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-                <p className="font-semibold">No se pudo enviar la invitación a:</p>
-                <ul className="mt-1 list-inside list-disc">
-                  {result.invitationsFailed.map((f) => (
-                    <li key={f.row}>
-                      Fila {f.row} · {f.email}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2">Los usuarios quedaron creados: usa "Reenviar invitación" en su fila de la tabla.</p>
-              </div>
-            )}
-          </>
-        )}
       </DialogBody>
 
       <DialogFooter>
@@ -252,7 +232,14 @@ export default function UserImportModal({ open, kind, onClose }: UserImportModal
             <Button variant="text" color="blue-gray" onClick={handleBackToSelect} className="mr-1" disabled={isBusy}>
               <span>Volver</span>
             </Button>
-            <Button variant="gradient" color="purple" onClick={handleConfirm} disabled={validCount === 0 || isBusy}>
+            <Button
+              variant="gradient"
+              color="purple"
+              onClick={handleConfirm}
+              disabled={validCount === 0 || isBusy}
+              className="flex items-center justify-center"
+            >
+              {confirmMutation.isPending && <Spinner />}
               <span>
                 {confirmMutation.isPending
                   ? kind === "staff"
@@ -262,11 +249,6 @@ export default function UserImportModal({ open, kind, onClose }: UserImportModal
               </span>
             </Button>
           </>
-        )}
-        {step === "result" && (
-          <Button variant="gradient" color="purple" onClick={handleClose}>
-            <span>Cerrar</span>
-          </Button>
         )}
       </DialogFooter>
     </Dialog>

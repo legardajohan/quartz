@@ -27,6 +27,7 @@ import { UsersTable } from "../components/UsersTable";
 import { UserForm, type UserFormData } from "../components/UserForm";
 import UserImportModal from "../components/UserImportModal";
 import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
+import type { ImportKind, ImportResult } from "../types";
 
 type UsersTab = "students" | "staff";
 
@@ -116,6 +117,36 @@ export default function UsersPage() {
     setFormData(data);
     setIsFormDirty(dirty);
   }, []);
+
+  const handleImportCompleted = (result: ImportResult, kind: ImportKind) => {
+    const skippedSuffix = result.skipped.length > 0
+      ? ` (${result.skipped.length} ${result.skipped.length === 1 ? "fila omitida" : "filas omitidas"})`
+      : "";
+    toast.success(
+      kind === "staff"
+        ? `${result.created} usuarios creados e invitaciones enviadas${skippedSuffix}`
+        : `${result.created} usuarios creados${skippedSuffix}`
+    );
+
+    if (result.invitationsFailed.length > 0) {
+      toast(
+        <span>
+          <b>No se pudo enviar la invitación a:</b>
+          <ul className="mt-1 list-inside list-disc">
+            {result.invitationsFailed.map((f) => (
+              <li key={f.row}>{f.email}</li>
+            ))}
+          </ul>
+          <span className="mt-1 block">Usa "Reenviar invitación" en su fila de la tabla.</span>
+        </span>,
+        {
+          duration: 8000,
+          icon: <ExclamationTriangleIcon className="h-5 w-5 shrink-0 text-amber-600" />,
+          style: { background: "#FFFBEB", color: "#78350F" },
+        }
+      );
+    }
+  };
 
   const handleResendInvitation = (user: UserDto) => {
     const promise = resendInvitationMutation.mutateAsync(user._id);
@@ -388,6 +419,7 @@ export default function UsersPage() {
         open={isImportModalOpen}
         kind={isStaffTab ? "staff" : "students"}
         onClose={() => setImportModalOpen(false)}
+        onCompleted={handleImportCompleted}
       />
 
       <ConfirmationModal

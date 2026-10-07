@@ -35,6 +35,12 @@ function getConfig(): MailConfig {
       port: Number(SMTP_PORT),
       secure: SMTP_SECURE === 'true',
       auth: { user: SMTP_USER, pass: SMTP_PASS },
+      // Un SMTP caído no debe colgar la petición: se reporta en `invitationsFailed` en ≤ 15 s.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
+      pool: true,
+      maxConnections: 5,
     }),
     from: MAIL_FROM,
   };

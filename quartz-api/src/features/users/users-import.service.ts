@@ -65,6 +65,7 @@ const STAFF_ROLE_LABELS: string[] = [...STAFF_ROLES];
 const REASON_DUPLICATE_IDENTIFICATION = 'Ya existe un usuario con esa identificación en la institución.';
 const REASON_DUPLICATE_EMAIL = 'Ya existe un usuario registrado con ese correo.';
 const emailSchema = z.string().email();
+const INVITATION_CONCURRENCY = 5;
 
 export function getImportTemplateFilename(kind: ImportKind): string {
   return TEMPLATE_FILENAME[kind];
@@ -472,15 +473,19 @@ export async function confirmImport(
     else skipped.push({ row: row.row, reasons: [REASON_DUPLICATE_IDENTIFICATION] });
   });
 
-  // Secuencial: ~100 correos caben en la petición y no saturan el SMTP.
+  // Lotes de `INVITATION_CONCURRENCY`: no satura el SMTP y un envío colgado no frena a los demás.
   const invitationsFailed: ImportResult['invitationsFailed'] = [];
-  for (const { row, id } of created.filter((c) => isStaffRole(c.row.role))) {
-    try {
-      await issueInvitation(institutionId, id);
-    } catch (error) {
-      console.error('No se pudo enviar la invitación del usuario', id, error);
-      invitationsFailed.push({ row: row.row, email: normalizeEmail(row.email as string) });
-    }
+  const toInvite = created.filter((c) => isStaffRole(c.row.role));
+  for (let i = 0; i < toInvite.length; i += INVITATION_CONCURRENCY) {
+    const batch = toInvite.slice(i, i + INVITATION_CONCURRENCY);
+    const results = await Promise.allSettled(batch.map(({ id }) => issueInvitation(institutionId, id)));
+    results.forEach((result, j) => {
+      if (result.status === 'rejected') {
+        const { row, id } = batch[j];
+        console.error('No se pudo enviar la invitación del usuario', id, result.reason);
+        invitationsFailed.push({ row: row.row, email: normalizeEmail(row.email as string) });
+      }
+    });
   }
 
   return { created: created.length, skipped: sortErrors(skipped), invitationsFailed };
