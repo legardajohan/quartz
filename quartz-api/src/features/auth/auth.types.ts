@@ -20,6 +20,11 @@ export interface IActivationPreview {
   institutionName: string;
 }
 
+export interface IPasswordResetPreview {
+  email: string;
+  firstName: string;
+}
+
 export enum IdentificationType {
   CC = 'CC',
   TI = 'TI',

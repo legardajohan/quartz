@@ -1,6 +1,6 @@
 import { FilterQuery, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { IUser, IUserDocument, User, SafeUser } from '../auth/auth.model';
+import { IUser, IUserDocument, User, SafeUser, PASSWORD_RESET_UNSET } from '../auth/auth.model';
 import { GradeLevel, UserAccountStatus, UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
 import {
@@ -746,7 +746,11 @@ export const changeOwnPassword = async (
     User,
     institutionId,
     { _id: new Types.ObjectId(userId) },
-    { $set: { passwordHash, updatedAt: new Date() } }
+    // Invalida cualquier enlace de recuperación pendiente (AUTH-04).
+    {
+      $set: { passwordHash, updatedAt: new Date() },
+      $unset: PASSWORD_RESET_UNSET,
+    }
   );
 };
 

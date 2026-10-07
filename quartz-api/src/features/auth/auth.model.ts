@@ -21,6 +21,9 @@ export interface IUser {
   activationTokenHash?: string; // SHA-256 del token de invitación vigente.
   activationTokenExpiresAt?: Date;
   invitationSentAt?: Date; // Último envío de la invitación (enfriamiento de reenvío).
+  passwordResetTokenHash?: string; // SHA-256 del token de recuperación vigente (AUTH-04).
+  passwordResetTokenExpiresAt?: Date;
+  passwordResetSentAt?: Date; // Último envío del enlace de recuperación (enfriamiento).
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -29,9 +32,9 @@ export interface IUserDocument extends IUser, Document {
   toSafeUser(): SafeUser;
 };
 
-// Type for safe user data without password hash nor activation token hash
+// Type for safe user data without password hash nor token hashes
 // This is used to return user data without exposing sensitive information
-export type SafeUser = Omit<IUser, 'passwordHash' | 'activationTokenHash'> & { _id: Schema.Types.ObjectId };
+export type SafeUser = Omit<IUser, 'passwordHash' | 'activationTokenHash' | 'passwordResetTokenHash'> & { _id: Schema.Types.ObjectId };
 
 const UserSchema = new Schema<IUserDocument>({
   institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', required: true },
@@ -54,6 +57,9 @@ const UserSchema = new Schema<IUserDocument>({
   activationTokenHash: { type: String, select: false },
   activationTokenExpiresAt: { type: Date },
   invitationSentAt: { type: Date },
+  passwordResetTokenHash: { type: String, select: false },
+  passwordResetTokenExpiresAt: { type: Date },
+  passwordResetSentAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -66,6 +72,9 @@ UserSchema.index({ institutionId: 1, role: 1, schoolId: 1 });
 
 // Lookup de la activación por hash del token (pre-tenant). Sparse: solo usuarios Pendientes lo tienen.
 UserSchema.index({ activationTokenHash: 1 }, { unique: true, sparse: true });
+
+// Lookup de la recuperación de contraseña por hash del token (pre-tenant, AUTH-04).
+UserSchema.index({ passwordResetTokenHash: 1 }, { unique: true, sparse: true });
 
 // Instance method to return a safe user object without password hash
 UserSchema.methods.toSafeUser = function (): SafeUser {
@@ -89,5 +98,12 @@ UserSchema.methods.toSafeUser = function (): SafeUser {
     updatedAt: this.updatedAt,
   };
 };
+
+// Campos de recuperación (AUTH-04): se eliminan al restablecer, activar o cambiar la contraseña.
+export const PASSWORD_RESET_UNSET = {
+  passwordResetTokenHash: 1,
+  passwordResetTokenExpiresAt: 1,
+  passwordResetSentAt: 1,
+} as const;
 
 export const User = model<IUserDocument>('User', UserSchema);
