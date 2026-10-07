@@ -6,30 +6,12 @@ import {
   Tooltip,
 } from "@material-tailwind/react";
 import {
-  LightBulbIcon,
-  HeartIcon,
-  FireIcon,
-  ChatBubbleLeftRightIcon,
-  PaintBrushIcon,
-  ScaleIcon,
-  UsersIcon,
-  BookOpenIcon,
   PlusIcon,
   ChatBubbleBottomCenterTextIcon,
 } from "@heroicons/react/24/outline";
 import EditableLearningItem from "./EditableLearningItem";
 import type { SubjectSnapshot, ChecklistTemplateDto } from "../types";
-
-const SUBJECT_ICONS = [
-  LightBulbIcon,
-  HeartIcon,
-  FireIcon,
-  ChatBubbleLeftRightIcon,
-  PaintBrushIcon,
-  ScaleIcon,
-  UsersIcon,
-  BookOpenIcon,
-];
+import { SUBJECT_ICONS } from "../../subject/subjectIcons";
 
 export type ChecklistEditorProps = {
   initialTemplate: ChecklistTemplateDto;

@@ -8,32 +8,11 @@ import {
   Radio,
   Progress,
 } from "@material-tailwind/react";
-import {
-  LightBulbIcon,
-  HeartIcon,
-  ChatBubbleLeftRightIcon,
-  FireIcon,
-  PaintBrushIcon,
-  ScaleIcon,
-  BookOpenIcon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
+import { BookOpenIcon } from "@heroicons/react/24/outline";
 import type { IValuationBySubjectDTO, ILearningValuationDTO } from "../types";
 import { ValuationState } from "../types/domain";
 import { useSubjectTypeLabel } from "../../subject/useSubjectAxisLabel";
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
-
-// Export icons for parent usage
-export const SUBJECT_ICONS = [
-  LightBulbIcon,
-  HeartIcon,
-  FireIcon,
-  ChatBubbleLeftRightIcon,
-  PaintBrushIcon,
-  ScaleIcon,
-  UsersIcon,
-  BookOpenIcon,
-];
 
 const TABLE_HEAD = [
   "Aprendizajes",
