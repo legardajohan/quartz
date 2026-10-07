@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore } from '../useAuthStore';
-import { PresentationPanel } from '../components/PresentationPanel';
+import AuthShell from '../components/AuthShell';
 import { LoginPanel } from '../components/LoginPanel';
 import type { AuthLocationState } from '../types';
 
@@ -53,21 +53,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center">
-      <div className="flex flex-col md:flex-row rounded-3xl shadow-2xl bg-white/90 overflow-hidden max-w-5xl w-full md:min-h-[520px] md:max-h-[600px]">
-        <PresentationPanel />
-        <LoginPanel
-          formData={formData}
-          isLoading={isLoading}
-          error={error}
-          notice={notice}
-          showPassword={showPassword}
-          handleInputChange={handleInputChange}
-          handleSubmit={handleSubmit}
-          handleForgotPassword={handleForgotPassword}
-          setShowPassword={setShowPassword}
-        />
-      </div>
-    </div>
+    <AuthShell>
+      <LoginPanel
+        formData={formData}
+        isLoading={isLoading}
+        error={error}
+        notice={notice}
+        showPassword={showPassword}
+        handleInputChange={handleInputChange}
+        handleSubmit={handleSubmit}
+        handleForgotPassword={handleForgotPassword}
+        setShowPassword={setShowPassword}
+      />
+    </AuthShell>
   );
 }

@@ -30,7 +30,7 @@ export default function ForgotPasswordForm({
       <div className="mb-10 text-center">
         <h1 className="mb-4 text-4xl font-bold text-purple-800 [text-wrap:balance]">Recupera tu contraseña</h1>
         <div className="mx-auto mb-6 h-1 w-[120px] bg-pink-500" />
-        <p className="text-lg text-gray-800 [text-wrap:pretty]">
+        <p className="text-base text-gray-800 [text-wrap:pretty]">
           Escribe el correo de tu cuenta y te enviaremos un enlace para crear una contraseña nueva.
         </p>
       </div>

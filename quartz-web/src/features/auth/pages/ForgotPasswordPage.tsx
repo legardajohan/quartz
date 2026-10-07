@@ -24,7 +24,7 @@ function ResetLinkSentNotice({ email, onBackToLogin, onUseAnotherEmail }: ResetL
       <h1 className="mb-4 text-3xl font-bold text-purple-800 [text-wrap:balance]">Revisa tu correo</h1>
       <div className="mx-auto mb-6 h-1 w-[120px] bg-pink-500" />
       <p className="mb-4 text-base leading-relaxed text-gray-700 [text-wrap:pretty]">
-        Si <span className="font-semibold break-all">{email}</span> tiene una cuenta en Quartz, te enviamos un enlace
+        Si <span className="font-semibold break-all">{email}</span> tiene una cuenta en <span className="font-semibold break-all color-purple-800">Quartz</span>, te enviamos un enlace
         para crear una contraseña nueva. El enlace vence en 1 hora.
       </p>
       <p className="mb-10 text-sm leading-relaxed text-gray-600 [text-wrap:pretty]">
