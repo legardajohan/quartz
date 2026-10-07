@@ -18,6 +18,21 @@ Sin cambios de API ni de tipos: `PasswordRequirementProps { met, label }` y `Pas
 | `<li>` | `gap-2 text-sm` | `gap-1.5 text-xs` |
 | Icono | `h-3.5 w-3.5` | `h-3 w-3` (pendiente conserva `scale-75`) |
 
+## Adición fuera del plan original (solicitada por el usuario durante la implementación)
+El usuario pidió además revisar el tamaño de texto de los `Input`/`Select`/`Textarea` de Material
+Tailwind en toda la app (percibidos como grandes frente al resto de la UI compactada en AUTH-03).
+No hay spec propio para esto; se implementó en la misma rama a petición explícita.
+
+- Archivo nuevo: `quartz-web/src/lib/materialTheme.ts` — `customTheme` para `ThemeProvider`
+  (único punto de verdad, en vez de tocar los ~9 formularios uno por uno).
+- `quartz-web/src/main.tsx` — `<ThemeProvider value={materialTheme}>`.
+- Solo se tocó `fontSize` en el tamaño `md` (el único usado en la app): `text-sm` → `text-xs`
+  en el texto escrito/label en reposo de `Input`, `Select` y `Textarea`. No se tocaron alturas,
+  paddings ni `lineHeight` (riesgo de descentrar el label sin poder verificarlo visualmente;
+  la verificación visual queda para el usuario, según `quartz-web/CLAUDE.md`).
+- Valores de origen confirmados contra el paquete publicado `@material-tailwind/react@2.1.10`
+  (no se pudo leer `node_modules` localmente por permisos del sandbox).
+
 ## Notas
 - Con 4 reglas + 1 extra, la rejilla de 2 columnas deja la última fila con 1 elemento; es aceptable (orden de lectura por filas, reglas primero).
 - Mantener `transition-colors duration-200` (feedback de estado, sin animación nueva).
