@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Input, Select, Option } from '@material-tailwind/react';
+import { useOfferedLevels } from '@/features/institution/queries/useOfferedLevels';
+import type { GradeLevel } from '@/types/domain';
 
 type Period = { _id: string; name: string; isActive: boolean };
 
-type CreateFormData = { name: string; periodId: string; grade: string };
+type CreateFormData = { name: string; periodId: string; grade: GradeLevel | '' };
 
 type ChecklistCreateFormProps = {
   periods: Period[];
   onFormChange: (data: CreateFormData, isReady: boolean) => void;
 };
 
-const GRADES = ['Transición'];
-
 export function ChecklistCreateForm({ periods, onFormChange }: ChecklistCreateFormProps) {
   const [name, setName] = useState('');
   const [periodId, setPeriodId] = useState('');
-  const [grade, setGrade] = useState('Transición');
+  const [pickedGrade, setPickedGrade] = useState<GradeLevel | ''>('');
+  const { levels: offeredLevels, isSingle: isSingleLevel } = useOfferedLevels();
+
+  // Con un único nivel ofertado no hay selector: la plantilla toma ese nivel.
+  const grade: GradeLevel | '' = isSingleLevel
+    ? offeredLevels[0]
+    : pickedGrade && offeredLevels.includes(pickedGrade) ? pickedGrade : '';
 
   useEffect(() => {
     const isReady = !!name.trim() && !!periodId && !!grade;
@@ -47,19 +53,21 @@ export function ChecklistCreateForm({ periods, onFormChange }: ChecklistCreateFo
         ))}
       </Select>
 
-      <Select
-        color="purple"
-        label="Grado"
-        value={grade}
-        onChange={(val) => setGrade(val ?? '')}
-        menuProps={{ placement: "bottom" }}
-      >
-        {GRADES.map((g) => (
-          <Option key={g} value={g}>
-            {g}
-          </Option>
-        ))}
-      </Select>
+      {!isSingleLevel && (
+        <Select
+          color="purple"
+          label="Nivel"
+          value={grade}
+          onChange={(val) => setPickedGrade((val as GradeLevel) ?? '')}
+          menuProps={{ placement: "bottom" }}
+        >
+          {offeredLevels.map((level) => (
+            <Option key={level} value={level}>
+              {level}
+            </Option>
+          ))}
+        </Select>
+      )}
     </div>
   );
 }

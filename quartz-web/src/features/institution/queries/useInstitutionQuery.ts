@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPatch } from '@/api/apiClient';
 import { withErrorMessage } from '@/api/withErrorMessage';
 import { STALE_TIME } from '@/lib/queryClient';
+import { learningKeys } from '@/features/learning/queries/useLearningsQuery';
+import { checklistTemplateKeys } from '@/features/checklist-template/queries/useChecklistTemplatesQuery';
 import type {
   InstitutionDto,
   InstitutionBrandingDto,
@@ -57,6 +59,10 @@ export function useUpdateInstitutionSettingsMutation() {
     onSuccess: (updated) => {
       queryClient.setQueryData(institutionKeys.me, updated);
       queryClient.setQueryData(institutionKeys.settings, updated.settings);
+      // Quitar un nivel cambia qué aprendizajes/plantillas se listan y puede reasignar docentes.
+      queryClient.invalidateQueries({ queryKey: learningKeys.all });
+      queryClient.invalidateQueries({ queryKey: checklistTemplateKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 }

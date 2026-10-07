@@ -9,7 +9,16 @@ export type AccountStatus = typeof ACCOUNT_STATUSES[number];
 export const IDENTIFICATION_TYPES = ['CC', 'TI', 'RC'] as const;
 export type IdentificationType = typeof IDENTIFICATION_TYPES[number];
 
-export type GradeLevel = 'Transición' | '1ro' | '2do' | '3ro' | '4to' | '5to' | '6to' | '7mo' | '8vo' | '9no' | '10mo' | '11mo';
+// Espejo de `GradeLevel` (quartz-api/src/features/auth/auth.types.ts): niveles de Preescolar,
+// orden canónico 3→5 años.
+export const GRADE_LEVELS = ['Prejardín', 'Jardín', 'Transición'] as const;
+export type GradeLevel = typeof GRADE_LEVELS[number];
+
+export const GRADE_LEVEL_AGES: Record<GradeLevel, number> = {
+  'Prejardín': 3,
+  'Jardín': 4,
+  'Transición': 5,
+};
 
 export const SUBJECT_TYPES = ['Dimensión', 'Asignatura', 'Área', 'Materia'] as const;
 export type SubjectType = typeof SUBJECT_TYPES[number];
@@ -122,4 +131,5 @@ export interface ISessionData {
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: Shift[];
+  offeredLevels: GradeLevel[];
 }

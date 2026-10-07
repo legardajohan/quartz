@@ -34,6 +34,7 @@ export interface IStudentValuationDocument extends Document {
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubject[];
   observations: string | null;
+  __v?: number;
 }
 
 const learningValuationSchema = new Schema<ILearningValuation>({
@@ -65,6 +66,7 @@ const studentValuationSchema = new Schema<IStudentValuationDocument>({
   observations: { type: String, default: null }
 }, {
   timestamps: true,
+  optimisticConcurrency: true,
 });
 
 // Compound unique index to ensure one valuation per student per period

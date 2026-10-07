@@ -1,6 +1,6 @@
 # quartz-web
 
-> **Sistema:** Quartz — Gestión académica para la **evaluación cualitativa** de estudiantes del grado **Transición**.
+> **Sistema:** Quartz — Gestión académica para la **evaluación cualitativa** de estudiantes de **Preescolar** (Prejardín · Jardín · Transición, según `settings.offeredLevels` de la institución).
 
 ## Arquitectura
 **Frontend:** **SPA desacoplada** que consume la API solo por REST.
@@ -42,7 +42,7 @@ Cada tipo de dato tiene un dueño. Antes de crear estado nuevo, decidir con esta
 |---|---|---|
 | **Estado de servidor**: cualquier lista/recurso remoto que se lee, cachea, refetchea e invalida tras mutar | **React Query** (`queries/use<Feature>Query.ts`) | `features/learning/queries/useLearningsQuery.ts`, `features/users/queries/useUsersQuery.ts` |
 | **Sesión**: token y `sessionData` (solo identidad: `user`), persistidos y revalidados con `refreshSession()` | **Zustand** (`useAuthStore`) | `features/auth/useAuthStore.ts` |
-| **UI compartida entre rutas**: búsqueda, filtros y página de tablas que deben sobrevivir a la navegación | **Zustand** en `src/stores/` (en memoria, sin `persist`) | `stores/useTableFiltersStore.ts` |
+| **UI compartida entre rutas**: búsqueda, filtros y página de tablas que deben sobrevivir a la navegación | **Zustand** en `src/stores/` (en memoria, sin `persist`) | `stores/useTableFiltersStore.ts`, `stores/useDashboardFiltersStore.ts` |
 | **Estado de un solo componente/página**: modales, formularios, borradores | `useState` local | páginas CRUD |
 
 **Prohibido** guardar datos de servidor en un store Zustand (`isLoading`, listas, caché, invalidación): eso lo da React Query. Un feature nuevo **no** crea `use<Feature>Store.ts` para datos remotos.
@@ -56,9 +56,10 @@ Cada tipo de dato tiene un dueño. Antes de crear estado nuevo, decidir con esta
   | `catalog` | 30 min | subjects, periods, schools, institution, branding |
   | `list` (default) | 5 min | learnings, concepts, checklist-templates, users |
   | `live` | 0 | valoración, carta, reporte (pinta la caché y revalida) |
-  | dashboard | 60 s | alineado a su TTL de servidor |
+  | dashboard | 60 s | alineado a su TTL de servidor; sin `gcTime` propio (hereda 30 min) |
 - **Keys:** un factory por feature en su archivo `queries/`: `learningKeys = { all: ['learnings'] as const, list: () => [...learningKeys.all, 'list'] as const }`.
 - **Mutaciones:** `useMutation` + `mutateAsync` (para `toast.promise`); `onSuccess` invalida `<feature>Keys.all` y los dominios que dependen del recurso (p. ej. aprendizajes/conceptos → `['dashboard']`). Envolver la llamada con `withErrorMessage` (`src/api/withErrorMessage.ts`) para que el toast reciba el mensaje ya resuelto.
+- **Conflictos de concurrencia:** las escrituras protegidas (aprendizajes, valoración, conceptos de la carta) envían `version`; `withErrorMessage` lanza `ApiError` (`status`, `code`). Ante `isVersionConflict(err)` no se muestra toast de error: `onError` devuelve el `invalidateQueries` (se espera el refetch), la pantalla lee la versión vigente de la caché y muestra `<ConflictNotice>` conservando el borrador. `isNotFound(err)` → recurso eliminado por otra persona.
 - **Carga:** `isPending` = sin datos en caché (spinner); con caché `stale` la UI pinta al instante y revalida en segundo plano (`isFetching`).
 - **Seguridad multi-tenant:** `useAuthStore` ejecuta `queryClient.clear()` en `login`, `activateAccount` y `logout`. **Prohibido** `persistQueryClient`/guardar la caché en `localStorage`.
 

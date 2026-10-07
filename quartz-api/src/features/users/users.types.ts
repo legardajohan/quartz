@@ -107,3 +107,43 @@ export interface ProfileRequestor {
     userId: string;
     role: UserRole;
 }
+
+// ─── Cargue masivo (USR-05) ──────────────────────────────────────────────────
+
+export const IMPORT_KINDS = ['students', 'staff'] as const;
+export type ImportKind = typeof IMPORT_KINDS[number];
+export const IMPORT_MAX_ROWS: Record<ImportKind, number> = { students: 500, staff: 100 };
+
+// Fila ya normalizada (trim, email en minúsculas, sede/jornada resueltas a id).
+export interface ImportRowDTO {
+    row: number; // Fila de Excel (≥ 2).
+    role: WritableUserRole; // students ⇒ Estudiante.
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    secondLastName?: string;
+    identificationType: IdentificationType;
+    identificationNumber: number;
+    phoneNumber?: string;
+    email?: string; // Obligatorio si role ∈ STAFF_ROLES.
+    schoolId: string;
+    schoolName: string; // Solo para mostrar en la preview.
+    shiftId?: string; // Solo Estudiante.
+    gradesTaught: GradeLevel[]; // Estudiante: uno; Docente: ≥ 1; Jefe de Área: opcional.
+}
+
+export interface ImportRowError {
+    row: number;
+    reasons: string[];
+}
+
+export interface ImportPreview {
+    valid: ImportRowDTO[];
+    invalid: ImportRowError[];
+}
+
+export interface ImportResult {
+    created: number;
+    skipped: ImportRowError[];
+    invitationsFailed: { row: number; email: string }[];
+}

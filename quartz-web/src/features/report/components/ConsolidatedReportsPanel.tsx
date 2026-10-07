@@ -8,13 +8,12 @@ import { usePermissions } from "../../auth/usePermissions";
 import { useSchoolsQuery } from "../../school/queries/useSchoolsQuery";
 import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
 import { useInstitutionSettingsQuery } from "../../institution/queries/useInstitutionQuery";
+import { useOfferedLevels } from "../../institution/queries/useOfferedLevels";
 import type { PeriodDto } from "../../period/types";
 import { useBulkReportDownload } from "../useBulkReportDownload";
 import type { IConsolidatedReportFilters } from "../types";
 import { REPORT_KIND_LABELS, REPORT_KIND_VALUES, type GradeLevel, type ReportKind, type Shift } from "@/types/domain";
 
-// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
-const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 const ALL_SCHOOLS_LABEL = "Todas las sedes";
 const NO_PERIODS: PeriodDto[] = [];
 const NO_SHIFTS: Shift[] = [];
@@ -38,6 +37,7 @@ export default function ConsolidatedReportsPanel() {
   const { download, isDownloading } = useBulkReportDownload();
   const { data: periods = NO_PERIODS } = usePeriodsQuery();
   const { data: settings } = useInstitutionSettingsQuery();
+  const { levels: offeredLevels, isSingle: isSingleLevel } = useOfferedLevels();
 
   const multipleShifts = settings?.multipleShifts ?? false;
   const shifts = settings?.shifts ?? NO_SHIFTS;
@@ -45,7 +45,7 @@ export default function ConsolidatedReportsPanel() {
   const enabledReports: readonly ReportKind[] = settings?.enabledReports ?? REPORT_KIND_VALUES;
 
   const [schoolId, setSchoolId] = useState(isTeacher ? ownSchoolId ?? "" : "");
-  const [grade, setGrade] = useState<GradeLevel | "">(GRADE_LEVELS.length === 1 ? GRADE_LEVELS[0] : "");
+  const [pickedGrade, setPickedGrade] = useState<GradeLevel | "">("");
   const [shiftId, setShiftId] = useState("");
   const [periodId, setPeriodId] = useState("");
   const [pickedKind, setPickedKind] = useState<ReportKind | null>(null);
@@ -61,6 +61,13 @@ export default function ConsolidatedReportsPanel() {
     pickedKind && reportOptions.some((option) => option.value === pickedKind)
       ? pickedKind
       : reportOptions[0]?.value ?? null;
+
+  // Derivado como `reportKind`: con un único nivel ofertado se fija sin selector.
+  const grade: GradeLevel | "" = isSingleLevel
+    ? offeredLevels[0]
+    : pickedGrade && offeredLevels.includes(pickedGrade)
+      ? pickedGrade
+      : "";
 
   const ownSchoolName = useMemo(
     () => schools.find((s) => s._id === ownSchoolId)?.name ?? "",
@@ -139,19 +146,21 @@ export default function ConsolidatedReportsPanel() {
           )}
         </Select>
 
-        <Select
-          color="purple"
-          label="Grado"
-          value={grade}
-          onChange={(val) => setGrade((val as GradeLevel) ?? "")}
-          menuProps={{ placement: "bottom" }}
-        >
-          {GRADE_LEVELS.map((level) => (
-            <Option key={level} value={level}>
-              {level}
-            </Option>
-          ))}
-        </Select>
+        {!isSingleLevel && (
+          <Select
+            color="purple"
+            label="Grado"
+            value={grade}
+            onChange={(val) => setPickedGrade((val as GradeLevel) ?? "")}
+            menuProps={{ placement: "bottom" }}
+          >
+            {offeredLevels.map((level) => (
+              <Option key={level} value={level}>
+                {level}
+              </Option>
+            ))}
+          </Select>
+        )}
 
         {multipleShifts && (
           <Select

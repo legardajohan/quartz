@@ -10,13 +10,16 @@ import {
   changeOwnPasswordController,
   uploadOwnPhotoController,
   resendInvitationController,
+  getImportTemplateController,
+  previewImportController,
+  confirmImportController,
 } from './users.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { requireTenant } from '../../middlewares/require-tenant.middleware';
 import { authorize } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { asyncHandler } from '../../middlewares/async-handler.middleware';
-import { uploadImageSingle } from '../../middlewares/upload.middleware';
+import { uploadImageSingle, uploadSpreadsheetSingle } from '../../middlewares/upload.middleware';
 import {
   getUsersSchema,
   createUserSchema,
@@ -26,6 +29,9 @@ import {
   updateOwnProfileSchema,
   changeOwnPasswordSchema,
   resendInvitationSchema,
+  importTemplateSchema,
+  previewImportSchema,
+  confirmImportSchema,
 } from './users.validation';
 import { UserRole } from '../auth/auth.types';
 
@@ -71,6 +77,38 @@ router.patch(
   authorize(OWN_ACCOUNT_ROLES),
   uploadImageSingle,
   asyncHandler(uploadOwnPhotoController)
+);
+
+/**
+ * Cargue masivo (USR-05). Declaradas antes de `/:userId` para que "import" nunca se lea como id.
+ * Solo Jefe de Área. Preview valida sin guardar; el POST confirma y revalida todo.
+ */
+router.get(
+  '/import/template',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA]),
+  validate(importTemplateSchema),
+  asyncHandler(getImportTemplateController)
+);
+
+router.post(
+  '/import/preview',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA]),
+  validate(previewImportSchema),
+  uploadSpreadsheetSingle,
+  asyncHandler(previewImportController)
+);
+
+router.post(
+  '/import',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA]),
+  validate(confirmImportSchema),
+  asyncHandler(confirmImportController)
 );
 
 /**

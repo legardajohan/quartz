@@ -2,10 +2,15 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Typography } from "@material-tailwind/react";
 import { PlusIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { extractErrorMessage } from "@/api/apiClient";
+import { isNotFound, isVersionConflict } from "@/api/withErrorMessage";
+import ConflictNotice, { type ConflictChange } from "@/components/common/ConflictNotice";
+import { diffLearning } from "@/lib/diffChanges";
 import {
   useLearningsQuery,
+  learningKeys,
   useCreateLearningMutation,
   useUpdateLearningMutation,
   useDeleteLearningMutation,
@@ -21,7 +26,7 @@ import { ConfirmationModal } from "../../../components/common/ConfirmationModal"
 import { FormModal } from "../../../components/common/FormModal";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import { Learning, NewLearning, UpdateLearning } from "../types";
-import { LearningForm } from "../components/LearningForm";
+import { LearningForm, type LearningFormData } from "../components/LearningForm";
 import { LearningsTable } from "../components/LearningsTable";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { normalizeText } from "../../../utils/normalizeText";
@@ -31,9 +36,15 @@ const NO_LEARNINGS: Learning[] = [];
 const NO_PERIODS: PeriodDto[] = [];
 const NO_SUBJECTS: Subject[] = [];
 
+interface LearningConflict {
+  current: Learning;
+  changes: ConflictChange[];
+}
+
 export default function LearningsPage() {
   const { data: learnings = NO_LEARNINGS, isPending: isLoading, error: queryError } = useLearningsQuery();
   const createMutation = useCreateLearningMutation();
+  const queryClient = useQueryClient();
   const updateMutation = useUpdateLearningMutation();
   const deleteMutation = useDeleteLearningMutation();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
@@ -48,10 +59,13 @@ export default function LearningsPage() {
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
-  const [learningFormData, setLearningFormData] = useState<Omit<NewLearning, 'grade'> | null>(null);
+  const [learningFormData, setLearningFormData] = useState<LearningFormData | null>(null);
   const [selectedLearning, setSelectedLearning] = useState<Learning | null>(null);
   const [learningToDelete, setLearningToDelete] = useState<Learning | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
+  // Versión con la que se empezó a editar: una revalidación en segundo plano no la cambia; solo un conflicto.
+  const [editBase, setEditBase] = useState<Learning | null>(null);
+  const [conflict, setConflict] = useState<LearningConflict | null>(null);
 
   // Búsqueda, filtros y página sobreviven a la navegación (store de UI, en memoria).
   const table = useTableFilters("learnings");
@@ -73,6 +87,8 @@ export default function LearningsPage() {
 
   const handleEdit = (learning: Learning) => {
     setSelectedLearning(learning);
+    setEditBase(learning);
+    setConflict(null);
     setFormModalOpen(true);
   };
 
@@ -86,6 +102,8 @@ export default function LearningsPage() {
     setLearningToDelete(null);
     setFormModalOpen(false);
     setSelectedLearning(null);
+    setEditBase(null);
+    setConflict(null);
     setIsFormDirty(false);
   };
 
@@ -101,41 +119,78 @@ export default function LearningsPage() {
     handleCloseModals();
   };
 
-  const handleFormChange = useCallback((formData: Omit<NewLearning, 'grade'>, isDirty: boolean) => {
+  const handleFormChange = useCallback((formData: LearningFormData, isDirty: boolean) => {
     setLearningFormData(formData);
     setIsFormDirty(isDirty);
   }, []);
 
+  // Guarda la edición sobre la `version` de `base`. Un conflicto no cierra el modal ni muestra
+  // toast de error: deja el borrador intacto y abre el aviso en línea.
+  const saveEdit = async (base: Learning, successMessage: string) => {
+    if (!learningFormData || !learningFormData.grade) return;
+    const toastId = toast.loading("Actualizando aprendizaje...");
+    const data: UpdateLearning = { ...learningFormData, grade: learningFormData.grade, version: base.version };
+    try {
+      await updateMutation.mutateAsync({ id: base._id, data });
+      toast.success(successMessage, { id: toastId });
+      handleCloseModals();
+    } catch (err: unknown) {
+      if (isVersionConflict(err)) {
+        const list = queryClient.getQueryData<Learning[]>(learningKeys.list());
+        const current = list?.find((l) => l._id === base._id);
+        if (current) {
+          toast.dismiss(toastId);
+          setConflict({ current, changes: diffLearning(base, current) });
+          setEditBase(base);
+          return;
+        }
+      }
+      if (isNotFound(err)) {
+        toast.error("Este aprendizaje ya no existe: otra persona lo eliminó. La lista se actualizó.", { id: toastId });
+        handleCloseModals();
+        return;
+      }
+      toast.error(err instanceof Error ? err.message : "Falló la actualización del aprendizaje.", { id: toastId });
+      handleCloseModals();
+    }
+  };
+
+  const handleKeepMine = () => {
+    if (!conflict) return;
+    void saveEdit(conflict.current, "Cambios guardados");
+  };
+
+  const handleUseCurrent = () => {
+    if (!conflict) return;
+    const { current } = conflict;
+    setSelectedLearning(current);
+    setEditBase(current);
+    setConflict(null);
+    toast.success("Se cargó la versión actual");
+  };
+
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!learningFormData || !learningFormData.subjectId || !learningFormData.periodId || !learningFormData.description) {
+    if (!learningFormData || !learningFormData.subjectId || !learningFormData.periodId || !learningFormData.description || !learningFormData.grade) {
       toast.error("Por favor, completa todos los campos del formulario.");
       return;
     }
 
-    let promise;
-    if (selectedLearning) {
-      const learningToUpdate: UpdateLearning = {
-        ...learningFormData,
-      };
-      promise = updateMutation.mutateAsync({ id: selectedLearning._id, data: learningToUpdate });
-      toast.promise(promise, {
-        loading: "Actualizando aprendizaje...",
-        success: <b>¡Aprendizaje actualizado con éxito!</b>,
-        error: (err) => <b>{err.toString()}</b>,
-      });
-    } else {
-      const learningToCreate: NewLearning = {
-        ...learningFormData,
-        grade: "Transición",
-      };
-      promise = createMutation.mutateAsync(learningToCreate);
-      toast.promise(promise, {
-        loading: "Creando aprendizaje...",
-        success: <b>¡Aprendizaje creado con éxito!</b>,
-        error: (err) => <b>{err.toString()}</b>,
-      });
+    if (selectedLearning && editBase) {
+      void saveEdit(editBase, "¡Aprendizaje actualizado con éxito!");
+      return;
     }
+
+    const learningToCreate: NewLearning = {
+      ...learningFormData,
+      grade: learningFormData.grade,
+    };
+    const promise = createMutation.mutateAsync(learningToCreate);
+    toast.promise(promise, {
+      loading: "Creando aprendizaje...",
+      success: <b>¡Aprendizaje creado con éxito!</b>,
+      error: (err) => <b>{err.toString()}</b>,
+    });
 
     handleCloseModals();
   };
@@ -260,7 +315,17 @@ export default function LearningsPage() {
         submitText={!isEditMode ? "Crear Aprendizaje" : "Actualizar"}
         isSubmitting={isSubmitting}
         isSubmitDisabled={isSubmitDisabled}
+        hideSubmit={!!conflict}
       >
+        {conflict && (
+          <ConflictNotice
+            title="Otra persona actualizó este aprendizaje"
+            changes={conflict.changes}
+            isSaving={updateMutation.isPending}
+            onKeepMine={handleKeepMine}
+            onUseCurrent={handleUseCurrent}
+          />
+        )}
         <LearningForm
           initialData={selectedLearning}
           onFormChange={handleFormChange}

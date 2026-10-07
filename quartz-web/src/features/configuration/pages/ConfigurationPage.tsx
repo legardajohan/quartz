@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Tabs, TabsHeader, TabsBody, Tab, TabPanel, Typography } from "@material-tailwind/react";
-import { Square3Stack3DIcon, CalendarDaysIcon, DocumentTextIcon, ShieldCheckIcon, BuildingOffice2Icon } from "@heroicons/react/24/outline";
+import { Square3Stack3DIcon, CalendarDaysIcon, DocumentTextIcon, ShieldCheckIcon, BuildingOffice2Icon, AcademicCapIcon } from "@heroicons/react/24/outline";
 
 import { SubjectsPanel } from "../../subject/components/SubjectsPanel";
 import { PeriodsPanel } from "../../period/components/PeriodsPanel";
 import { ReportSettingsPanel } from "../../institution/components/ReportSettingsPanel";
 import { InstitutionShieldPanel } from "../../institution/components/InstitutionShieldPanel";
 import { ShiftsPanel } from "../../institution/components/ShiftsPanel";
+import { LevelsPanel } from "../../institution/components/LevelsPanel";
 import { SchoolsPanel } from "../../school/components/SchoolsPanel";
 
 const STEPS = [
@@ -45,6 +46,13 @@ const STEPS = [
     hint: "Dónde enseñas",
     icon: BuildingOffice2Icon,
   },
+  {
+    value: "niveles",
+    step: 6,
+    label: "Niveles",
+    hint: "A quién enseñas",
+    icon: AcademicCapIcon,
+  },
 ] as const;
 
 export default function ConfigurationPage() {
@@ -57,7 +65,7 @@ export default function ConfigurationPage() {
           Configuración
         </Typography>
         <Typography variant="small" className="text-gray-500">
-          Configura tu institución en Quartz en cinco pasos: ejes de valoración, periodos, informes, identidad, y sedes y jornadas.
+          Configura tu institución en Quartz en seis pasos: ejes de valoración, periodos, informes, identidad, sedes y jornadas, y niveles.
         </Typography>
       </div>
 
@@ -113,6 +121,9 @@ export default function ConfigurationPage() {
               <hr className="border-gray-200" />
               <ShiftsPanel />
             </div>
+          </TabPanel>
+          <TabPanel value="niveles" className="px-0 pt-8">
+            <LevelsPanel />
           </TabPanel>
         </TabsBody>
       </Tabs>

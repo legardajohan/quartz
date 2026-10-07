@@ -1,7 +1,7 @@
 import { FilterQuery, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { IUser, IUserDocument, User, SafeUser } from '../auth/auth.model';
-import { UserAccountStatus, UserRole } from '../auth/auth.types';
+import { IUser, IUserDocument, User, SafeUser, PASSWORD_RESET_UNSET } from '../auth/auth.model';
+import { GradeLevel, UserAccountStatus, UserRole } from '../auth/auth.types';
 import { StudentValuationModel } from '../student-valuation/student-valuation.model';
 import {
   UserWithValuations,
@@ -20,7 +20,7 @@ import {
 } from './users.types';
 import { Institution } from '../institution/institution.model';
 import { SchoolModel, ISchoolDocument } from '../school/school.model';
-import { getShiftSettings } from '../institution/institution.service';
+import { getShiftSettings, getOfferedLevels } from '../institution/institution.service';
 import {
   findScoped,
   findOneScoped,
@@ -91,7 +91,7 @@ function mapInvitationFields(
   };
 }
 
-function isStaffRole(role: UserRole): role is StaffRole {
+export function isStaffRole(role: UserRole): role is StaffRole {
   return (STAFF_ROLES as readonly UserRole[]).includes(role);
 }
 
@@ -103,7 +103,7 @@ function assertNotSelf(userId: string, requestorId: string): void {
 }
 
 // El login busca el correo en minúsculas (`useAuthStore.login`): se guarda igual o el usuario queda fuera.
-function normalizeEmail(email: string): string {
+export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
@@ -114,7 +114,7 @@ function buildActivationUrl(token: string): string {
 
 // Emite un token nuevo (invalida el anterior), lo persiste y envía el correo. El token se
 // guarda antes del envío: si el SMTP falla, el reenvío emite otro.
-async function issueInvitation(institutionId: string, userId: string): Promise<void> {
+export async function issueInvitation(institutionId: string, userId: string): Promise<void> {
   const { token, tokenHash, expiresAt } = generateActivationToken();
 
   const user = await findOneAndUpdateScoped(
@@ -191,6 +191,16 @@ async function assertAssignableShift(institutionId: string, shiftId: string): Pr
     throw new AppError('La jornada no existe o no está habilitada en la institución.', 422);
   }
   return found;
+}
+
+// Los niveles válidos son los del inquilino del token, nunca los que traiga el body.
+async function assertOfferedGrades(institutionId: string, grades: GradeLevel[]): Promise<void> {
+  if (grades.length === 0) return;
+  const offeredLevels = await getOfferedLevels(institutionId);
+  const notOffered = grades.filter((grade) => !offeredLevels.includes(grade));
+  if (notOffered.length > 0) {
+    throw new AppError(`La institución no ofrece el nivel: ${notOffered.join(', ')}.`, 422);
+  }
 }
 
 export const getUsersByFilters = async (filters: GetUsersFilters): Promise<UserWithValuations[]> => {
@@ -329,6 +339,8 @@ export const createUser = async (
     throw new AppError('Ya existe un usuario con esa identificación en la institución.', 409);
   }
 
+  await assertOfferedGrades(institutionId, data.gradesTaught ?? []);
+
   const userData: Record<string, unknown> = {
     role: data.role,
     firstName: data.firstName,
@@ -452,6 +464,12 @@ export const updateUser = async (
 
   if (existing.role === UserRole.DOCENTE && data.gradesTaught?.length === 0) {
     throw new AppError('El docente debe tener al menos un grado.', 400);
+  }
+  if (existing.role === UserRole.ESTUDIANTE && data.gradesTaught !== undefined && data.gradesTaught.length !== 1) {
+    throw new AppError('El estudiante debe tener exactamente un grado.', 400);
+  }
+  if (data.gradesTaught !== undefined) {
+    await assertOfferedGrades(institutionId, data.gradesTaught);
   }
 
   const email = data.email !== undefined ? normalizeEmail(data.email) : undefined;
@@ -728,7 +746,11 @@ export const changeOwnPassword = async (
     User,
     institutionId,
     { _id: new Types.ObjectId(userId) },
-    { $set: { passwordHash, updatedAt: new Date() } }
+    // Invalida cualquier enlace de recuperación pendiente (AUTH-04).
+    {
+      $set: { passwordHash, updatedAt: new Date() },
+      $unset: PASSWORD_RESET_UNSET,
+    }
   );
 };
 

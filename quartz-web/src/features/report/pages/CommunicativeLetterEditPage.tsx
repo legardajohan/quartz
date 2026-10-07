@@ -1,10 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, IconButton, Typography, Avatar } from "@material-tailwind/react";
 import { ExclamationTriangleIcon, BookmarkSquareIcon } from "@heroicons/react/24/outline";
 import { BookmarkSquareIcon as BookmarkSquareIconSolid } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
-import { useCommunicativeLetterQuery, useSaveLetterConceptsMutation } from "../queries/useReportQuery";
+import { useCommunicativeLetterQuery, useSaveLetterConceptsMutation, reportKeys } from "../queries/useReportQuery";
+import { isNotFound, isVersionConflict } from "@/api/withErrorMessage";
+import ConflictNotice from "@/components/common/ConflictNotice";
+import { EmptyState } from "@/components/common/EmptyState";
+import { diffLetterConcepts } from "@/lib/diffChanges";
 import { extractErrorMessage } from "../../../api/apiClient";
 import LetterConceptPicker from "../components/LetterConceptPicker";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
@@ -48,9 +53,15 @@ function buildServerConceptText(letter: ICommunicativeLetterTemplate | undefined
   return serverConceptText;
 }
 
+interface LetterConflict {
+  current: ICommunicativeLetterTemplate;
+  subjectIds: Set<string>;
+}
+
 export default function CommunicativeLetterEditPage() {
   const { studentId, valuationId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const letterQuery = useCommunicativeLetterQuery(valuationId);
   const { mutateAsync: saveLetterConcepts } = useSaveLetterConceptsMutation();
 
@@ -60,6 +71,8 @@ export default function CommunicativeLetterEditPage() {
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [conceptText, setConceptText] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [conflict, setConflict] = useState<LetterConflict | null>(null);
+  const [isGone, setIsGone] = useState(false);
 
   const { data: studentUsers } = useUsersQuery(studentId ? { id: studentId } : undefined);
   const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
@@ -111,13 +124,15 @@ export default function CommunicativeLetterEditPage() {
   };
 
   const handleDiscard = () => {
+    setConflict(null);
     syncFromServer(serverLetter);
   };
 
-  const handleSave = useCallback(async () => {
-    if (!valuationId || !currentLetter) return;
+  // `base`: carta cuya `version` se envía. Normalmente la de la edición; tras un aviso, la vigente.
+  const handleSave = useCallback(async (base: ICommunicativeLetterTemplate | undefined = currentLetter) => {
+    if (!valuationId || !base) return;
 
-    const assignments: ConceptAssignmentUpdate[] = currentLetter.subjects
+    const assignments: ConceptAssignmentUpdate[] = base.subjects
       .filter((subject) => subject.evaluationMode === "checklist")
       .map((subject) => ({
         subjectId: subject.subjectId,
@@ -130,21 +145,63 @@ export default function CommunicativeLetterEditPage() {
     try {
       // La mutación resuelve con la carta ya refetcheada; soltar la base hace que el render
       // siguiente adopte esa versión del servidor.
-      await saveLetterConcepts({ valuationId, assignments });
+      await saveLetterConcepts({ valuationId, assignments, version: base.version });
       setCurrentLetter(undefined);
-      toast.success("Conceptos guardados");
+      setConflict(null);
+      toast.success(conflict ? "Cambios guardados" : "Conceptos guardados");
     } catch (err: unknown) {
+      if (isVersionConflict(err)) {
+        const current = queryClient.getQueryData<ICommunicativeLetterTemplate>(reportKeys.letter(valuationId));
+        if (current) {
+          setConflict({ current, subjectIds: diffLetterConcepts(base, current) });
+          throw err;
+        }
+      }
+      if (isNotFound(err)) {
+        setIsGone(true);
+        throw err;
+      }
       const message = err instanceof Error ? err.message : "Error desconocido";
       toast.error(`Error al guardar: ${message}`);
       throw err;
     } finally {
       setIsSaving(false);
     }
-  }, [valuationId, currentLetter, selection, conceptText, saveLetterConcepts]);
+  }, [valuationId, currentLetter, selection, conceptText, saveLetterConcepts, queryClient, conflict]);
+
+  const handleKeepMine = () => {
+    if (!conflict) return;
+    const { current } = conflict;
+    setCurrentLetter(current);
+    handleSave(current).catch(() => undefined);
+  };
+
+  const handleUseCurrent = () => {
+    if (!conflict) return;
+    syncFromServer(conflict.current);
+    setConflict(null);
+    toast.success("Se cargó la versión actual");
+  };
 
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) => isDirty && currentLocation.pathname !== nextLocation.pathname
   );
+
+  if (isGone) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <EmptyState
+          icon={ExclamationTriangleIcon}
+          title="Esta evaluación fue eliminada por otra persona."
+          action={
+            <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate("/evaluacion")}>
+              Volver a Evaluación
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   if (isLetterLoading) {
     return <Loading message="Cargando Carta Comunicativa…" />;
@@ -232,6 +289,23 @@ export default function CommunicativeLetterEditPage() {
         />
       ) : null}
 
+      {conflict && (
+        <div className="mb-4">
+          <ConflictNotice
+            title="Los conceptos de esta carta cambiaron"
+            summary={
+              conflict.subjectIds.size > 0
+                ? `${conflict.subjectIds.size} ${conflict.subjectIds.size === 1 ? "dimensión tiene" : "dimensiones tienen"} un concepto distinto`
+                : undefined
+            }
+            changes={[]}
+            isSaving={isSaving}
+            onKeepMine={handleKeepMine}
+            onUseCurrent={handleUseCurrent}
+          />
+        </div>
+      )}
+
       <LetterConceptPicker
         subjects={currentLetter.subjects}
         selection={selection}
@@ -239,6 +313,7 @@ export default function CommunicativeLetterEditPage() {
         conceptText={conceptText}
         onTextChange={handleTextChange}
         disabled={isSaving}
+        externallyUpdatedIds={conflict?.subjectIds}
       />
 
       <div
@@ -260,17 +335,19 @@ export default function CommunicativeLetterEditPage() {
             <Button variant="text" size="sm" color="blue-gray" onClick={handleDiscard} className="hover:bg-gray-100">
               Deshacer cambios
             </Button>
-            <Button
-              variant="gradient"
-              color="purple"
-              size="sm"
-              loading={isSaving}
-              onClick={handleSave}
-              className="flex items-center gap-2 shadow-purple-500/20 hover:shadow-purple-500/40"
-            >
-              {isSaving ? <BookmarkSquareIcon className="w-4 h-4" /> : <BookmarkSquareIconSolid className="w-4 h-4" />}
-              Guardar
-            </Button>
+            {!conflict && (
+              <Button
+                variant="gradient"
+                color="purple"
+                size="sm"
+                loading={isSaving}
+                onClick={() => handleSave().catch(() => undefined)}
+                className="flex items-center gap-2 shadow-purple-500/20 hover:shadow-purple-500/40"
+              >
+                {isSaving ? <BookmarkSquareIcon className="w-4 h-4" /> : <BookmarkSquareIconSolid className="w-4 h-4" />}
+                Guardar
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { Types } from 'mongoose';
 import { Institution } from './institution.model';
 import { User } from '../auth/auth.model';
+import { GradeLevel, GRADE_LEVELS, UserRole } from '../auth/auth.types';
+import { findScoped } from '../../repositories/base.repository';
 import {
   IInstitutionDTO,
   IInstitutionBrandingDTO,
@@ -16,6 +18,16 @@ import { webpToJpeg } from '../../utils/webpToJpeg';
 import { uploadImage, deleteImage, getImage, keyFromPublicUrl } from '../../services/r2.service';
 
 const DEFAULT_ENABLED_REPORTS: ReportKind[] = [ReportKind.CHECKLIST, ReportKind.COMMUNICATIVE_LETTER];
+const DEFAULT_OFFERED_LEVELS: GradeLevel[] = [GradeLevel.TRANSICION];
+
+// Persistido en el orden en que llegó: se normaliza al canónico 3→5 años para la UI.
+function sortLevels(levels: GradeLevel[]): GradeLevel[] {
+  return GRADE_LEVELS.filter((level) => levels.includes(level));
+}
+
+function resolveOfferedLevels(levels?: GradeLevel[]): GradeLevel[] {
+  return levels && levels.length > 0 ? sortLevels(levels) : DEFAULT_OFFERED_LEVELS;
+}
 
 const SHIELD_VERSION_RE = /shield-(\d+)\.jpg$/;
 
@@ -38,7 +50,12 @@ function mapInstitutionToDTO(institution: {
   phoneNumber?: string;
   email: string;
   isActive: boolean;
-  settings?: Partial<{ enabledReports: ReportKind[]; multipleShifts: boolean; shifts: PersistedShift[] }>;
+  settings?: Partial<{
+    enabledReports: ReportKind[];
+    multipleShifts: boolean;
+    shifts: PersistedShift[];
+    offeredLevels: GradeLevel[];
+  }>;
   shieldUrl?: string;
 }): IInstitutionDTO {
   return {
@@ -54,6 +71,7 @@ function mapInstitutionToDTO(institution: {
       enabledReports: institution.settings?.enabledReports ?? DEFAULT_ENABLED_REPORTS,
       multipleShifts: institution.settings?.multipleShifts ?? false,
       shifts: (institution.settings?.shifts ?? []).map(mapShiftToDTO),
+      offeredLevels: resolveOfferedLevels(institution.settings?.offeredLevels),
     },
     shieldUrl: institution.shieldUrl,
   };
@@ -75,14 +93,20 @@ export const getShiftSettings = async (institutionId: string): Promise<IShiftSet
   };
 };
 
-// Ajustes transversales (informes habilitados + jornadas): el Docente los necesita y no puede
-// leer `getInstitutionById`, que expone datos administrativos.
+export const getOfferedLevels = async (institutionId: string): Promise<GradeLevel[]> => {
+  const institution = await Institution.findById(institutionId).select('settings.offeredLevels').lean();
+  return resolveOfferedLevels(institution?.settings?.offeredLevels);
+};
+
+// Ajustes transversales (informes habilitados + jornadas + niveles): el Docente los necesita y no
+// puede leer `getInstitutionById`, que expone datos administrativos.
 export const getInstitutionSettings = async (institutionId: string): Promise<IInstitutionSettings> => {
-  const [enabledReports, shiftSettings] = await Promise.all([
+  const [enabledReports, shiftSettings, offeredLevels] = await Promise.all([
     getEnabledReports(institutionId),
     getShiftSettings(institutionId),
+    getOfferedLevels(institutionId),
   ]);
-  return { enabledReports, ...shiftSettings };
+  return { enabledReports, ...shiftSettings, offeredLevels };
 };
 
 // Versión mínima de `getInstitutionById` para consumo transversal (p. ej. el sidebar):
@@ -130,6 +154,42 @@ export const getInstitutionById = async (institutionId: string): Promise<IInstit
   return mapInstitutionToDTO(institution);
 };
 
+// Docentes, Jefes de Área, aprendizajes y plantillas no bloquean el cambio: solo los Estudiantes.
+async function assertNoStudentsInLevel(institutionId: string, level: GradeLevel): Promise<void> {
+  const count = await findScoped(User, institutionId, {
+    role: UserRole.ESTUDIANTE,
+    gradesTaught: level,
+  }).countDocuments();
+
+  if (count > 0) {
+    throw new AppError(`El nivel «${level}» tiene ${count} estudiante(s). Cámbialos de nivel antes.`, 409);
+  }
+}
+
+// Retira el nivel quitado del `gradesTaught` de los Docentes del inquilino; si alguno queda sin
+// niveles, recibe todos los que siguen ofertados. El Jefe de Área no se toca.
+async function reassignTeachersForRemovedLevels(
+  institutionId: string,
+  removedLevels: GradeLevel[],
+  nextLevels: GradeLevel[]
+): Promise<number> {
+  if (removedLevels.length === 0) {
+    return 0;
+  }
+
+  const pulled = await User.updateMany(
+    { institutionId, role: UserRole.DOCENTE, gradesTaught: { $in: removedLevels } },
+    { $pull: { gradesTaught: { $in: removedLevels } } }
+  );
+
+  await User.updateMany(
+    { institutionId, role: UserRole.DOCENTE, gradesTaught: { $size: 0 } },
+    { $set: { gradesTaught: sortLevels(nextLevels) } }
+  );
+
+  return pulled.modifiedCount;
+}
+
 export const updateInstitutionSettings = async (
   institutionId: string,
   data: UpdateInstitutionSettingsData
@@ -138,8 +198,12 @@ export const updateInstitutionSettings = async (
     throw new AppError('Debe habilitarse al menos un informe.', 422);
   }
 
+  if (data.offeredLevels && data.offeredLevels.length === 0) {
+    throw new AppError('Selecciona al menos un nivel.', 422);
+  }
+
   const current = await Institution.findById(institutionId)
-    .select('settings.multipleShifts settings.shifts')
+    .select('settings.multipleShifts settings.shifts settings.offeredLevels')
     .lean();
 
   if (!current) {
@@ -206,6 +270,17 @@ export const updateInstitutionSettings = async (
     }
   }
 
+  let removedLevels: GradeLevel[] = [];
+  if (data.offeredLevels !== undefined) {
+    const nextLevels = new Set(data.offeredLevels);
+    removedLevels = resolveOfferedLevels(current.settings?.offeredLevels)
+      .filter((level) => !nextLevels.has(level));
+
+    for (const removed of removedLevels) {
+      await assertNoStudentsInLevel(institutionId, removed);
+    }
+  }
+
   const setPayload: Record<string, unknown> = {};
   if (data.enabledReports !== undefined) {
     setPayload['settings.enabledReports'] = data.enabledReports;
@@ -215,6 +290,9 @@ export const updateInstitutionSettings = async (
   }
   if (nextShiftsPersisted !== undefined) {
     setPayload['settings.shifts'] = nextShiftsPersisted;
+  }
+  if (data.offeredLevels !== undefined) {
+    setPayload['settings.offeredLevels'] = sortLevels(data.offeredLevels);
   }
 
   const institution = await Institution.findByIdAndUpdate(
@@ -227,7 +305,20 @@ export const updateInstitutionSettings = async (
     throw new AppError('Institución no encontrada.', 404);
   }
 
-  return mapInstitutionToDTO(institution);
+  const dto = mapInstitutionToDTO(institution);
+
+  if (removedLevels.length > 0) {
+    const adjustedTeachers = await reassignTeachersForRemovedLevels(
+      institutionId,
+      removedLevels,
+      sortLevels(data.offeredLevels as GradeLevel[])
+    );
+    if (adjustedTeachers > 0) {
+      dto.adjustedTeachers = adjustedTeachers;
+    }
+  }
+
+  return dto;
 };
 
 export const uploadInstitutionShield = async (

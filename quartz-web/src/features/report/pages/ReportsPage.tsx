@@ -8,10 +8,8 @@ import { usePermissions } from "../../auth/usePermissions";
 import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import { useTableFilters } from "@/stores/useTableFiltersStore";
 import type { UserDto, UserSchool } from "../../users/types";
-import type { GradeLevel } from "@/types/domain";
+import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
 
-// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
-const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 
 const TABS = [
   { value: "individual", label: "Individual", icon: UserIcon },
@@ -25,6 +23,7 @@ const NO_USERS: UserDto[] = [];
 const STUDENTS_QUERY = { role: "Estudiante" } as const;
 
 export default function ReportsPage() {
+  const { levels: offeredLevels } = useOfferedLevels();
   const [activeTab, setActiveTab] = useState<ReportsTab>("individual");
   const { data: users = NO_USERS } = useUsersQuery(STUDENTS_QUERY);
   const { isAreaLead, schoolId } = usePermissions();
@@ -54,7 +53,7 @@ export default function ReportsPage() {
     {
       id: "grade",
       label: "Grado",
-      options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
+      options: offeredLevels.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
       onToggle: table.toggle("grade"),
     },

@@ -15,4 +15,5 @@ export interface FormModalProps {
     submitColor?: "pink" | "green" | "purple" | "blue";
     isSubmitting?: boolean;
     isSubmitDisabled?: boolean;
+    hideSubmit?: boolean;
 }

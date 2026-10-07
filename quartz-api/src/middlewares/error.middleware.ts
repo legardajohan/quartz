@@ -1,10 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import AppError from '../utils/AppError';
+import mongoose from 'mongoose';
+import AppError, { VERSION_CONFLICT } from '../utils/AppError';
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof AppError) {
-    res.status(err.statusCode).json({ message: err.message });
+    res.status(err.statusCode).json({ message: err.message, ...(err.code && { code: err.code }) });
+    return;
+  }
+
+  if (err instanceof mongoose.Error.VersionError) {
+    res.status(409).json({
+      message: 'El registro fue modificado por otro usuario.',
+      code: VERSION_CONFLICT,
+    });
     return;
   }
 

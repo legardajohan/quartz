@@ -18,5 +18,6 @@ export function seedSessionCatalogs(payload: ISessionData): void {
     enabledReports: payload.enabledReports,
     multipleShifts: payload.multipleShifts,
     shifts: payload.shifts,
+    offeredLevels: payload.offeredLevels,
   });
 }

@@ -28,7 +28,8 @@ function mapLearningToResponse(learning: ILearningDocument): ILearningResponse {
         period: {
             _id: learningObject.periodId._id.toString(),
             name: learningObject.periodId.name,
-        }
+        },
+        version: learningObject.__v ?? 0,
     };
 }
 

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { Tabs, TabsHeader, Tab } from "@material-tailwind/react";
-import { PlusIcon, AcademicCapIcon, BriefcaseIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, ArrowUpTrayIcon, AcademicCapIcon, BriefcaseIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { extractErrorMessage } from "@/api/apiClient";
@@ -25,6 +25,9 @@ import { STAFF_ROLES } from "../types";
 import type { UserDto, NewUser, UpdateUser, WritableUserRole, StaffRole, GetUsersQuery } from "../types";
 import { UsersTable } from "../components/UsersTable";
 import { UserForm, type UserFormData } from "../components/UserForm";
+import UserImportModal from "../components/UserImportModal";
+import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
+import type { ImportKind, ImportResult } from "../types";
 
 type UsersTab = "students" | "staff";
 
@@ -39,11 +42,10 @@ const TAB_QUERY: Record<UsersTab, GetUsersQuery> = {
   staff: { roles: STAFF_ROLES },
 };
 
-// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
-const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 const NO_SHIFTS: Shift[] = [];
 
 export default function UsersPage() {
+  const { levels: offeredLevels } = useOfferedLevels();
   const { isAreaLead, userId: currentUserId } = usePermissions();
   const canCreate = isAreaLead;
   const canDelete = isAreaLead;
@@ -73,6 +75,7 @@ export default function UsersPage() {
 
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isImportModalOpen, setImportModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserDto | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserDto | null>(null);
   const [formData, setFormData] = useState<UserFormData | null>(null);
@@ -114,6 +117,36 @@ export default function UsersPage() {
     setFormData(data);
     setIsFormDirty(dirty);
   }, []);
+
+  const handleImportCompleted = (result: ImportResult, kind: ImportKind) => {
+    const skippedSuffix = result.skipped.length > 0
+      ? ` (${result.skipped.length} ${result.skipped.length === 1 ? "fila omitida" : "filas omitidas"})`
+      : "";
+    toast.success(
+      kind === "staff"
+        ? `${result.created} usuarios creados e invitaciones enviadas${skippedSuffix}`
+        : `${result.created} usuarios creados${skippedSuffix}`
+    );
+
+    if (result.invitationsFailed.length > 0) {
+      toast(
+        <span>
+          <b>No se pudo enviar la invitación a:</b>
+          <ul className="mt-1 list-inside list-disc">
+            {result.invitationsFailed.map((f) => (
+              <li key={f.row}>{f.email}</li>
+            ))}
+          </ul>
+          <span className="mt-1 block">Usa "Reenviar invitación" en su fila de la tabla.</span>
+        </span>,
+        {
+          duration: 8000,
+          icon: <ExclamationTriangleIcon className="h-5 w-5 shrink-0 text-amber-600" />,
+          style: { background: "#FFFBEB", color: "#78350F" },
+        }
+      );
+    }
+  };
 
   const handleResendInvitation = (user: UserDto) => {
     const promise = resendInvitationMutation.mutateAsync(user._id);
@@ -164,7 +197,7 @@ export default function UsersPage() {
     {
       id: "grade",
       label: "Grado",
-      options: GRADE_LEVELS.map((grade) => ({ value: grade, label: grade })),
+      options: offeredLevels.map((grade) => ({ value: grade, label: grade })),
       selected: selectedGrades,
       onToggle: table.toggle("grade"),
     },
@@ -306,14 +339,24 @@ export default function UsersPage() {
           <h1 className="text-2xl font-semibold text-purple-900">Gestión de Usuarios</h1>
 
           {canCreate && (
-            <button
-              onClick={handleOpenCreateModal}
-              aria-label="Crear nuevo usuario"
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
-            >
-              <PlusIcon className="h-6 w-6" strokeWidth={2} />
-              Crear
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setImportModalOpen(true)}
+                aria-label="Cargue masivo de usuarios"
+                className="flex items-center gap-2 border-2 border-purple-600 text-purple-700 hover:bg-purple-50 font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
+              >
+                <ArrowUpTrayIcon className="h-6 w-6" strokeWidth={2} />
+                Cargue masivo
+              </button>
+              <button
+                onClick={handleOpenCreateModal}
+                aria-label="Crear nuevo usuario"
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex-shrink-0"
+              >
+                <PlusIcon className="h-6 w-6" strokeWidth={2} />
+                Crear
+              </button>
+            </div>
           )}
         </div>
 
@@ -371,6 +414,13 @@ export default function UsersPage() {
           onResendInvitation={handleResendInvitation}
         />
       </div>
+
+      <UserImportModal
+        open={isImportModalOpen}
+        kind={isStaffTab ? "staff" : "students"}
+        onClose={() => setImportModalOpen(false)}
+        onCompleted={handleImportCompleted}
+      />
 
       <ConfirmationModal
         open={isDeleteModalOpen}

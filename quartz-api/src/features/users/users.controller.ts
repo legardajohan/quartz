@@ -11,7 +11,21 @@ import {
   uploadOwnPhoto,
   resendInvitation,
 } from './users.service';
-import { CreateUserDTO, UpdateUserDTO, UpdateOwnProfileDTO, ChangeOwnPasswordDTO, StaffRole } from './users.types';
+import {
+  buildImportTemplate,
+  previewImport,
+  confirmImport,
+  getImportTemplateFilename,
+} from './users-import.service';
+import {
+  CreateUserDTO,
+  UpdateUserDTO,
+  UpdateOwnProfileDTO,
+  ChangeOwnPasswordDTO,
+  StaffRole,
+  ImportKind,
+  ImportRowDTO,
+} from './users.types';
 import AppError from '../../utils/AppError';
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
@@ -79,6 +93,34 @@ export const uploadUserPhotoController = async (req: Request, res: Response): Pr
   });
 
   res.status(200).json(user);
+};
+
+// ─── Cargue masivo (USR-05) ──────────────────────────────────────────────────
+
+const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+export const getImportTemplateController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { kind } = req.query as { kind: ImportKind };
+  const buffer = await buildImportTemplate(institutionId, kind);
+
+  res.setHeader('Content-Type', XLSX_CONTENT_TYPE);
+  res.setHeader('Content-Disposition', `attachment; filename="${getImportTemplateFilename(kind)}"`);
+  res.send(buffer);
+};
+
+export const previewImportController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { kind } = req.query as { kind: ImportKind };
+  const preview = await previewImport(institutionId, kind, req.file!.buffer);
+  res.status(200).json(preview);
+};
+
+export const confirmImportController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { kind, rows } = req.body as { kind: ImportKind; rows: ImportRowDTO[] };
+  const result = await confirmImport(institutionId, kind, rows);
+  res.status(201).json(result);
 };
 
 // ─── Mi cuenta (USR-03): el usuario objetivo es siempre el del token ─────────

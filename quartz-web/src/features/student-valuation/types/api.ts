@@ -63,6 +63,7 @@ export interface IStudentValuationDTO {
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubjectDTO[];
   observations: string | null;
+  version: number;
 }
 
 // Update payload types
@@ -80,4 +81,5 @@ export type ValuationBySubjectUpdate = {
 export type StudentValuationUpdateData = {
   valuationsBySubject: ValuationBySubjectUpdate[];
   observations?: string | null;
+  version: number;
 };

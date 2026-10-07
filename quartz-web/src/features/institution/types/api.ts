@@ -1,4 +1,4 @@
-import type { ReportKind, Shift } from '@/types/domain';
+import type { GradeLevel, ReportKind, Shift } from '@/types/domain';
 
 export type ShiftDto = Shift;
 
@@ -6,6 +6,7 @@ export interface InstitutionSettingsDto {
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: ShiftDto[];
+  offeredLevels: GradeLevel[];
 }
 
 export interface InstitutionDto {
@@ -19,6 +20,7 @@ export interface InstitutionDto {
   isActive: boolean;
   settings: InstitutionSettingsDto;
   shieldUrl?: string;
+  adjustedTeachers?: number;
 }
 
 export interface InstitutionBrandingDto {
@@ -37,4 +39,5 @@ export type UpdateInstitutionSettings = Partial<{
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: ShiftInput[];
+  offeredLevels: GradeLevel[];
 }>;

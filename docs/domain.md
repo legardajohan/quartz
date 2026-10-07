@@ -3,7 +3,7 @@
 > Reglas de negocio **estables que todo feature debe respetar**. No las redefinas en specs ni en código: refiérete a este archivo. Detalle de datos en [data-model.md](data-model.md).
 
 ## Fase y alcance
-- **Actual:** Grado **Transición**, valoración **cualitativa** (Lista de Chequeo → Carta Comunicativa).
+- **Actual:** nivel **Preescolar** — Prejardín (3 años), Jardín (4) y Transición (5) —, valoración **cualitativa** (Lista de Chequeo → Carta Comunicativa). Cada institución elige qué niveles ofrece (`settings.offeredLevels`, mín. 1, default `Transición`); los grados de usuarios, aprendizajes y plantillas se limitan a ellos (ACAD-05).
 - **Futuro (no implementar aún):** Grados 1°–11°, valoración **cuantitativa** (0.0–5.0).
 
 ## Roles

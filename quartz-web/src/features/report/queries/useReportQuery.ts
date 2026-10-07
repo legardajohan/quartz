@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPatch, apiPost, REPORT_REQUEST_TIMEOUT_MS } from '@/api/apiClient';
-import { withErrorMessage } from '@/api/withErrorMessage';
+import { withErrorMessage, isNotFound, isVersionConflict } from '@/api/withErrorMessage';
 import { STALE_TIME } from '@/lib/queryClient';
 import type {
   IReportTemplate,
@@ -64,9 +64,17 @@ export function useSaveLetterConceptsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ valuationId, assignments }: { valuationId: string; assignments: ConceptAssignmentUpdate[] }) =>
+    mutationFn: ({
+      valuationId,
+      assignments,
+      version,
+    }: {
+      valuationId: string;
+      assignments: ConceptAssignmentUpdate[];
+      version: number;
+    }) =>
       withErrorMessage(
-        () => apiPatch(`/student-valuations/${valuationId}/concepts`, { assignments }),
+        () => apiPatch(`/student-valuations/${valuationId}/concepts`, { assignments, version }),
         'Falló guardar la selección de conceptos.',
       ),
     // Se espera solo la carta: la pantalla debe reflejar la versión del servidor al resolver.
@@ -74,6 +82,12 @@ export function useSaveLetterConceptsMutation() {
       void queryClient.invalidateQueries({ queryKey: reportKeys.letterAvailabilityAll() });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       return queryClient.invalidateQueries({ queryKey: reportKeys.letter(valuationId) });
+    },
+    // Se espera el refetch: la pantalla lee la versión vigente de la caché al resolver el error.
+    onError: (err, { valuationId }) => {
+      if (isVersionConflict(err) || isNotFound(err)) {
+        return queryClient.invalidateQueries({ queryKey: reportKeys.letter(valuationId) });
+      }
     },
   });
 }

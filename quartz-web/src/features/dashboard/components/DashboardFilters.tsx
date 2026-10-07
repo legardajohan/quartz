@@ -5,9 +5,8 @@ import type { PeriodDto } from "@/features/period/types";
 import { usePermissions } from "@/features/auth/usePermissions";
 import { useSchoolsQuery } from "@/features/school/queries/useSchoolsQuery";
 import type { GradeLevel, Shift } from "@/types/domain";
+import { useOfferedLevels } from "@/features/institution/queries/useOfferedLevels";
 
-// Fase actual del sistema: solo Grado Transición (ver CLAUDE.md raíz).
-const GRADE_LEVELS: GradeLevel[] = ["Transición"];
 const ALL_SCHOOLS_LABEL = "Todas las sedes";
 const ALL_GRADES_LABEL = "Todos los grados";
 const ALL_SHIFTS_LABEL = "Todas las jornadas";
@@ -27,6 +26,7 @@ interface DashboardFiltersProps {
 }
 
 export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
+  const { levels: offeredLevels } = useOfferedLevels();
   const { isAreaLead } = usePermissions();
   const { data: schools = [] } = useSchoolsQuery();
 
@@ -102,7 +102,7 @@ export function DashboardFilters({ values, onChange }: DashboardFiltersProps) {
           menuProps={{ placement: "bottom" }}
         >
           <Option value="">{ALL_GRADES_LABEL}</Option>
-          {GRADE_LEVELS.map((level) => (
+          {offeredLevels.map((level) => (
             <Option key={level} value={level}>
               {level}
             </Option>

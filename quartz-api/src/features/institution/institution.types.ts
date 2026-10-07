@@ -1,3 +1,5 @@
+import type { GradeLevel } from '../auth/auth.types';
+
 export enum ReportKind {
   CHECKLIST = 'checklist',
   COMMUNICATIVE_LETTER = 'communicative-letter',
@@ -23,6 +25,7 @@ export interface IInstitutionSettings {
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: IShiftDTO[];
+  offeredLevels: GradeLevel[];
 }
 
 export interface IInstitutionBrandingDTO {
@@ -42,10 +45,12 @@ export interface IInstitutionDTO {
   isActive: boolean;
   settings: IInstitutionSettings;
   shieldUrl?: string;
+  adjustedTeachers?: number;
 }
 
 export type UpdateInstitutionSettingsData = Partial<{
   enabledReports: ReportKind[];
   multipleShifts: boolean;
   shifts: ShiftInput[];
+  offeredLevels: GradeLevel[];
 }>;

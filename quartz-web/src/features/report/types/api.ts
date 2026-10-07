@@ -118,6 +118,7 @@ export interface ICommunicativeLetterTemplate {
   student: IReportStudent;
   subjects: ILetterSubjectBlock[];
   observations: string | null;
+  version: number;
   generatedAt: string;
 }
 

@@ -34,3 +34,30 @@ export const activateAccountSchema = z.object({
       path: ['confirmPassword'],
     }),
 });
+
+// Recuperación de contraseña (AUTH-04).
+export const requestPasswordResetSchema = z.object({
+  body: z.object({
+    email: z.string().trim().min(1, 'El email es obligatorio.').email('El formato del email no es válido.'),
+  }).strict(),
+});
+
+const passwordResetToken = z.string().min(1, 'El enlace de recuperación no es válido.');
+
+export const verifyPasswordResetSchema = z.object({
+  body: z.object({
+    token: passwordResetToken,
+  }).strict(),
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    token: passwordResetToken,
+    password: strongPasswordSchema,
+    confirmPassword: z.string().min(1, 'Debe confirmar la contraseña.'),
+  }).strict()
+    .refine((b) => b.password === b.confirmPassword, {
+      message: 'Las contraseñas no coinciden.',
+      path: ['confirmPassword'],
+    }),
+});

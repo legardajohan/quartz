@@ -63,6 +63,44 @@ export interface NewUser {
   shiftId?: string;  // solo Estudiante; opcional
 }
 
+// ─── Cargue masivo (USR-05): espejo de quartz-api/features/users/users.types.ts ───
+
+export const IMPORT_KINDS = ['students', 'staff'] as const;
+export type ImportKind = typeof IMPORT_KINDS[number];
+
+export interface ImportRowDto {
+  row: number;
+  role: WritableUserRole;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  identificationType: IdentificationType;
+  identificationNumber: number;
+  phoneNumber?: string;
+  email?: string;
+  schoolId: string;
+  schoolName: string;
+  shiftId?: string;
+  gradesTaught: GradeLevel[];
+}
+
+export interface ImportRowError {
+  row: number;
+  reasons: string[];
+}
+
+export interface ImportPreview {
+  valid: ImportRowDto[];
+  invalid: ImportRowError[];
+}
+
+export interface ImportResult {
+  created: number;
+  skipped: ImportRowError[];
+  invitationsFailed: { row: number; email: string }[];
+}
+
 // El rol es inmutable tras la creación: no forma parte del payload de actualización.
 // shiftId admite `null` explícito para desasignar la jornada del estudiante.
 export type UpdateUser = Partial<Omit<NewUser, 'role' | 'shiftId'>> & {

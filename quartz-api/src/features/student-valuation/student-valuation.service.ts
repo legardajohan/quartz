@@ -25,7 +25,7 @@ import {
   VALUATION_POINTS,
   CONCEPT_THRESHOLDS,
 } from './student-valuation.types';
-import AppError from '../../utils/AppError';
+import AppError, { VERSION_CONFLICT } from '../../utils/AppError';
 import { User } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
 import { Subject } from '../subject/subject.model';
@@ -108,6 +108,7 @@ interface PopulatedValuationDoc extends Document {
   checklistTemplateId: Types.ObjectId;
   globalStatus: GlobalValuationStatus | null;
   observations: string | null;
+  __v?: number;
 
   // Propiedades que ahora están pobladas (con su nuevo tipo)
   studentId: {
@@ -193,6 +194,7 @@ export function mapValuationToDTO(
     globalStatus: valuation.globalStatus,
     valuationsBySubject,
     observations: valuation.observations,
+    version: valuation.__v ?? 0,
   };
 }
 
@@ -250,6 +252,7 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
     periodId: rawPeriodId,
     globalStatus: populatedDoc.globalStatus,
     observations: populatedDoc.observations,
+    __v: populatedDoc.__v,
     valuationsBySubject: populatedDoc.valuationsBySubject.map((vs, index) => ({
       subjectId: rawSubjectIds[index],
       evaluationMode: vs.evaluationMode,
@@ -415,6 +418,10 @@ export async function updateStudentValuation(
 
   await assertStudentInScope(valuation.studentId, institutionId, scope);
 
+  if ((valuation.__v ?? 0) !== updateData.version) {
+    throw new AppError('Otro usuario modificó esta valoración.', 409, VERSION_CONFLICT);
+  }
+
   // Use a Map for efficient lookups of the updates.
   const updateMap = new Map(
     updateData.valuationsBySubject.map(subject => [
@@ -569,6 +576,10 @@ export async function updateValuationConcepts(
   }
 
   await assertStudentInScope(valuation.studentId, institutionId, scope);
+
+  if ((valuation.__v ?? 0) !== data.version) {
+    throw new AppError('Otro usuario modificó esta valoración.', 409, VERSION_CONFLICT);
+  }
 
   if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
     throw new AppError('La Lista de Chequeo aún no está evaluada completamente.', 409);
