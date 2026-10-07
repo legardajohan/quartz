@@ -1,19 +1,26 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { Typography, IconButton, Tooltip } from "@material-tailwind/react";
 import toast from "react-hot-toast";
 
-import { useSubjectStore } from "../useSubjectStore";
+import { useSubjectsQuery, useCreateSubjectMutation, useUpdateSubjectMutation, useDeleteSubjectMutation } from "../queries/useSubjectsQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
 import { DataTable, Column, ITEMS_PER_PAGE } from "../../../components/common/DataTable";
 import { SubjectForm, SubjectFormData } from "./SubjectForm";
 import { SubjectDto, NewSubject, UpdateSubject } from "../types";
 
+const NO_SUBJECTS: SubjectDto[] = [];
+
 export function SubjectsPanel() {
-  const { subjects, isLoading, isSubmitting, error, fetchSubjects, createSubject, updateSubject, deleteSubject } =
-    useSubjectStore();
+  const { data: subjects = NO_SUBJECTS, isPending: isLoading, error: queryError } = useSubjectsQuery();
+  const createMutation = useCreateSubjectMutation();
+  const updateMutation = useUpdateSubjectMutation();
+  const deleteMutation = useDeleteSubjectMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de dimensiones.") : null;
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
@@ -22,10 +29,6 @@ export function SubjectsPanel() {
   const [subjectToDelete, setSubjectToDelete] = useState<SubjectDto | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    fetchSubjects();
-  }, [fetchSubjects]);
 
   const handleOpenCreateModal = () => {
     setSelectedSubject(null);
@@ -53,10 +56,10 @@ export function SubjectsPanel() {
   const handleConfirmDelete = () => {
     if (!subjectToDelete) return;
 
-    const promise = deleteSubject(subjectToDelete._id);
+    const promise = deleteMutation.mutateAsync(subjectToDelete._id);
     toast.promise(promise, {
-      loading: "Eliminando dimensión...",
-      success: <b>Dimensión eliminada con éxito</b>,
+      loading: "Eliminando...",
+      success: <b>{subjectToDelete.type} eliminada con éxito</b>,
       error: (err) => <b>{err.toString()}</b>,
     });
     handleCloseModals();
@@ -81,10 +84,10 @@ export function SubjectsPanel() {
         type: subjectFormData.type,
         evaluationMode: subjectFormData.evaluationMode,
       };
-      promise = updateSubject(selectedSubject._id, subjectToUpdate);
+      promise = updateMutation.mutateAsync({ id: selectedSubject._id, data: subjectToUpdate });
       toast.promise(promise, {
-        loading: "Actualizando dimensión...",
-        success: <b>¡Dimensión actualizada con éxito!</b>,
+        loading: "Actualizando...",
+        success: <b>¡{subjectToUpdate.type} actualizada con éxito!</b>,
         error: (err) => <b>{err.toString()}</b>,
       });
     } else {
@@ -93,10 +96,10 @@ export function SubjectsPanel() {
         type: subjectFormData.type,
         evaluationMode: subjectFormData.evaluationMode,
       };
-      promise = createSubject(subjectToCreate);
+      promise = createMutation.mutateAsync(subjectToCreate);
       toast.promise(promise, {
-        loading: "Creando dimensión...",
-        success: <b>¡Dimensión creada con éxito!</b>,
+        loading: "Creando...",
+        success: <b>¡{subjectToCreate.type} creada con éxito!</b>,
         error: (err) => <b>{err.toString()}</b>,
       });
     }
@@ -179,10 +182,10 @@ export function SubjectsPanel() {
         <div className="flex justify-between items-start mb-6">
           <div>
             <Typography variant="h6" color="blue-gray" className="font-bold">
-              Dimensiones
+              Ejes de Valoración
             </Typography>
             <Typography variant="small" className="text-gray-500">
-              Gestiona las dimensiones de valoración de tu institución.
+              Gestiona los Ejes de Valoración de tu institución.
             </Typography>
           </div>
 
@@ -206,7 +209,7 @@ export function SubjectsPanel() {
           onNextPage={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           onPrevPage={() => setCurrentPage((p) => Math.max(1, p - 1))}
           isLoading={isLoading}
-          emptyMessage="No se encontraron dimensiones."
+          emptyMessage="No se encontraron Ejes de Valoración."
         />
       </div>
 
@@ -214,8 +217,8 @@ export function SubjectsPanel() {
         open={isDeleteModalOpen}
         onClose={handleCloseModals}
         onConfirm={handleConfirmDelete}
-        title="¿Deseas eliminar la dimensión?"
-        body={subjectToDelete?.name ?? ''}
+        title="¿Deseas eliminar este registro?"
+        body={subjectToDelete ? `${subjectToDelete.name} (${subjectToDelete.type})` : ''}
         confirmColor="pink"
       />
 
@@ -223,9 +226,10 @@ export function SubjectsPanel() {
         open={isFormModalOpen}
         onClose={handleCloseModals}
         onSubmit={handleFormSubmit}
-        title={!isEditMode ? "Nueva Dimensión" : "Editar Dimensión"}
-        subtitle={!isEditMode ? "Completa los datos para registrar una nueva dimensión." : "Actualiza los datos de la dimensión."}
-        submitText={!isEditMode ? "Crear Dimensión" : "Actualizar"}
+        scrollable={false}
+        title={selectedSubject ? `Editar ${selectedSubject.type}` : "Nuevo registro"}
+        subtitle={!isEditMode ? "Completa los datos para registrarlo." : "Actualiza los datos."}
+        submitText={!isEditMode ? "Crear" : "Actualizar"}
         isSubmitting={isSubmitting}
         isSubmitDisabled={isSubmitDisabled}
       >

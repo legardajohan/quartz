@@ -5,22 +5,71 @@ import { Period } from '../period/period.model';
 import {
     findOneScoped,
     findScoped,
+    findByIdScoped,
     createScoped,
     deleteOneScoped,
 } from '../../repositories/base.repository';
 import { validateAllExist } from '../../services/document-validator.service';
+import { invalidatePrefix } from '../../services/memory-cache.service';
 import {
   StudentValuationCreationData,
   StudentValuationUpdateData,
+  StudentValuationConceptsUpdateData,
   IStudentValuationDTO,
+  IStudentValuationLean,
   IValuationBySubjectDTO,
+  StudentNameFields,
   GlobalValuationStatus,
   QualitativeValuation,
+  RequestorScope,
+  VALUATION_POINTS,
+  CONCEPT_THRESHOLDS,
 } from './student-valuation.types';
-import AppError from '../../utils/AppError';
+import AppError, { VERSION_CONFLICT } from '../../utils/AppError';
 import { User } from '../auth/auth.model';
+import { UserRole } from '../auth/auth.types';
 import { Subject } from '../subject/subject.model';
 import { SubjectEvaluationMode } from '../subject/subject.types';
+import { ConceptModel } from '../concept/concept.model';
+
+// -----------------------------------------------------------------------------
+// 0. DOMAIN RULES
+// -----------------------------------------------------------------------------
+
+/**
+ * Umbrales de docs/domain.md §Concepto por dimensión: 80-100 Logrado · 46-79 En proceso · 0-45 Con dificultad.
+ */
+export function resolveQualitativeValuation(subjectPercentage: number): QualitativeValuation {
+  if (subjectPercentage >= CONCEPT_THRESHOLDS.ACHIEVED) return QualitativeValuation.ACHIEVED;
+  if (subjectPercentage >= CONCEPT_THRESHOLDS.IN_PROCESS) return QualitativeValuation.IN_PROCESS;
+  return QualitativeValuation.WITH_DIFICULTY;
+}
+
+/**
+ * Cierra el acceso directo por id: el objetivo debe existir en el inquilino y ser un
+ * Estudiante (para cualquier rol), y si el solicitante es Docente, debe pertenecer a su
+ * propia sede. 404 y no 403 — un 403 confirmaría que ese estudiante/valoración existe en
+ * otra sede (mismo criterio que `uploadUserPhoto`, `users.service.ts:379-384`).
+ */
+async function assertStudentInScope(
+  studentId: Types.ObjectId | string,
+  institutionId: string,
+  scope: RequestorScope
+): Promise<void> {
+  const student = await findByIdScoped(User, institutionId, studentId)
+    .select('role schoolId')
+    .lean();
+
+  if (!student || student.role !== UserRole.ESTUDIANTE) {
+    throw new AppError('Valoración no encontrada.', 404);
+  }
+
+  if (scope.role !== UserRole.DOCENTE) return;
+
+  if (!scope.schoolId || student.schoolId.toString() !== scope.schoolId) {
+    throw new AppError('Valoración no encontrada.', 404);
+  }
+}
 
 // -----------------------------------------------------------------------------
 // I. CENTRALIZED POPULATION AND DTO MAPPING (CORRECTED)
@@ -46,6 +95,7 @@ interface PopulatedValuationBySubject {
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: Types.ObjectId;
+  assignedConceptText?: string | null;
 }
 
 interface PopulatedValuationDoc extends Document {
@@ -58,6 +108,7 @@ interface PopulatedValuationDoc extends Document {
   checklistTemplateId: Types.ObjectId;
   globalStatus: GlobalValuationStatus | null;
   observations: string | null;
+  __v?: number;
 
   // Propiedades que ahora están pobladas (con su nuevo tipo)
   studentId: {
@@ -72,43 +123,35 @@ interface PopulatedValuationDoc extends Document {
 }
 
 /**
- * Centralized function to enrich a StudentValuation document with related data.
- * It takes a Mongoose document, populates it, and maps it to the final DTO.
- * This function is the single source of truth for data enrichment.
- * @param valuationDoc A Mongoose document instance of a student valuation.
- * @returns {Promise<IStudentValuationDTO>} A promise that resolves to the enriched DTO.
+ * Mapeo en memoria de una StudentValuation (poblada o no) a su DTO, resolviendo nombres de
+ * estudiante/período/asignatura contra los `Map` provistos en vez de `populate()`. Único lugar
+ * que produce `IStudentValuationDTO`: lo reutilizan tanto el camino poblado (`populateAndMapValuation`,
+ * un solo documento) como el de lote (`buildReportContexts` en `report.service.ts`, N documentos
+ * con ~6 consultas totales en vez de ~10·N).
  */
-async function populateAndMapValuation(valuationDoc: IStudentValuationDocument): Promise<IStudentValuationDTO> {
-  // 1. Populate all required fields in a single database query.
-  // Note: learningValuations are NOT populated because they are now embedded snapshots.
-  const populatedDoc = (await valuationDoc.populate([
-    { path: 'studentId', select: 'firstName middleName lastName secondLastName' },
-    { path: 'periodId', select: 'name' },
-    { path: 'valuationsBySubject.subjectId', select: 'name', model: Subject },
-  ])) as PopulatedValuationDoc; // Explicitly cast to our clean, populated type.
-
-  // 2. Map the populated document to the target DTO, handling potential nulls.
-  if (!populatedDoc.studentId) {
-    // This is a critical data integrity issue. A valuation must always have a student.
+export function mapValuationToDTO(
+  valuation: IStudentValuationLean,
+  students: Map<string, StudentNameFields>,
+  periods: Map<string, { name: string }>,
+  subjects: Map<string, { name: string }>
+): IStudentValuationDTO {
+  const studentName = students.get(valuation.studentId.toString());
+  if (!studentName) {
+    // Fallo de integridad de datos real: una valoración siempre debe tener un estudiante.
     throw new AppError('Error de integridad de datos: El estudiante asociado a esta valoración no fue encontrado.', 500);
   }
 
-  const studentName = {
-    firstName: populatedDoc.studentId.firstName,
-    middleName: populatedDoc.studentId.middleName,
-    lastName: populatedDoc.studentId.lastName,
-    secondLastName: populatedDoc.studentId.secondLastName,
-  };
-
-  const valuationsBySubject: IValuationBySubjectDTO[] = populatedDoc.valuationsBySubject.map(vs => {
+  const valuationsBySubject: IValuationBySubjectDTO[] = valuation.valuationsBySubject.map(vs => {
+    const subject = subjects.get(vs.subjectId.toString());
     const base = {
-      subjectId: vs.subjectId ? vs.subjectId._id.toString() : '',
-      // Null safety: Provide a default value if the referenced subject is deleted.
-      subjectName: vs.subjectId ? vs.subjectId.name : 'Asignatura no disponible',
+      subjectId: vs.subjectId.toString(),
+      // Null safety: valor por defecto si la asignatura referenciada fue eliminada.
+      subjectName: subject ? subject.name : 'Asignatura no disponible',
       totalSubjectScore: vs.totalSubjectScore,
       maxSubjectScore: vs.maxSubjectScore,
       subjectPercentage: vs.subjectPercentage,
       assignedConceptId: vs.assignedConceptId?.toString(),
+      assignedConceptText: vs.assignedConceptText ?? undefined,
     };
 
     if (vs.evaluationMode === SubjectEvaluationMode.DESCRIPTION) {
@@ -122,7 +165,7 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
 
     const learningValuations = vs.learningValuations.map(lv => ({
       // learningId in DTO now refers to the Valuation Item ID (subdocument ID) to allow targeting updates
-      learningId: lv._id.toString(),
+      learningId: lv._id!.toString(),
       learningDescription: lv.learningDescription,
       qualitativeValuation: lv.qualitativeValuation,
       pointsObtained: lv.pointsObtained,
@@ -136,21 +179,94 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
     };
   });
 
-  // 3. Construct and return the final DTO.
+  const period = periods.get(valuation.periodId.toString());
+
   return {
-    _id: populatedDoc._id.toString(),
-    institutionId: populatedDoc.institutionId.toString(),
-    studentId: populatedDoc.studentId._id.toString(),
+    _id: valuation._id.toString(),
+    institutionId: valuation.institutionId.toString(),
+    studentId: valuation.studentId.toString(),
     studentName,
-    teacherId: populatedDoc.teacherId.toString(),
-    checklistTemplateId: populatedDoc.checklistTemplateId.toString(),
-    periodId: populatedDoc.periodId ? populatedDoc.periodId._id.toString() : '',
-    // Null safety: Provide a default value if the referenced period is deleted.
-    periodName: populatedDoc.periodId ? populatedDoc.periodId.name : 'Periodo no disponible',
-    globalStatus: populatedDoc.globalStatus,
+    teacherId: valuation.teacherId.toString(),
+    checklistTemplateId: valuation.checklistTemplateId.toString(),
+    periodId: valuation.periodId.toString(),
+    // Null safety: valor por defecto si el período referenciado fue eliminado.
+    periodName: period ? period.name : 'Periodo no disponible',
+    globalStatus: valuation.globalStatus,
     valuationsBySubject,
-    observations: populatedDoc.observations,
+    observations: valuation.observations,
+    version: valuation.__v ?? 0,
   };
+}
+
+/**
+ * Centralized function to enrich a StudentValuation document with related data.
+ * It takes a Mongoose document, populates it, and maps it to the final DTO.
+ * This function is the single source of truth for data enrichment.
+ * @param valuationDoc A Mongoose document instance of a student valuation.
+ * @returns {Promise<IStudentValuationDTO>} A promise that resolves to the enriched DTO.
+ */
+async function populateAndMapValuation(valuationDoc: IStudentValuationDocument): Promise<IStudentValuationDTO> {
+  // Capturar los ObjectId originales antes de populate(): Mongoose reemplaza el campo en el
+  // propio documento con el subdocumento poblado (o null si la referencia es inválida), y
+  // mapValuationToDTO necesita el id crudo para indexar los Map.
+  const rawStudentId = valuationDoc.studentId;
+  const rawPeriodId = valuationDoc.periodId;
+  const rawSubjectIds = valuationDoc.valuationsBySubject.map(vs => vs.subjectId);
+
+  // Populate all required fields in a single database query.
+  // Note: learningValuations are NOT populated because they are now embedded snapshots.
+  const populatedDoc = (await valuationDoc.populate([
+    { path: 'studentId', select: 'firstName middleName lastName secondLastName' },
+    { path: 'periodId', select: 'name' },
+    { path: 'valuationsBySubject.subjectId', select: 'name', model: Subject },
+  ])) as PopulatedValuationDoc; // Explicitly cast to our clean, populated type.
+
+  const students = new Map<string, StudentNameFields>();
+  if (populatedDoc.studentId) {
+    students.set(rawStudentId.toString(), {
+      firstName: populatedDoc.studentId.firstName,
+      middleName: populatedDoc.studentId.middleName,
+      lastName: populatedDoc.studentId.lastName,
+      secondLastName: populatedDoc.studentId.secondLastName,
+    });
+  }
+
+  const periods = new Map<string, { name: string }>();
+  if (populatedDoc.periodId) {
+    periods.set(rawPeriodId.toString(), { name: populatedDoc.periodId.name });
+  }
+
+  const subjects = new Map<string, { name: string }>();
+  populatedDoc.valuationsBySubject.forEach((vs, index) => {
+    if (vs.subjectId) {
+      subjects.set(rawSubjectIds[index].toString(), { name: vs.subjectId.name });
+    }
+  });
+
+  const rawValuation: IStudentValuationLean = {
+    _id: populatedDoc._id,
+    institutionId: populatedDoc.institutionId,
+    studentId: rawStudentId,
+    teacherId: populatedDoc.teacherId,
+    checklistTemplateId: populatedDoc.checklistTemplateId,
+    periodId: rawPeriodId,
+    globalStatus: populatedDoc.globalStatus,
+    observations: populatedDoc.observations,
+    __v: populatedDoc.__v,
+    valuationsBySubject: populatedDoc.valuationsBySubject.map((vs, index) => ({
+      subjectId: rawSubjectIds[index],
+      evaluationMode: vs.evaluationMode,
+      learningValuations: vs.learningValuations,
+      performanceDescription: vs.performanceDescription,
+      totalSubjectScore: vs.totalSubjectScore,
+      maxSubjectScore: vs.maxSubjectScore,
+      subjectPercentage: vs.subjectPercentage,
+      assignedConceptId: vs.assignedConceptId,
+      assignedConceptText: vs.assignedConceptText,
+    })),
+  };
+
+  return mapValuationToDTO(rawValuation, students, periods, subjects);
 }
 
 
@@ -160,7 +276,8 @@ async function populateAndMapValuation(valuationDoc: IStudentValuationDocument):
 
 export async function getStudentValuationById(
   valuationId: string,
-  institutionId: string
+  institutionId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -170,13 +287,18 @@ export async function getStudentValuationById(
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
 
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
   return populateAndMapValuation(valuation);
 }
 
 export async function getStudentValuations(
   studentId: string,
-  institutionId: string
+  institutionId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO[]> {
+  await assertStudentInScope(studentId, institutionId, scope);
+
   const valuations = await findScoped(StudentValuationModel, institutionId, {
     studentId: new Types.ObjectId(studentId),
   });
@@ -189,8 +311,11 @@ export async function initializeStudentValuation(
   studentId: string,
   teacherId: string,
   institutionId: string,
-  periodId: string
+  periodId: string,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
+  await assertStudentInScope(studentId, institutionId, scope);
+
   // Check if a valuation already exists to avoid duplication.
   const existingValuation = await findOneScoped(StudentValuationModel, institutionId, {
     studentId: new Types.ObjectId(studentId),
@@ -202,9 +327,10 @@ export async function initializeStudentValuation(
     return populateAndMapValuation(existingValuation);
   }
 
-  // Validate that related documents exist before creation.
+  // Validate that related documents exist before creation. El estudiante ya lo valida
+  // `assertStudentInScope` (existencia + rol) más arriba.
   try {
-    await validateAllExist([[Period, periodId, 'Periodo'], [User, studentId, 'Estudiante']]);
+    await validateAllExist([[Period, periodId, 'Periodo']]);
   } catch (error: unknown) {
     throw new AppError(error instanceof Error ? error.message : 'Error desconocido', 404);
   }
@@ -269,15 +395,18 @@ export async function initializeStudentValuation(
     }
   }
 
+  invalidatePrefix(`dashboard:${institutionId}`);
+
   // Return the fresh, fully populated document from the database
-  return getStudentValuationById(valuationId, institutionId);
+  return getStudentValuationById(valuationId, institutionId, scope);
 }
 
 
 export async function updateStudentValuation(
   valuationId: string,
   institutionId: string,
-  updateData: StudentValuationUpdateData
+  updateData: StudentValuationUpdateData,
+  scope: RequestorScope
 ): Promise<IStudentValuationDTO> {
   const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
@@ -285,6 +414,12 @@ export async function updateStudentValuation(
 
   if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
+  }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
+  if ((valuation.__v ?? 0) !== updateData.version) {
+    throw new AppError('Otro usuario modificó esta valoración.', 409, VERSION_CONFLICT);
   }
 
   // Use a Map for efficient lookups of the updates.
@@ -324,19 +459,13 @@ export async function updateStudentValuation(
   let totalLearnings = 0;
   let valuatedLearnings = 0;
 
-  const pointsMapping = {
-    [QualitativeValuation.ACHIEVED]: 3,
-    [QualitativeValuation.IN_PROCESS]: 2,
-    [QualitativeValuation.WITH_DIFICULTY]: 1
-  };
-
   valuation.valuationsBySubject.forEach(subject => {
     let totalPoints = 0;
 
     subject.learningValuations.forEach(lv => {
       totalLearnings++;
 
-      const points = lv.qualitativeValuation ? pointsMapping[lv.qualitativeValuation] : 0;
+      const points = lv.qualitativeValuation ? VALUATION_POINTS[lv.qualitativeValuation] : 0;
       lv.pointsObtained = points;
       totalPoints += points;
 
@@ -367,13 +496,56 @@ export async function updateStudentValuation(
     }
   });
 
-  // 3. Persist optional free-text observations, normalizing blank input to null.
+  // 3. Assign the default Concept for each fully-valued checklist subject, by qualitative level.
+  const periodConcepts = await findScoped(ConceptModel, institutionId, {
+    periodId: valuation.periodId,
+  })
+    .select('subjectId valuationType createdAt description')
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const conceptCandidatesByKey = new Map<string, { id: string; description: string }[]>();
+  periodConcepts.forEach(concept => {
+    const key = `${concept.subjectId.toString()}|${concept.valuationType}`;
+    const candidate = { id: concept._id.toString(), description: concept.description };
+    const candidates = conceptCandidatesByKey.get(key);
+    if (candidates) {
+      candidates.push(candidate);
+    } else {
+      conceptCandidatesByKey.set(key, [candidate]);
+    }
+  });
+
+  valuation.valuationsBySubject.forEach(subject => {
+    if (subject.evaluationMode !== SubjectEvaluationMode.CHECKLIST) return;
+
+    const isFullyValued = subject.learningValuations.length > 0
+      && subject.learningValuations.every(lv => lv.qualitativeValuation !== null);
+
+    if (!isFullyValued) {
+      subject.assignedConceptId = undefined;
+      subject.assignedConceptText = undefined;
+      return;
+    }
+
+    const level = resolveQualitativeValuation(subject.subjectPercentage);
+    const candidates = conceptCandidatesByKey.get(`${subject.subjectId.toString()}|${level}`) ?? [];
+    const currentConceptId = subject.assignedConceptId?.toString();
+
+    if (currentConceptId && candidates.some(c => c.id === currentConceptId)) return;
+
+    const chosen = candidates[0];
+    subject.assignedConceptId = chosen ? new Types.ObjectId(chosen.id) : undefined;
+    subject.assignedConceptText = chosen ? chosen.description : undefined;
+  });
+
+  // 4. Persist optional free-text observations, normalizing blank input to null.
   if (updateData.observations !== undefined) {
     const trimmedObservations = updateData.observations?.trim() ?? '';
     valuation.observations = trimmedObservations.length > 0 ? trimmedObservations : null;
   }
 
-  // 4. Determine Global Status
+  // 5. Determine Global Status
   if (valuatedLearnings === 0) {
     valuation.globalStatus = GlobalValuationStatus.CREATED;
   } else if (valuatedLearnings === totalLearnings && totalLearnings > 0) {
@@ -383,17 +555,104 @@ export async function updateStudentValuation(
   }
 
   await valuation.save();
+  invalidatePrefix(`dashboard:${institutionId}`);
 
   // Directly populate and map the updated document without a second DB query.
   return populateAndMapValuation(valuation);
 }
 
-export async function deleteStudentValuation(valuationId: string, institutionId: string): Promise<void> {
-  const { deletedCount } = await deleteOneScoped(StudentValuationModel, institutionId, {
+export async function updateValuationConcepts(
+  valuationId: string,
+  institutionId: string,
+  data: StudentValuationConceptsUpdateData,
+  scope: RequestorScope
+): Promise<IStudentValuationDTO> {
+  const valuation = await findOneScoped(StudentValuationModel, institutionId, {
     _id: new Types.ObjectId(valuationId),
   });
 
-  if (deletedCount === 0) {
+  if (!valuation) {
     throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
   }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
+  if ((valuation.__v ?? 0) !== data.version) {
+    throw new AppError('Otro usuario modificó esta valoración.', 409, VERSION_CONFLICT);
+  }
+
+  if (valuation.globalStatus !== GlobalValuationStatus.COMPLETED) {
+    throw new AppError('La Lista de Chequeo aún no está evaluada completamente.', 409);
+  }
+
+  const conceptIds = data.assignments.map(assignment => new Types.ObjectId(assignment.conceptId));
+  const concepts = await findScoped(ConceptModel, institutionId, {
+    _id: { $in: conceptIds },
+  })
+    .select('subjectId periodId valuationType')
+    .lean();
+
+  const conceptsById = new Map(concepts.map(concept => [concept._id.toString(), concept]));
+
+  // Validate every assignment before mutating the document, so a single invalid entry aborts the whole request.
+  data.assignments.forEach(assignment => {
+    const subject = valuation.valuationsBySubject.find(
+      s => s.subjectId.toString() === assignment.subjectId
+    );
+
+    if (!subject || subject.evaluationMode !== SubjectEvaluationMode.CHECKLIST) {
+      throw new AppError('La dimensión no existe en esta valoración o no admite conceptos.', 422);
+    }
+
+    const concept = conceptsById.get(assignment.conceptId);
+    if (!concept) {
+      throw new AppError('El concepto no existe o no pertenece a la institución.', 422);
+    }
+
+    const level = resolveQualitativeValuation(subject.subjectPercentage);
+    const matchesSubject = concept.subjectId.toString() === assignment.subjectId;
+    const matchesPeriod = concept.periodId.toString() === valuation.periodId.toString();
+    const matchesLevel = concept.valuationType === level;
+
+    if (!matchesSubject || !matchesPeriod || !matchesLevel) {
+      throw new AppError('El concepto no corresponde a la dimensión, el período o el nivel obtenido.', 422);
+    }
+  });
+
+  data.assignments.forEach(assignment => {
+    const subject = valuation.valuationsBySubject.find(
+      s => s.subjectId.toString() === assignment.subjectId
+    );
+    if (subject) {
+      subject.assignedConceptId = new Types.ObjectId(assignment.conceptId);
+      subject.assignedConceptText = assignment.conceptText;
+    }
+  });
+
+  await valuation.save();
+  invalidatePrefix(`dashboard:${institutionId}`);
+
+  return populateAndMapValuation(valuation);
+}
+
+export async function deleteStudentValuation(
+  valuationId: string,
+  institutionId: string,
+  scope: RequestorScope
+): Promise<void> {
+  const valuation = await findOneScoped(StudentValuationModel, institutionId, {
+    _id: new Types.ObjectId(valuationId),
+  });
+
+  if (!valuation) {
+    throw new AppError('Valoración no encontrada o no pertenece a la institución.', 404);
+  }
+
+  await assertStudentInScope(valuation.studentId, institutionId, scope);
+
+  await deleteOneScoped(StudentValuationModel, institutionId, {
+    _id: new Types.ObjectId(valuationId),
+  });
+
+  invalidatePrefix(`dashboard:${institutionId}`);
 }

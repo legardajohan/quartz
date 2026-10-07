@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPatch } from '@/api/apiClient';
-import type { UserDto, GetUsersQuery } from '../types';
+import { apiGet, apiPatch, apiPost, apiDelete } from '@/api/apiClient';
+import type { UserDto, GetUsersQuery, NewUser, UpdateUser, CreatedUser } from '../types';
 
 export const usersQueryKey = (params?: GetUsersQuery) =>
   ['users', params] as const;
@@ -8,7 +8,11 @@ export const usersQueryKey = (params?: GetUsersQuery) =>
 export function useUsersQuery(params?: GetUsersQuery) {
   return useQuery({
     queryKey: usersQueryKey(params),
-    queryFn: () => apiGet<UserDto[]>('/users', { params }),
+    // `roles` viaja como CSV (`Docente,Jefe de Área`), el formato que valida la API.
+    queryFn: () =>
+      apiGet<UserDto[]>('/users', {
+        params: params?.roles ? { ...params, roles: params.roles.join(',') } : params,
+      }),
   });
 }
 
@@ -23,6 +27,51 @@ export function useUploadStudentPhotoMutation() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useCreateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: NewUser) => apiPost<CreatedUser, NewUser>('/users', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useUpdateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: UpdateUser }) =>
+      apiPatch<UserDto, UpdateUser>(`/users/${userId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useDeleteUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => apiDelete<void>(`/users/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useResendInvitationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => apiPost<void>(`/users/${userId}/invitation`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

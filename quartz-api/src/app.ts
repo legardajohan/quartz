@@ -12,6 +12,7 @@ import schoolRoutes from './features/school/school.routes';
 import conceptRoutes from './features/concept/concept.routes';
 import reportRoutes from './features/report/report.routes';
 import institutionRoutes from './features/institution/institution.routes';
+import dashboardRoutes from './features/dashboard/dashboard.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import dotenv from 'dotenv';
 
@@ -23,6 +24,10 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+// Health check for the host (public, no tenant data)
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 // Routes for authentication
 app.use('/api/auth', authRoutes);
 // Routes for expected learning
@@ -45,6 +50,8 @@ app.use('/api/concepts', conceptRoutes);
 app.use('/api/reports', reportRoutes);
 // Routes for institution settings (periods per year, enabled reports)
 app.use('/api/institutions', institutionRoutes);
+// Routes for the analytics dashboard (read-only, in-memory cached)
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use(errorHandler);
 
@@ -52,6 +59,11 @@ app.use(errorHandler);
 const { MONGODB_URI, API_USER, API_PASSWORD } = process.env;
 if (!MONGODB_URI || !API_USER || !API_PASSWORD) {
   console.error('Faltan variables de entorno para la conexión a MongoDB (MONGODB_URI, API_USER o API_PASSWORD)');
+  process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('Falta la variable de entorno JWT_SECRET');
   process.exit(1);
 }
 
@@ -67,4 +79,5 @@ mongoose.connect(mongoUri)
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
+    process.exit(1);
   });

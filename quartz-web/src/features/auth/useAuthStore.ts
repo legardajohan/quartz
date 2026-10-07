@@ -1,7 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiPost, apiGet, isAxiosError, extractErrorMessage } from '../../api/apiClient';
-import type { AuthState, LoginRequest, LoginResponse, ProfileResponse } from './types';
+import { purgeAllShieldCacheEntries } from '../institution/shieldCache';
+import { queryClient } from '../../lib/queryClient';
+import { useTableFiltersStore } from '../../stores/useTableFiltersStore';
+import { useDashboardFiltersStore } from '../../stores/useDashboardFiltersStore';
+import { seedSessionCatalogs } from './seedSessionCatalogs';
+import type {
+  AuthState,
+  LoginRequest,
+  LoginResponse,
+  SessionResponse,
+  ActivateAccountRequest,
+  SessionUser,
+} from './types';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -10,6 +22,7 @@ export const useAuthStore = create<AuthState>()(
       sessionData: null,
       isLoading: false,
       error: null,
+      showWelcomeLoader: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -20,11 +33,17 @@ export const useAuthStore = create<AuthState>()(
             password,
           });
 
+          // La caché es de la sesión anterior (otro usuario o institución): se descarta antes de
+          // sembrar la nueva, y se siembra antes de fijar `token` para que el primer render
+          // autenticado ya tenga catálogos.
+          queryClient.clear();
+          seedSessionCatalogs(sessionData);
           set({
             token,
-            sessionData,
+            sessionData: { user: sessionData.user },
             isLoading: false,
-            error: null
+            error: null,
+            showWelcomeLoader: true
           });
 
         } catch (error: unknown) {
@@ -39,12 +58,30 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      activateAccount: async (request: ActivateAccountRequest) => {
+        const { token, sessionData } = await apiPost<LoginResponse, ActivateAccountRequest>('/auth/activation', request);
+        queryClient.clear();
+        seedSessionCatalogs(sessionData);
+        set({
+          token,
+          sessionData: { user: sessionData.user },
+          isLoading: false,
+          error: null,
+          showWelcomeLoader: true
+        });
+      },
+
       logout: () => {
+        purgeAllShieldCacheEntries();
+        queryClient.clear();
+        useTableFiltersStore.getState().resetAll();
+        useDashboardFiltersStore.getState().reset();
         set({
           token: null,
           sessionData: null,
           isLoading: false,
-          error: null
+          error: null,
+          showWelcomeLoader: false
         });
       },
 
@@ -52,65 +89,42 @@ export const useAuthStore = create<AuthState>()(
         set({ error: null });
       },
 
-      refreshUser: async () => {
+      refreshSession: async () => {
         const { token } = get();
         if (!token) return;
 
-        set({ isLoading: true, error: null });
-
         try {
-          const profile = await apiGet<ProfileResponse>('/auth/profile');
-          const refreshedUser = profile.user;
-
-          set((state) => ({
-            sessionData: state.sessionData
-              ? { ...state.sessionData, user: refreshedUser }
-              : null,
-            isLoading: false,
-            error: null
-          }));
-
+          const { sessionData } = await apiGet<SessionResponse>('/auth/session');
+          // El servidor es la fuente: re-sembrar sobrescribe la caché sin riesgo.
+          seedSessionCatalogs(sessionData);
+          set({ sessionData: { user: sessionData.user } });
         } catch (error: unknown) {
           if (isAxiosError(error) && error.response?.status === 401) {
             get().logout();
             return;
           }
 
-          const errorMessage = extractErrorMessage(error, 'Error al actualizar datos del usuario');
-
-          set({
-            isLoading: false,
-            error: errorMessage
-          });
+          // Red o 5xx: se conservan `token` y `user` persistidos y la caché, sin tocar `isLoading` ni
+          // `error` — esta revalidación es silenciosa, no debe parpadear la UI.
         }
       },
 
-      setSubjects: (subjects) => {
-        set((state) => ({
-          sessionData: state.sessionData
-            ? { ...state.sessionData, subjects }
-            : null
-        }));
-      },
-
-      setPeriods: (periods) => {
-        set((state) => ({
-          sessionData: state.sessionData
-            ? { ...state.sessionData, periods }
-            : null
-        }));
-      },
-
-      setEnabledReports: (enabledReports) => {
-        set((state) => ({
-          sessionData: state.sessionData
-            ? { ...state.sessionData, enabledReports }
-            : null
-        }));
+      dismissWelcomeLoader: () => {
+        set({ showWelcomeLoader: false });
       }
     }),
     {
       name: 'quartz-session',
+      // v0 guardaba `sessionData` con catálogos. `migrate` conserva `token` + `user` (sin re-login)
+      // y descarta los catálogos; sin él, el cambio de versión tiraría la sesión guardada.
+      version: 1,
+      migrate: (persisted) => {
+        const old = persisted as { token?: string | null; sessionData?: { user?: SessionUser } | null };
+        return {
+          token: old.token ?? null,
+          sessionData: old.sessionData?.user ? { user: old.sessionData.user } : null,
+        } as AuthState;
+      },
       partialize: (state) => ({
         token: state.token,
         sessionData: state.sessionData

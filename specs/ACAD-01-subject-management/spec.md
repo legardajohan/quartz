@@ -1,7 +1,7 @@
 ---
 id: ACAD-01-subject-management
 feature: subject-management
-status: implemented
+status: released
 created: 2026-07-15
 ---
 

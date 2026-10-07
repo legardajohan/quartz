@@ -1,55 +1,84 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Typography } from "@material-tailwind/react";
 import { PlusIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { useLearningStore } from "../useLearningStore";
-import { useAuthStore } from "../../auth/useAuthStore";
+import { extractErrorMessage } from "@/api/apiClient";
+import { isNotFound, isVersionConflict } from "@/api/withErrorMessage";
+import ConflictNotice, { type ConflictChange } from "@/components/common/ConflictNotice";
+import { diffLearning } from "@/lib/diffChanges";
+import {
+  useLearningsQuery,
+  learningKeys,
+  useCreateLearningMutation,
+  useUpdateLearningMutation,
+  useDeleteLearningMutation,
+} from "../queries/useLearningsQuery";
+import { usePeriodsQuery } from "../../period/queries/usePeriodsQuery";
+import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
+import type { PeriodDto } from "../../period/types";
+import type { Subject } from "@/types/domain";
+import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
+import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import { FormModal } from "../../../components/common/FormModal";
+import SearchFilterBar, { type FilterGroup } from "../../../components/common/SearchFilterBar";
 import { Learning, NewLearning, UpdateLearning } from "../types";
-import { LearningForm } from "../components/LearningForm";
+import { LearningForm, type LearningFormData } from "../components/LearningForm";
 import { LearningsTable } from "../components/LearningsTable";
-import { LearningsFilters } from "../components/LearningsFilters";
 import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
+import { normalizeText } from "../../../utils/normalizeText";
+import { useTableFilters } from "@/stores/useTableFiltersStore";
+
+const NO_LEARNINGS: Learning[] = [];
+const NO_PERIODS: PeriodDto[] = [];
+const NO_SUBJECTS: Subject[] = [];
+
+interface LearningConflict {
+  current: Learning;
+  changes: ConflictChange[];
+}
 
 export default function LearningsPage() {
-  const { learnings, isLoading, isSubmitting, error, createLearning, updateLearning, deleteLearning } =
-    useLearningStore();
-  const { sessionData } = useAuthStore();
+  const { data: learnings = NO_LEARNINGS, isPending: isLoading, error: queryError } = useLearningsQuery();
+  const createMutation = useCreateLearningMutation();
+  const queryClient = useQueryClient();
+  const updateMutation = useUpdateLearningMutation();
+  const deleteMutation = useDeleteLearningMutation();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const error = queryError ? extractErrorMessage(queryError, "Falló la carga de aprendizajes.") : null;
+  const { isAreaLead } = usePermissions();
 
-  const subjects = sessionData?.subjects ?? [];
-  const periods = sessionData?.periods ?? [];
+  const { data: subjects = NO_SUBJECTS } = useSubjectsQuery();
+  // Tras F5 la lista llega después del primer render: el default de periodo activo espera a ella.
+  const { data: periods = NO_PERIODS } = usePeriodsQuery();
+  const activePeriod = useActivePeriod();
+  const axis = useSubjectAxisLabel();
 
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isFormModalOpen, setFormModalOpen] = useState(false);
-  const [learningFormData, setLearningFormData] = useState<Omit<NewLearning, 'grade'> | null>(null);
+  const [learningFormData, setLearningFormData] = useState<LearningFormData | null>(null);
   const [selectedLearning, setSelectedLearning] = useState<Learning | null>(null);
   const [learningToDelete, setLearningToDelete] = useState<Learning | null>(null);
   const [isFormDirty, setIsFormDirty] = useState(false);
+  // Versión con la que se empezó a editar: una revalidación en segundo plano no la cambia; solo un conflicto.
+  const [editBase, setEditBase] = useState<Learning | null>(null);
+  const [conflict, setConflict] = useState<LearningConflict | null>(null);
 
-  // Filters
-  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  // Búsqueda, filtros y página sobreviven a la navegación (store de UI, en memoria).
+  const table = useTableFilters("learnings");
+  const { search, initDefaults } = table;
+  const selectedPeriods = table.selectedOf("period");
+  const selectedSubjects = table.selectedOf("subject");
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const hasInitializedFilter = useRef(false);
-
+  // Default de periodo activo: una vez por sesión; si el usuario lo quita, no se re-aplica.
   useEffect(() => {
-    useLearningStore.getState().fetchLearnings();
-  }, []);
-
-  // Set default active period filter
-  useEffect(() => {
-    if (!hasInitializedFilter.current && periods.length > 0) {
-      const activePeriod = periods.find(p => p.isActive);
-      if (activePeriod) {
-        setSelectedPeriods([activePeriod._id]);
-      }
-      hasInitializedFilter.current = true;
+    if (periods.length > 0) {
+      initDefaults(activePeriod ? { period: [activePeriod._id] } : {});
     }
-  }, [periods]);
+  }, [periods, activePeriod, initDefaults]);
 
   const handleOpenCreateModal = () => {
     setSelectedLearning(null);
@@ -58,6 +87,8 @@ export default function LearningsPage() {
 
   const handleEdit = (learning: Learning) => {
     setSelectedLearning(learning);
+    setEditBase(learning);
+    setConflict(null);
     setFormModalOpen(true);
   };
 
@@ -71,13 +102,15 @@ export default function LearningsPage() {
     setLearningToDelete(null);
     setFormModalOpen(false);
     setSelectedLearning(null);
+    setEditBase(null);
+    setConflict(null);
     setIsFormDirty(false);
   };
 
   const handleConfirmDelete = () => {
     if (!learningToDelete) return;
 
-    const promise = deleteLearning(learningToDelete._id);
+    const promise = deleteMutation.mutateAsync(learningToDelete._id);
     toast.promise(promise, {
       loading: "Eliminando aprendizaje...",
       success: <b>Aprendizaje eliminado con éxito</b>,
@@ -86,72 +119,112 @@ export default function LearningsPage() {
     handleCloseModals();
   };
 
-  const handleFormChange = useCallback((formData: Omit<NewLearning, 'grade'>, isDirty: boolean) => {
+  const handleFormChange = useCallback((formData: LearningFormData, isDirty: boolean) => {
     setLearningFormData(formData);
     setIsFormDirty(isDirty);
   }, []);
 
+  // Guarda la edición sobre la `version` de `base`. Un conflicto no cierra el modal ni muestra
+  // toast de error: deja el borrador intacto y abre el aviso en línea.
+  const saveEdit = async (base: Learning, successMessage: string) => {
+    if (!learningFormData || !learningFormData.grade) return;
+    const toastId = toast.loading("Actualizando aprendizaje...");
+    const data: UpdateLearning = { ...learningFormData, grade: learningFormData.grade, version: base.version };
+    try {
+      await updateMutation.mutateAsync({ id: base._id, data });
+      toast.success(successMessage, { id: toastId });
+      handleCloseModals();
+    } catch (err: unknown) {
+      if (isVersionConflict(err)) {
+        const list = queryClient.getQueryData<Learning[]>(learningKeys.list());
+        const current = list?.find((l) => l._id === base._id);
+        if (current) {
+          toast.dismiss(toastId);
+          setConflict({ current, changes: diffLearning(base, current) });
+          setEditBase(base);
+          return;
+        }
+      }
+      if (isNotFound(err)) {
+        toast.error("Este aprendizaje ya no existe: otra persona lo eliminó. La lista se actualizó.", { id: toastId });
+        handleCloseModals();
+        return;
+      }
+      toast.error(err instanceof Error ? err.message : "Falló la actualización del aprendizaje.", { id: toastId });
+      handleCloseModals();
+    }
+  };
+
+  const handleKeepMine = () => {
+    if (!conflict) return;
+    void saveEdit(conflict.current, "Cambios guardados");
+  };
+
+  const handleUseCurrent = () => {
+    if (!conflict) return;
+    const { current } = conflict;
+    setSelectedLearning(current);
+    setEditBase(current);
+    setConflict(null);
+    toast.success("Se cargó la versión actual");
+  };
+
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!learningFormData || !learningFormData.subjectId || !learningFormData.periodId || !learningFormData.description) {
+    if (!learningFormData || !learningFormData.subjectId || !learningFormData.periodId || !learningFormData.description || !learningFormData.grade) {
       toast.error("Por favor, completa todos los campos del formulario.");
       return;
     }
 
-    let promise;
-    if (selectedLearning) {
-      const learningToUpdate: UpdateLearning = {
-        ...learningFormData,
-      };
-      promise = updateLearning(selectedLearning._id, learningToUpdate);
-      toast.promise(promise, {
-        loading: "Actualizando aprendizaje...",
-        success: <b>¡Aprendizaje actualizado con éxito!</b>,
-        error: (err) => <b>{err.toString()}</b>,
-      });
-    } else {
-      const learningToCreate: NewLearning = {
-        ...learningFormData,
-        grade: "Transición",
-      };
-      promise = createLearning(learningToCreate);
-      toast.promise(promise, {
-        loading: "Creando aprendizaje...",
-        success: <b>¡Aprendizaje creado con éxito!</b>,
-        error: (err) => <b>{err.toString()}</b>,
-      });
+    if (selectedLearning && editBase) {
+      void saveEdit(editBase, "¡Aprendizaje actualizado con éxito!");
+      return;
     }
+
+    const learningToCreate: NewLearning = {
+      ...learningFormData,
+      grade: learningFormData.grade,
+    };
+    const promise = createMutation.mutateAsync(learningToCreate);
+    toast.promise(promise, {
+      loading: "Creando aprendizaje...",
+      success: <b>¡Aprendizaje creado con éxito!</b>,
+      error: (err) => <b>{err.toString()}</b>,
+    });
 
     handleCloseModals();
   };
 
-  const togglePeriodFilter = (periodId: string) => {
-    setSelectedPeriods(prev =>
-      prev.includes(periodId)
-        ? prev.filter(id => id !== periodId)
-        : [...prev, periodId]
-    );
-    setCurrentPage(1);
-  };
-
-  const toggleSubjectFilter = (subjectId: string) => {
-    setSelectedSubjects(prev =>
-      prev.includes(subjectId)
-        ? prev.filter(id => id !== subjectId)
-        : [...prev, subjectId]
-    );
-    setCurrentPage(1);
-  };
-
   const filteredLearnings = useMemo(() => {
+    const term = normalizeText(search);
     return learnings.filter(learning => {
+      const matchSearch = term === "" || normalizeText(learning.description).includes(term);
       const matchPeriod = selectedPeriods.length === 0 || selectedPeriods.includes(learning.period._id);
       const matchSubject = selectedSubjects.length === 0 || selectedSubjects.includes(learning.subject._id);
-      return matchPeriod && matchSubject;
+      return matchSearch && matchPeriod && matchSubject;
     });
-  }, [learnings, selectedPeriods, selectedSubjects]);
+  }, [learnings, search, selectedPeriods, selectedSubjects]);
+
+  const learningFilterGroups: FilterGroup[] = [
+    {
+      id: "period",
+      label: "Periodo",
+      options: periods.map((period) => ({ value: period._id, label: period.name })),
+      selected: selectedPeriods,
+      onToggle: table.toggle("period"),
+    },
+    {
+      id: "subject",
+      label: axis.plural,
+      options: subjects.map((subject) => ({ value: subject._id, label: subject.name })),
+      selected: selectedSubjects,
+      onToggle: table.toggle("subject"),
+    },
+  ];
 
   const totalPages = Math.ceil(filteredLearnings.length / ITEMS_PER_PAGE);
+  // La página guardada puede quedar fuera de rango si la lista se reduce (p. ej. tras eliminar).
+  const currentPage = Math.max(1, Math.min(table.page, totalPages));
   const paginatedLearnings = filteredLearnings.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -169,23 +242,12 @@ export default function LearningsPage() {
   return (
     <>
       <div className="w-full relative">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-purple-900">
-              Gestión de Aprendizajes Esperados
-            </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold text-purple-900">
+            Gestión de Aprendizajes Esperados
+          </h1>
 
-            <LearningsFilters
-              periods={periods}
-              subjects={subjects}
-              selectedPeriods={selectedPeriods}
-              selectedSubjects={selectedSubjects}
-              onTogglePeriod={togglePeriodFilter}
-              onToggleSubject={toggleSubjectFilter}
-            />
-          </div>
-
-          {!isDescriptionModeSelected && (
+          {isAreaLead && !isDescriptionModeSelected && (
             <button
               onClick={handleOpenCreateModal}
               aria-label="Crear nuevo aprendizaje"
@@ -195,6 +257,15 @@ export default function LearningsPage() {
               Crear
             </button>
           )}
+        </div>
+
+        <div className="mb-6 flex">
+          <SearchFilterBar
+            search={search}
+            onSearchChange={table.setSearch}
+            placeholder="Buscar aprendizaje"
+            groups={learningFilterGroups}
+          />
         </div>
 
         {error && <p className="mt-4 text-red-500">{error}</p>}
@@ -208,7 +279,7 @@ export default function LearningsPage() {
               Descripción personalizada del desempeño por parte del docente
             </Typography>
             <Typography variant="small" className="max-w-md text-gray-500">
-              Esta dimensión no gestiona aprendizajes: se valora con una descripción libre del desempeño en la Lista de Chequeo.
+              {axis.singular} sin aprendizajes: se valora con una descripción libre del desempeño en la Lista de Chequeo.
             </Typography>
           </div>
         ) : (
@@ -216,9 +287,10 @@ export default function LearningsPage() {
             learnings={paginatedLearnings}
             currentPage={currentPage}
             totalPages={totalPages}
-            onNextPage={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            onPrevPage={() => setCurrentPage(p => Math.max(1, p - 1))}
+            onNextPage={() => table.setPage(Math.min(totalPages, currentPage + 1))}
+            onPrevPage={() => table.setPage(Math.max(1, currentPage - 1))}
             isLoading={isLoading}
+            canManage={isAreaLead}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
@@ -243,7 +315,17 @@ export default function LearningsPage() {
         submitText={!isEditMode ? "Crear Aprendizaje" : "Actualizar"}
         isSubmitting={isSubmitting}
         isSubmitDisabled={isSubmitDisabled}
+        hideSubmit={!!conflict}
       >
+        {conflict && (
+          <ConflictNotice
+            title="Otra persona actualizó este aprendizaje"
+            changes={conflict.changes}
+            isSaving={updateMutation.isPending}
+            onKeepMine={handleKeepMine}
+            onUseCurrent={handleUseCurrent}
+          />
+        )}
         <LearningForm
           initialData={selectedLearning}
           onFormChange={handleFormChange}

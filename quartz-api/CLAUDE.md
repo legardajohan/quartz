@@ -1,6 +1,6 @@
 # quartz-api
 
-> **Sistema:** Quartz — Gestión académica para la **evaluación cualitativa** de estudiantes del grado **Transición**.
+> **Sistema:** Quartz — Gestión académica para la **evaluación cualitativa** de estudiantes de **Preescolar** (Prejardín · Jardín · Transición, según `settings.offeredLevels` de la institución).
 > **Dominio y datos:** reglas de negocio en [`docs/domain.md`](../docs/domain.md); modelo de colecciones en [`docs/data-model.md`](../docs/data-model.md) (la verdad de campos vive en los `*.model.ts`).
 
 ## Arquitectura
@@ -57,6 +57,10 @@ Nunca aceptar `institutionId` del body/params.
 ## Convención de export
 - Routers: `export default router`.
 - Controllers/Services: *named exports* (`export async function`).
+
+## Incidentes conocidos
+Bugs no obvios ya diagnosticados, para no repetirlos: [`docs/known-issues.md`](docs/known-issues.md).
+Antes de escribir un schema Zod nuevo, revisar la entrada sobre dónde va `.strict()`.
 
 ## Verificación
 `npx tsc --noEmit`

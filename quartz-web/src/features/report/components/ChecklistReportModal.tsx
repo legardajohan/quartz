@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { Dialog, DialogHeader, DialogBody, IconButton, Button, Typography } from "@material-tailwind/react";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import ChecklistReportDocument from "./ChecklistReportDocument";
 import { Loading } from "../../../components/ui/Loading";
-import { useReportStore } from "../useReportStore";
+import { useChecklistReportQuery } from "../queries/useReportQuery";
+import { extractErrorMessage } from "../../../api/apiClient";
+import { useReportPdf } from "../useReportPdf";
+import { useInstitutionShieldQuery } from "@/features/institution/queries/useInstitutionShieldQuery";
 
 interface ChecklistReportModalProps {
   open: boolean;
@@ -19,18 +21,28 @@ export default function ChecklistReportModal({
   studentName,
   onClose,
 }: ChecklistReportModalProps) {
-  const { currentReport, isReportLoading, reportError, fetchChecklistReport, clearReport } = useReportStore();
+  // Cerrar el modal no descarta la caché: reabrirlo pinta el reporte y revalida en segundo plano.
+  const report = useChecklistReportQuery(valuationId, { enabled: open });
+  const shield = useInstitutionShieldQuery();
 
-  useEffect(() => {
-    if (open && valuationId) {
-      fetchChecklistReport(valuationId);
-    }
-    if (!open) {
-      clearReport();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, valuationId]);
+  const currentReport = report.data;
+  const isReportLoading = report.isPending;
+  const reportError =
+    report.error && !currentReport ? extractErrorMessage(report.error, "Falló la carga del informe.") : null;
 
+  // Memoizado para que un re-render del modal no regenere el PDF: `useReportPdf` reacciona a la
+  // identidad del elemento, no a su contenido.
+  const pdfDocument = useMemo(
+    () =>
+      currentReport && !isReportLoading && !shield.isLoading ? (
+        <ChecklistReportDocument report={currentReport} shieldSrc={shield.src} />
+      ) : null,
+    [currentReport, isReportLoading, shield.isLoading, shield.src]
+  );
+
+  const pdf = useReportPdf(pdfDocument);
+
+  const errorMessage = reportError ?? pdf.error;
   const fileName = `lista-chequeo-${studentName.trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
 
   return (
@@ -40,18 +52,15 @@ export default function ChecklistReportModal({
           Lista de Chequeo · {studentName}
         </Typography>
         <div className="flex items-center gap-2">
-          {currentReport && (
-            <PDFDownloadLink
-              document={<ChecklistReportDocument report={currentReport} />}
-              fileName={fileName}
-            >
-              {({ loading }) => (
-                <Button size="sm" color="purple" className="flex items-center gap-2" disabled={loading}>
-                  <ArrowDownTrayIcon className="h-4 w-4" />
-                  {loading ? "Preparando…" : "Descargar PDF"}
-                </Button>
-              )}
-            </PDFDownloadLink>
+          {/* Misma estructura que producía `PDFDownloadLink`: un <a download> envolviendo el
+              botón, pero apuntando al único blob que ya generó `useReportPdf`. */}
+          {pdf.isReady && pdf.url && (
+            <a href={pdf.url} download={fileName}>
+              <Button size="sm" color="purple" className="flex items-center gap-2">
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                Descargar PDF
+              </Button>
+            </a>
           )}
           <IconButton variant="text" size="sm" onClick={onClose} className="text-blue-gray-500">
             <XMarkIcon className="h-5 w-5" />
@@ -59,22 +68,24 @@ export default function ChecklistReportModal({
         </div>
       </DialogHeader>
       <DialogBody className="h-[80vh] p-0">
-        {isReportLoading && (
+        {!pdf.isReady && !errorMessage && (
           <div className="flex h-full items-center justify-center">
             <Loading message="Generando vista previa…" />
           </div>
         )}
-        {reportError && !isReportLoading && (
+        {errorMessage && !isReportLoading && (
           <div className="flex h-full items-center justify-center px-6 text-center">
             <Typography color="red" className="font-normal">
-              {reportError}
+              {errorMessage}
             </Typography>
           </div>
         )}
-        {currentReport && !isReportLoading && !reportError && (
-          <PDFViewer width="100%" height="100%" showToolbar={false} style={{ border: "none" }}>
-            <ChecklistReportDocument report={currentReport} />
-          </PDFViewer>
+        {pdf.isReady && pdf.url && (
+          <iframe
+            src={`${pdf.url}#toolbar=0`}
+            title={`Lista de Chequeo · ${studentName}`}
+            className="h-full w-full border-none"
+          />
         )}
       </DialogBody>
     </Dialog>

@@ -1,4 +1,6 @@
-import { GlobalValuationStatus, IValuationBySubjectDTO } from "../student-valuation/student-valuation.types";
+import { GlobalValuationStatus, IValuationBySubjectDTO, QualitativeValuation } from "../student-valuation/student-valuation.types";
+import { SubjectEvaluationMode } from "../subject/subject.types";
+import { GradeLevel } from "../auth/auth.types";
 
 // Definicion de interfaces de evaluacion de estudiante
 
@@ -9,7 +11,7 @@ export interface IInstitution {
     address: string;
     rectorName: string;
     email: string;
-    shield?: string; // URL del escudo. Sin mecanismo de subida aun: el informe reserva el espacio.
+    shield?: string;
 }
 
 export interface IPeriod {
@@ -62,4 +64,76 @@ export interface IReportTemplate {
     student: IStudent;
     valuation: IStudentValuation;
     generatedAt: string; // Fecha de generación/impresión (ISO), calculada al momento de la petición
+}
+
+// Interfaces de la Carta Comunicativa
+
+export interface ILetterConceptOption {
+    _id: string;
+    description: string;
+}
+
+export interface ILetterSubjectBlock {
+    subjectId: string;
+    subjectName: string;
+    evaluationMode: SubjectEvaluationMode;
+    valuationType: QualitativeValuation | null; // null en modo description
+    subjectPercentage: number;
+    assignedConceptId: string | null;
+    conceptText: string; // texto del concepto asignado, o performanceDescription en modo description
+    availableConcepts: ILetterConceptOption[]; // [] en modo description
+}
+
+export interface ICommunicativeLetterTemplate {
+    _id: string;
+    institution: IInstitution;
+    period: IPeriod;
+    teacher: ITeacher;
+    student: IStudent;
+    subjects: ILetterSubjectBlock[];
+    observations: string | null;
+    version: number;
+    generatedAt: string;
+}
+
+export interface IMissingConceptCoverage {
+    subjectId: string;
+    subjectName: string;
+    missingValuationTypes: QualitativeValuation[];
+}
+
+export interface ILetterAvailability {
+    periodId: string;
+    isAvailable: boolean;
+    missing: IMissingConceptCoverage[];
+}
+
+// Interfaces de lote (RPT-07)
+
+export type BulkReportSkipReason =
+    | 'not-found'         // no existe, o no pertenece al inquilino del token
+    | 'not-completed'     // globalStatus !== Evaluado
+    | 'forbidden-school'  // Docente pidiendo estudiante de otra sede
+    | 'missing-concepts'; // solo carta: findMissingConceptCoverage encontró faltantes
+
+export interface IBulkReportSkip {
+    valuationId: string;
+    reason: BulkReportSkipReason;
+}
+
+export interface IBulkChecklistReportResponse {
+    reports: IReportTemplate[];
+    skipped: IBulkReportSkip[];
+}
+
+export interface IBulkCommunicativeLetterResponse {
+    reports: ICommunicativeLetterTemplate[];
+    skipped: IBulkReportSkip[];
+}
+
+export interface IConsolidatedReportFilters {
+    schoolId?: string;   // ignorado y sobrescrito por el service si requestorRole === DOCENTE
+    grade: GradeLevel;
+    shiftId?: string;    // ausente/omitido = todas las jornadas
+    periodId: string;
 }

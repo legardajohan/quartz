@@ -20,6 +20,7 @@ export interface IValuationBySubject {
   maxSubjectScore: number;
   subjectPercentage: number;
   assignedConceptId?: Types.ObjectId;
+  assignedConceptText?: string | null;
 }
 
 // Interface for the StudentValuation document
@@ -33,6 +34,7 @@ export interface IStudentValuationDocument extends Document {
   globalStatus: GlobalValuationStatus | null;
   valuationsBySubject: IValuationBySubject[];
   observations: string | null;
+  __v?: number;
 }
 
 const learningValuationSchema = new Schema<ILearningValuation>({
@@ -49,7 +51,8 @@ const valuationBySubjectSchema = new Schema<IValuationBySubject>({
   totalSubjectScore: { type: Number, default: 0 },
   maxSubjectScore: { type: Number, default: 0 },
   subjectPercentage: { type: Number, default: 0 },
-  assignedConceptId: { type: Schema.Types.ObjectId, ref: 'Concept' }
+  assignedConceptId: { type: Schema.Types.ObjectId, ref: 'Concept' },
+  assignedConceptText: { type: String, default: null }
 }, { _id: false });
 
 const studentValuationSchema = new Schema<IStudentValuationDocument>({
@@ -63,9 +66,13 @@ const studentValuationSchema = new Schema<IStudentValuationDocument>({
   observations: { type: String, default: null }
 }, {
   timestamps: true,
+  optimisticConcurrency: true,
 });
 
 // Compound unique index to ensure one valuation per student per period
 studentValuationSchema.index({ studentId: 1, periodId: 1 }, { unique: true });
+
+// Soporta el $match del $facet del dashboard y la agregación de tendencia (INF-04).
+studentValuationSchema.index({ institutionId: 1, periodId: 1, studentId: 1 });
 
 export const StudentValuationModel = model<IStudentValuationDocument>('StudentValuation', studentValuationSchema, 'studentValuations');

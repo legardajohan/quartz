@@ -13,10 +13,10 @@ import { Subject } from '../subject/subject.model';
 import { SubjectType, SubjectEvaluationMode } from '../subject/subject.types';
 import { User } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
+import { getOfferedLevels } from '../institution/institution.service';
 import type {
   CreateChecklistTemplateData,
   UpdateChecklistTemplateData,
-  IChecklistTemplateForSession,
   SubjectSnapshotData,
 } from './checklist-template.types';
 import AppError from '../../utils/AppError';
@@ -66,28 +66,16 @@ export async function getChecklistTemplates(
   userId: string,
   userRole: UserRole
 ): Promise<IChecklistTemplateDocument[]> {
-  const filter: FilterQuery<IChecklistTemplateDocument> = {};
+  const offeredLevels = await getOfferedLevels(institutionId);
+  // Plantillas de un nivel retirado se conservan en BD pero no se listan; reaparecen si el nivel
+  // vuelve a ofrecerse.
+  const filter: FilterQuery<IChecklistTemplateDocument> = { grade: { $in: offeredLevels } };
   if (userRole === UserRole.DOCENTE) {
     filter.teacherId = new Types.ObjectId(userId);
   }
   return populateTemplateDetails(
     findScoped(ChecklistTemplateModel, institutionId, filter)
   ).exec();
-}
-
-export async function getChecklistTemplatesForSession(
-  teacherId: string,
-  institutionId: string
-): Promise<IChecklistTemplateForSession[]> {
-  const templates = await findScoped(ChecklistTemplateModel, institutionId, { teacherId })
-    .select('_id name periodId')
-    .lean();
-
-  return templates.map((t) => ({
-    _id: (t._id as Types.ObjectId).toString(),
-    name: (t as any).name,
-    periodId: (t as any).periodId.toString(),
-  }));
 }
 
 export async function createChecklistTemplate(

@@ -1,16 +1,44 @@
 import { Request, Response } from 'express';
-import { getUsersByFilters, uploadStudentPhoto } from './users.service';
+import {
+  getUsersByFilters,
+  createUser,
+  updateUser,
+  deleteUser,
+  uploadUserPhoto,
+  getOwnProfile,
+  updateOwnProfile,
+  changeOwnPassword,
+  uploadOwnPhoto,
+  resendInvitation,
+} from './users.service';
+import {
+  buildImportTemplate,
+  previewImport,
+  confirmImport,
+  getImportTemplateFilename,
+} from './users-import.service';
+import {
+  CreateUserDTO,
+  UpdateUserDTO,
+  UpdateOwnProfileDTO,
+  ChangeOwnPasswordDTO,
+  StaffRole,
+  ImportKind,
+  ImportRowDTO,
+} from './users.types';
 import AppError from '../../utils/AppError';
 
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
   const sessionUser = req.user!;
-  const { id, role, schoolId } = req.query as { id?: string; role?: string; schoolId?: string };
+  const { id, role, roles, schoolId } = req.query as { id?: string; role?: string; roles?: string; schoolId?: string };
   const institutionId = sessionUser.institutionId.toString();
 
   const users = await getUsersByFilters({
     institutionId,
     id,
     role,
+    // `validate()` no reescribe `req.query`: el CSV ya validado se separa aquí.
+    roles: roles ? (roles.split(',') as StaffRole[]) : undefined,
     schoolId,
     requestorRole: sessionUser.role,
     requestorSchoolId: sessionUser.schoolId?.toString(),
@@ -19,19 +47,111 @@ export const getUsers = async (req: Request, res: Response) => {
   res.status(200).json(users);
 };
 
-export const uploadStudentPhotoController = async (req: Request, res: Response) => {
+export const createUserController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const created = await createUser(institutionId, req.body as CreateUserDTO);
+  res.status(201).json(created);
+};
+
+export const updateUserController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { userId } = req.params;
+  const updated = await updateUser(institutionId, userId, req.body as UpdateUserDTO, {
+    userId: req.user!._id.toString(),
+    role: req.user!.role,
+    schoolId: req.user!.schoolId?.toString(),
+  });
+  res.status(200).json(updated);
+};
+
+export const deleteUserController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { userId } = req.params;
+  await deleteUser(institutionId, userId, req.user!._id.toString());
+  res.status(204).send();
+};
+
+export const resendInvitationController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { userId } = req.params;
+  await resendInvitation(institutionId, userId, req.user!._id.toString());
+  res.status(204).send();
+};
+
+export const uploadUserPhotoController = async (req: Request, res: Response): Promise<void> => {
   if (!req.file) {
     throw new AppError('Debe adjuntar una imagen.', 422);
   }
 
   const sessionUser = req.user!;
   const institutionId = sessionUser.institutionId.toString();
-  const { studentId } = req.params;
+  const { userId } = req.params;
 
-  const student = await uploadStudentPhoto(institutionId, studentId, req.file, {
+  const user = await uploadUserPhoto(institutionId, userId, req.file, {
     role: sessionUser.role,
     schoolId: sessionUser.schoolId?.toString(),
   });
 
-  res.status(200).json(student);
+  res.status(200).json(user);
+};
+
+// ─── Cargue masivo (USR-05) ──────────────────────────────────────────────────
+
+const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+export const getImportTemplateController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { kind } = req.query as { kind: ImportKind };
+  const buffer = await buildImportTemplate(institutionId, kind);
+
+  res.setHeader('Content-Type', XLSX_CONTENT_TYPE);
+  res.setHeader('Content-Disposition', `attachment; filename="${getImportTemplateFilename(kind)}"`);
+  res.send(buffer);
+};
+
+export const previewImportController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { kind } = req.query as { kind: ImportKind };
+  const preview = await previewImport(institutionId, kind, req.file!.buffer);
+  res.status(200).json(preview);
+};
+
+export const confirmImportController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const { kind, rows } = req.body as { kind: ImportKind; rows: ImportRowDTO[] };
+  const result = await confirmImport(institutionId, kind, rows);
+  res.status(201).json(result);
+};
+
+// ─── Mi cuenta (USR-03): el usuario objetivo es siempre el del token ─────────
+
+export const getOwnProfileController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const profile = await getOwnProfile(institutionId, req.user!._id.toString());
+  res.status(200).json(profile);
+};
+
+export const updateOwnProfileController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  const profile = await updateOwnProfile(institutionId, req.body as UpdateOwnProfileDTO, {
+    userId: req.user!._id.toString(),
+    role: req.user!.role,
+  });
+  res.status(200).json(profile);
+};
+
+export const changeOwnPasswordController = async (req: Request, res: Response): Promise<void> => {
+  const institutionId = req.user!.institutionId.toString();
+  await changeOwnPassword(institutionId, req.user!._id.toString(), req.body as ChangeOwnPasswordDTO);
+  res.status(204).send();
+};
+
+export const uploadOwnPhotoController = async (req: Request, res: Response): Promise<void> => {
+  if (!req.file) {
+    throw new AppError('Debe adjuntar una imagen.', 422);
+  }
+
+  const institutionId = req.user!.institutionId.toString();
+  const profile = await uploadOwnPhoto(institutionId, req.user!._id.toString(), req.file);
+  res.status(200).json(profile);
 };

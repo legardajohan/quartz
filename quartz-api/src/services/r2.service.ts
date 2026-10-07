@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
 interface R2Config {
   client: S3Client;
@@ -54,6 +54,20 @@ export async function uploadImage(key: string, buffer: Buffer, contentType: stri
   );
 
   return `${publicBaseUrl}/${key}`;
+}
+
+export async function getImage(key: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const { client, bucket } = getConfig();
+
+  try {
+    const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    if (!result.Body) return null;
+
+    const buffer = Buffer.from(await result.Body.transformToByteArray());
+    return { buffer, contentType: result.ContentType ?? 'application/octet-stream' };
+  } catch {
+    return null;
+  }
 }
 
 export async function deleteImage(key: string): Promise<void> {

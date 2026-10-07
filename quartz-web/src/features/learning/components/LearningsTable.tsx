@@ -5,6 +5,7 @@ import {
 } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { DataTable, Column } from "../../../components/common/DataTable";
+import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
 import { Learning } from "../types";
 
 interface LearningsTableProps {
@@ -14,6 +15,7 @@ interface LearningsTableProps {
     onNextPage: () => void;
     onPrevPage: () => void;
     isLoading: boolean;
+    canManage: boolean;
     onEdit: (learning: Learning) => void;
     onDelete: (learning: Learning) => void;
 }
@@ -25,10 +27,12 @@ export function LearningsTable({
     onNextPage,
     onPrevPage,
     isLoading,
+    canManage,
     onEdit,
     onDelete,
 }: LearningsTableProps) {
-    const columns: Column<Learning>[] = [
+    const axis = useSubjectAxisLabel();
+    const baseColumns: Column<Learning>[] = [
         {
             header: "Descripción",
             accessor: (item) => (
@@ -68,40 +72,46 @@ export function LearningsTable({
             ),
         },
         {
-            header: "Dimensión",
+            header: axis.singular,
             accessor: (item) => (
                 <Typography variant="small" className="font-normal min-w-[50px]">
                     {item.subject.name}
                 </Typography>
             ),
         },
-        {
-            header: "Acciones",
-            accessor: (item) => (
-                <div className="flex items-center gap-2 min-w-[50px]">
-                    <Tooltip content="Editar" size="sm">
-                        <IconButton
-                            size="sm"
-                            color="white"
-                            className="text-gray-600 shadow-none hover:shadow-md hover:text-green-500 transition-all border border-gray-200"
-                            onClick={() => onEdit(item)}
-                        >
-                            <PencilIcon className="h-4 w-4" />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip content="Eliminar" size="sm">
-                        <IconButton
-                            size="sm"
-                            color="white"
-                            className="text-gray-600 shadow-none hover:shadow-md hover:text-pink-500 transition-all border border-gray-200"
-                            onClick={() => onDelete(item)}
-                        >
-                            <TrashIcon className="h-4 w-4" />
-                        </IconButton>
-                    </Tooltip>
-                </div>
-            ),
-        },
+    ];
+
+    const actionsColumn: Column<Learning> = {
+        header: "Acciones",
+        accessor: (item) => (
+            <div className="flex items-center gap-2 min-w-[50px]">
+                <Tooltip content="Editar" size="sm">
+                    <IconButton
+                        size="sm"
+                        color="white"
+                        className="text-gray-600 shadow-none hover:shadow-md hover:text-green-500 transition-all border border-gray-200"
+                        onClick={() => onEdit(item)}
+                    >
+                        <PencilIcon className="h-4 w-4" />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip content="Eliminar" size="sm">
+                    <IconButton
+                        size="sm"
+                        color="white"
+                        className="text-gray-600 shadow-none hover:shadow-md hover:text-pink-500 transition-all border border-gray-200"
+                        onClick={() => onDelete(item)}
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                    </IconButton>
+                </Tooltip>
+            </div>
+        ),
+    };
+
+    const columns: Column<Learning>[] = [
+        ...baseColumns,
+        ...(canManage ? [actionsColumn] : []),
     ];
 
     return (

@@ -1,7 +1,7 @@
 ---
 id: ACAD-03-image-uploads
 feature: image-uploads
-status: implemented        # draft | approved | implemented | released
+status: released           # draft | approved | implemented | released
 created: 2026-07-16
 ---
 

@@ -5,8 +5,11 @@ import {
     Chip,
 } from "@material-tailwind/react";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { LockClosedIcon } from "@heroicons/react/24/outline";
 import { DataTable, Column } from "../../../components/common/DataTable";
-import { ConceptDto, QualitativeValuation } from "../types";
+import { useSubjectAxisLabel } from "../../subject/useSubjectAxisLabel";
+import { ConceptDto } from "../types";
+import type { QualitativeValuation } from "@/types/domain";
 
 const VALUATION_CHIP_COLOR: Record<QualitativeValuation, "green" | "amber" | "red"> = {
     'Logrado': 'green',
@@ -37,6 +40,7 @@ export function ConceptsTable({
     onEdit,
     onDelete,
 }: ConceptsTableProps) {
+    const axis = useSubjectAxisLabel();
     const columns: Column<ConceptDto>[] = [
         {
             header: "Descripción",
@@ -81,7 +85,7 @@ export function ConceptsTable({
             ),
         },
         {
-            header: "Dimensión",
+            header: axis.singular,
             accessor: (item) => (
                 <Typography variant="small" className="font-normal min-w-[50px]">
                     {item.subject.name}
@@ -115,9 +119,15 @@ export function ConceptsTable({
                         </Tooltip>
                     </div>
                 ) : (
-                    <Typography variant="small" className="font-normal text-gray-400 min-w-[50px]">
-                        —
-                    </Typography>
+                    <Tooltip content="Solo su autor puede editarlo" size="sm">
+                        <span
+                            role="img"
+                            aria-label="Solo lectura"
+                            className="flex h-8 w-8 items-center justify-center min-w-[50px] text-blue-gray-300"
+                        >
+                            <LockClosedIcon className="h-4 w-4" />
+                        </span>
+                    </Tooltip>
                 )
             ),
         },

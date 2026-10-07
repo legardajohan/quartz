@@ -16,9 +16,10 @@ import {
   updateConceptSchema,
   deleteConceptSchema,
 } from './concept.validation';
+import { UserRole } from '../auth/auth.types';
 
 const router = Router();
-const allowedRoles = ['Jefe de Área', 'Docente'];
+const allowedRoles = [UserRole.JEFE_DE_AREA, UserRole.DOCENTE];
 
 router.get(
   '/',

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   initializeValuationController,
   updateValuationController,
+  updateValuationConceptsController,
   deleteValuationController,
   getValuationByIdController,
   getValuationsByStudentController,
@@ -52,11 +53,20 @@ router.patch(
   asyncHandler(updateValuationController)
 );
 
+router.patch(
+  '/:valuationId/concepts',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  validate(studentValuationValidation.updateValuationConcepts),
+  asyncHandler(updateValuationConceptsController)
+);
+
 router.delete(
   '/:valuationId',
   authenticateJWT,
   requireTenant,
-  authorize([UserRole.JEFE_DE_AREA]),
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
   validate(studentValuationValidation.deleteValuation),
   asyncHandler(deleteValuationController)
 );

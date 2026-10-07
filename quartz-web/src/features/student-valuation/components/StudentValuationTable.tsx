@@ -1,9 +1,5 @@
-import { ClipboardDocumentListIcon, TrashIcon } from "@heroicons/react/24/solid";
-import {
-    ArrowLeftIcon,
-    ArrowRightIcon,
-    PlusIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { ClipboardCheck, Mail, Plus, Trash2 } from "lucide-react";
 import {
     Avatar,
     Card,
@@ -12,20 +8,15 @@ import {
     IconButton,
     Tooltip,
 } from "@material-tailwind/react";
-import { useStudentValuationStore } from "../useStudentValuationStore";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import toast from "react-hot-toast";
 import { useState } from "react";
 
-import type { UserDto } from "../types/store";
-import {
-    API_STATUS_TO_VALUATION_STATE,
-    ValuationState,
-} from '../types/domain';
+import type { UserDto } from "@/features/users/types";
+import { ITEMS_PER_PAGE } from "../../../components/common/DataTable";
+import { getValuationState } from '../types/domain';
 import { ValuationStatusBadge } from './ValuationStatusBadge';
-import userImage from "../../../assets/images/default-user.jpg";
-
-export const ITEMS_PER_PAGE = 10;
+import { AVATAR_FALLBACK } from "@/constants/assets";
 
 const TABLE_HEAD = [
     "ID",
@@ -40,7 +31,13 @@ const TABLE_HEAD = [
 
 interface StudentValuationTableProps {
     users: UserDto[];
+    isLoading: boolean;
+    error: string | null;
+    onDeleteValuation: (valuationId: string) => Promise<void>;
     onOpenChecklist?: (studentId: string) => void;
+    onViewLetter?: (studentId: string, valuationId: string) => void;
+    isLetterEnabled?: boolean;
+    isLetterAvailable?: boolean;
     currentPage: number;
     totalPages: number;
     onNextPage: () => void;
@@ -48,43 +45,48 @@ interface StudentValuationTableProps {
 }
 import { Loading } from "../../../components/ui/Loading";
 
-export default function StudentValuationTable({ users, onOpenChecklist, currentPage, totalPages, onNextPage, onPrevPage }: StudentValuationTableProps) {
-    const { isLoading, error, deleteValuation } = useStudentValuationStore();
+export default function StudentValuationTable({
+    users,
+    isLoading,
+    error,
+    onDeleteValuation,
+    onOpenChecklist,
+    onViewLetter,
+    isLetterEnabled = false,
+    isLetterAvailable = false,
+    currentPage,
+    totalPages,
+    onNextPage,
+    onPrevPage,
+}: StudentValuationTableProps) {
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedValuationId, setSelectedValuationId] = useState<string | null>(null);
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [selectedStudentName, setSelectedStudentName] = useState<string>("");
 
     const handleOpenChecklist = (studentId: string) => {
         onOpenChecklist?.(studentId);
     };
 
-    const handleDeleteClick = (valuationId: string, userId: string, studentName: string) => {
+    const handleDeleteClick = (valuationId: string, studentName: string) => {
         setSelectedValuationId(valuationId);
-        setSelectedUserId(userId);
         setSelectedStudentName(studentName);
         setDeleteModalOpen(true);
     };
 
     const handleConfirmDelete = async () => {
-        if (!selectedValuationId || !selectedUserId) return;
+        if (!selectedValuationId) return;
 
         try {
-            await deleteValuation(selectedValuationId, selectedUserId);
+            await onDeleteValuation(selectedValuationId);
             setDeleteModalOpen(false);
             toast.success("Evaluación eliminada con éxito");
             setSelectedValuationId(null);
-            setSelectedUserId(null);
             setSelectedStudentName("");
-        } catch (err: any) {
-            toast.error(`Error al eliminar la evaluación: ${err.message}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Error desconocido";
+            toast.error(`Error al eliminar la evaluación: ${message}`);
         }
     };
-
-    const getValuationState = (status: string | null | undefined): ValuationState => {
-        if (!status) return 'NOT_STARTED';
-        return API_STATUS_TO_VALUATION_STATE[status] || 'NOT_STARTED';
-    }
 
     if (isLoading) {
         return (
@@ -150,7 +152,7 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                     </td>
                                     <td className={classes}>
                                         <div className="flex items-center gap-3">
-                                            <Avatar src={user.avatarUrl || userImage} alt="user_imgage" size="sm" />
+                                            <Avatar src={user.avatarUrl || AVATAR_FALLBACK} alt="user_imgage" size="sm" />
                                             <div className="flex flex-col">
                                                 <Typography variant="small" color="blue-gray" className="font-normal">
                                                     {fullLastName}
@@ -207,10 +209,10 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                                     className="shadow-none hover:shadow-md bg-white transition-all border border-gray-200"
                                                 >
                                                     {valuationState === 'NOT_STARTED' ? (
-                                                        <PlusIcon className="h-5 w-5 text-gray-500" />
+                                                        <Plus className="h-5 w-5 text-gray-500" />
                                                     ) : (
 
-                                                        <ClipboardDocumentListIcon
+                                                        <ClipboardCheck
                                                             className={`h-5 w-5 ${valuationState === 'COMPLETED'
                                                                 ? 'text-green-500'
                                                                 : valuationState === 'IN_PROGRESS'
@@ -221,20 +223,44 @@ export default function StudentValuationTable({ users, onOpenChecklist, currentP
                                                     )}
                                                 </IconButton>
                                             </Tooltip>
+                                            {isLetterEnabled && (() => {
+                                                const isLetterReady = valuationState === 'COMPLETED' && isLetterAvailable;
+                                                const letterTooltip = valuationState !== 'COMPLETED'
+                                                    ? "Disponible cuando la evaluación esté completa"
+                                                    : !isLetterAvailable
+                                                        ? "Faltan conceptos por dimensión"
+                                                        : "Ver Carta Comunicativa";
+
+                                                return (
+                                                    <Tooltip content={letterTooltip} size="sm">
+                                                        <span>
+                                                            <IconButton
+                                                                variant="text"
+                                                                disabled={!isLetterReady}
+                                                                onClick={() => user.valuations[0] && onViewLetter?.(user._id, user.valuations[0]._id)}
+                                                                size="sm"
+                                                                color="white"
+                                                                className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                                                            >
+                                                                <Mail className={`h-5 w-5 ${isLetterReady ? 'text-green-500' : 'text-gray-400'}`} />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                );
+                                            })()}
                                             {valuationState !== 'NOT_STARTED' && user.valuations[0]?._id && (
                                                 <Tooltip content="Borrar Evaluación" size="sm">
                                                     <IconButton
                                                         variant="text"
                                                         onClick={() => handleDeleteClick(
                                                             user.valuations[0]._id,
-                                                            user._id,
                                                             `${user.firstName} ${user.lastName} ${user.secondLastName || ''}`
                                                         )}
                                                         color="white"
                                                         size="sm"
                                                         className="text-gray-500 shadow-none hover:shadow-md hover:text-pink-500 transition-all border border-gray-200"
                                                     >
-                                                        <TrashIcon className="h-4 w-4" />
+                                                        <Trash2 className="h-4 w-4" />
                                                     </IconButton>
                                                 </Tooltip>
                                             )}

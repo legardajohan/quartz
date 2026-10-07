@@ -4,6 +4,7 @@ import { Dialog, DialogBody, DialogFooter, DialogHeader, Typography, Button } fr
 import { CameraIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
 import { ACCEPTED_IMAGE_LABEL, ACCEPTED_IMAGE_TYPES, cropToWebp, isPng } from "../../utils/imageToWebp";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 
 export interface ImageCropUploaderProps {
   currentUrl?: string;
@@ -11,7 +12,7 @@ export interface ImageCropUploaderProps {
   onUpload: (blob: Blob) => Promise<void>;
   isUploading?: boolean;
   shape?: "circle" | "square";
-  size?: "sm" | "lg";
+  size?: "sm" | "lg" | "xl";
 }
 
 export function ImageCropUploader({
@@ -76,7 +77,8 @@ export function ImageCropUploader({
     }
   };
 
-  const dimensions = size === "lg" ? "h-24 w-24" : "h-12 w-12";
+  const dimensions = size === "xl" ? "h-32 w-32" : size === "lg" ? "h-24 w-24" : "h-12 w-12";
+  const hoverIconSize = size === "xl" ? "h-8 w-8" : "h-5 w-5";
   const roundedClass = shape === "circle" ? "rounded-full" : "rounded-xl";
   const imagePadding = shape === "square" ? "p-2" : "";
 
@@ -89,15 +91,9 @@ export function ImageCropUploader({
           className={`relative ${dimensions} ${roundedClass} ${imagePadding} overflow-hidden border border-gray-200 bg-gray-50 transition-transform duration-150 active:scale-[0.97]`}
           aria-label={label}
         >
-          {currentUrl ? (
-            <img src={currentUrl} alt={label} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-gray-300">
-              <CameraIcon className="h-6 w-6" />
-            </div>
-          )}
+          <img src={currentUrl || AVATAR_FALLBACK} alt={label} className="h-full w-full object-cover" />
           <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity duration-150 group-hover:bg-black/40 group-hover:opacity-100">
-            <CameraIcon className="h-5 w-5 text-white" />
+            <CameraIcon className={`${hoverIconSize} text-white`} />
           </span>
         </button>
         <input

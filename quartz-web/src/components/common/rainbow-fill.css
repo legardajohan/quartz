@@ -1,0 +1,38 @@
+/* =============================================================
+   rainbow-fill — relleno de degradado arcoíris animado, compartido por
+   toda marca de Quartz que use el efecto (WelcomeLoader, PoweredByBrand).
+   Se aplica como clase "al lado" sobre un elemento ya enmascarado con la
+   silueta del logo (cada componente aporta su propio -webkit-mask/mask).
+
+   El arcoíris viaja a lo ancho del logo (linear-gradient 90deg + shift de
+   background-position). Es un efecto permanente (no depende de tema claro/
+   oscuro): hues saturados y ciclo lento (8s) para que sea un shimmer
+   ambiental, no una animación que grite.
+   ============================================================= */
+
+.quartz-rainbow-fill {
+  background-image: linear-gradient(
+    90deg,
+    #ff1f5a,
+    #b81fff,
+    #5a3bff,
+    #0a9bff,
+    #16c46a,
+    #ffc21a,
+    #ff7a1a,
+    #ff1f5a
+  );
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  background-repeat: repeat;
+  animation: quartz-rainbow 8s linear infinite;
+}
+
+@keyframes quartz-rainbow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quartz-rainbow-fill { animation: none; }
+}

@@ -1,66 +1,74 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useBlocker } from "react-router-dom";
 import { Button, IconButton, Typography, Avatar, Progress } from "@material-tailwind/react";
-import { useStudentValuationStore } from "../useStudentValuationStore";
-import { useAuthStore } from "../../auth/useAuthStore";
-import ValuationChecklist, { SUBJECT_ICONS } from "./ValuationChecklist";
-import type { StudentValuationUpdateData, LearningValuationUpdate } from "../types";
+import { useStudentValuationQuery, useUpdateValuationMutation, valuationKeys } from "../queries/useStudentValuationQuery";
+import { isNotFound, isVersionConflict } from "@/api/withErrorMessage";
+import ConflictNotice from "@/components/common/ConflictNotice";
+import { EmptyState } from "@/components/common/EmptyState";
+import { diffValuationItems, type ValuationDiff } from "@/lib/diffChanges";
+import { extractErrorMessage } from "../../../api/apiClient";
+import { useSubjectsQuery } from "../../subject/queries/useSubjectsQuery";
+import { usePermissions } from "../../auth/usePermissions";
+import { useActivePeriod } from "../../period/useActivePeriod";
+import ValuationChecklist from "./ValuationChecklist";
+import { SUBJECT_ICONS } from "../../subject/subjectIcons";
+import type { IStudentValuationDTO, StudentValuationUpdateData, LearningValuationUpdate } from "../types";
 import { ConfirmationModal } from "../../../components/common/ConfirmationModal";
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
-import { ImageCropUploader } from "../../../components/common/ImageCropUploader";
 import toast from "react-hot-toast";
-import userImage from "../../../assets/images/default-user.jpg";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 import { BookmarkSquareIcon } from "@heroicons/react/24/solid";
-import { useUsersQuery, useUploadStudentPhotoMutation } from "../../users/queries/useUsersQuery";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { useUsersQuery } from "../../users/queries/useUsersQuery";
 
 import { Loading } from "../../../components/ui/Loading";
 
-const PHOTO_UPLOAD_ROLES = ["Jefe de Área", "Docente"];
+interface ValuationConflict extends ValuationDiff {
+    current: IStudentValuationDTO;
+}
 
 export default function StudentValuationDetail() {
     const { studentId } = useParams();
     const navigate = useNavigate();
-    const {
-        currentValuation,
-        fetchValuation,
-        updateValuation,
-        clearValuation,
-        isLoading,
-        error
-    } = useStudentValuationStore();
-    const { sessionData } = useAuthStore();
+    const queryClient = useQueryClient();
+    const { data: subjects } = useSubjectsQuery();
+    const { isAreaLead } = usePermissions();
+    const activePeriod = useActivePeriod();
+    const { data: serverValuation, isPending, error } = useStudentValuationQuery(studentId, activePeriod?._id);
+    const updateValuation = useUpdateValuationMutation();
 
     const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
-    const [localValuation, setLocalValuation] = useState(currentValuation);
+    // `baseValuation`: versión del servidor sobre la que se editó `localValuation`. Comparar contra
+    // ella (no contra la caché) evita que una revalidación en segundo plano se lea como cambio.
+    const [baseValuation, setBaseValuation] = useState<IStudentValuationDTO | null>(null);
+    const [localValuation, setLocalValuation] = useState<IStudentValuationDTO | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [conflict, setConflict] = useState<ValuationConflict | null>(null);
+    const [isGone, setIsGone] = useState(false);
 
     const { data: studentUsers } = useUsersQuery(studentId ? { id: studentId } : undefined);
     const studentAvatarUrl = studentUsers?.[0]?.avatarUrl;
-    const uploadPhotoMutation = useUploadStudentPhotoMutation();
-    const canUploadPhoto = Boolean(sessionData?.user.role && PHOTO_UPLOAD_ROLES.includes(sessionData.user.role));
 
-    const handlePhotoUpload = async (blob: Blob) => {
-        if (!studentId) return;
-        await uploadPhotoMutation.mutateAsync({ studentId, blob });
+    const hasChanges =
+        !!localValuation &&
+        !!baseValuation &&
+        (JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(baseValuation.valuationsBySubject) ||
+            (localValuation.observations ?? "") !== (baseValuation.observations ?? ""));
+
+    const syncFromServer = (valuation: IStudentValuationDTO) => {
+        setBaseValuation(valuation);
+        setLocalValuation(valuation);
     };
 
-    useEffect(() => {
-        const activePeriod = sessionData?.periods?.find((p) => p.isActive);
-        if (studentId && activePeriod) {
-            fetchValuation(studentId, activePeriod._id);
-        }
-        return () => {
-            clearValuation();
-        };
-    }, [studentId, sessionData, fetchValuation, clearValuation]);
-
-    useEffect(() => {
-        setLocalValuation(currentValuation);
+    // Ajuste en render (no en effect): adopta la versión del servidor solo si no hay borrador.
+    if (serverValuation && serverValuation !== baseValuation && !hasChanges) {
+        syncFromServer(serverValuation);
         // Open first subject by default if not already open
-        if (currentValuation?.valuationsBySubject?.[0]?.subjectId && !openSubjectId) {
-            setOpenSubjectId(currentValuation.valuationsBySubject[0].subjectId);
+        if (serverValuation.valuationsBySubject[0]?.subjectId && !openSubjectId) {
+            setOpenSubjectId(serverValuation.valuationsBySubject[0].subjectId);
         }
-    }, [currentValuation]);
+    }
 
     // Calculate Global Progress
     const totalLearnings = localValuation?.valuationsBySubject.reduce((acc, subject) => acc + subject.learningValuations.length, 0) || 0;
@@ -70,8 +78,10 @@ export default function StudentValuationDetail() {
     const globalProgress = totalLearnings > 0 ? (totalValued / totalLearnings) * 100 : 0;
 
 
-    const handleSave = async () => {
-        if (!localValuation) return;
+    // `base`: valoración cuya `version` se envía. Normalmente la de la edición; tras un aviso, la vigente.
+    // Devuelve si el guardado se completó.
+    const handleSave = async (base: IStudentValuationDTO | null = baseValuation): Promise<boolean> => {
+        if (!localValuation || !base) return false;
         setIsSaving(true);
         try {
             const payload: StudentValuationUpdateData = {
@@ -91,51 +101,121 @@ export default function StudentValuationDetail() {
                             : {}),
                     })),
                 observations: localValuation.observations ?? "",
+                version: base.version,
             };
 
-            await updateValuation(localValuation._id, payload);
-            toast.success("Evaluación guardada correctamente");
+            const saved = await updateValuation.mutateAsync({ valuationId: localValuation._id, payload });
+            syncFromServer(saved);
+            toast.success(conflict ? "Cambios guardados" : "Evaluación guardada correctamente");
+            setConflict(null);
+            return true;
         } catch (error) {
+            if (isVersionConflict(error)) {
+                const current = queryClient.getQueryData<IStudentValuationDTO>(
+                    valuationKeys.detail(localValuation.studentId, localValuation.periodId),
+                );
+                if (current) {
+                    const diff = diffValuationItems(base, current);
+                    setConflict({ current, ...diff });
+                    // Abre una dimensión afectada si la abierta no lo está.
+                    if (!openSubjectId || !diff.subjectIds.has(openSubjectId)) {
+                        const first = [...diff.subjectIds][0];
+                        if (first) setOpenSubjectId(first);
+                    }
+                    return false;
+                }
+            }
+            if (isNotFound(error)) {
+                setIsGone(true);
+                return false;
+            }
             toast.error("Error al guardar la Evaluación");
             console.error(error);
+            return false;
         } finally {
             setIsSaving(false);
         }
     };
 
+    const handleKeepMine = () => {
+        if (!conflict) return;
+        const { current } = conflict;
+        setBaseValuation(current);
+        void handleSave(current);
+    };
 
+    const handleUseCurrent = () => {
+        if (!conflict) return;
+        syncFromServer(conflict.current);
+        setConflict(null);
+        toast.success("Se cargó la versión actual");
+    };
 
-    const hasChanges = useCallback(() => {
-        if (!localValuation || !currentValuation) return false;
-        return (
-            JSON.stringify(localValuation.valuationsBySubject) !== JSON.stringify(currentValuation.valuationsBySubject) ||
-            (localValuation.observations ?? "") !== (currentValuation.observations ?? "")
-        );
-    }, [localValuation, currentValuation]);
 
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) =>
-            hasChanges() && currentLocation.pathname !== nextLocation.pathname
+            hasChanges && currentLocation.pathname !== nextLocation.pathname
     );
 
-    if (isLoading) {
+    if (isGone) {
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                <EmptyState
+                    icon={ExclamationTriangleIcon}
+                    title="Esta evaluación fue eliminada por otra persona."
+                    action={
+                        <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
+                            Volver a Evaluación
+                        </Button>
+                    }
+                />
+            </div>
+        );
+    }
+
+    if (studentId && activePeriod && isPending) {
         return <Loading message="Cargando valoración..." />;
     }
 
-    if (error) {
+    if (error && !serverValuation) {
         return (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex flex-col items-center justify-center gap-2">
                 <Typography color="red" className="font-medium">
                     No se pudo crear la evaluación
                 </Typography>
                 <Typography variant="small" className="text-gray-600">
-                    {error}
+                    {extractErrorMessage(error, "Error al cargar la valoración.")}
                 </Typography>
                 <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
                     Volver
                 </Button>
             </div>
         )
+    }
+
+    if (!activePeriod) {
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center gap-2 text-center">
+                <Typography variant="h6" color="blue-gray">
+                    No hay un periodo académico activo
+                </Typography>
+                <Typography variant="small" className="text-gray-500">
+                    {isAreaLead
+                        ? "Activa un periodo en Configuración para poder valorar estudiantes."
+                        : "Pide al Jefe de Área que active el periodo académico."}
+                </Typography>
+                <div className="flex gap-2 mt-2">
+                    {isAreaLead && (
+                        <Button color="purple" size="sm" onClick={() => navigate('/gestion/configuracion')}>
+                            Ir a Configuración
+                        </Button>
+                    )}
+                    <Button variant="text" size="sm" color="blue-gray" onClick={() => navigate('/evaluacion')}>
+                        Volver
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     if (!localValuation) {
@@ -162,18 +242,7 @@ export default function StudentValuationDetail() {
                 </div>
                 <div className="flex w-full items-center justify-between mb-8 border border-gray-200 p-4 rounded-lg">
                     <div className="flex items-center gap-4">
-                        {canUploadPhoto ? (
-                            <ImageCropUploader
-                                currentUrl={studentAvatarUrl}
-                                label="Foto del estudiante"
-                                onUpload={handlePhotoUpload}
-                                isUploading={uploadPhotoMutation.isPending}
-                                shape="circle"
-                                size="lg"
-                            />
-                        ) : (
-                            <Avatar src={studentAvatarUrl || userImage} alt="user_image" size="lg" />
-                        )}
+                        <Avatar src={studentAvatarUrl || AVATAR_FALLBACK} alt="user_image" size="lg" />
                         <div>
                             <h1 className="text-lg font-semibold text-gray-700">
                                 {localValuation.studentName.lastName} {localValuation.studentName.secondLastName}
@@ -201,8 +270,8 @@ export default function StudentValuationDetail() {
                     open={true}
                     onClose={() => blocker.reset()}
                     onConfirm={async () => {
-                        await handleSave();
-                        blocker.proceed();
+                        if (await handleSave()) blocker.proceed();
+                        else blocker.reset();
                     }}
                     onDiscard={() => blocker.proceed()}
                     title="¿Deseas guardar los cambios?"
@@ -222,11 +291,26 @@ export default function StudentValuationDetail() {
                 />
             ) : null}
 
+            {conflict && (
+                <div className="mb-4">
+                    <ConflictNotice
+                        title="Esta evaluación cambió mientras la editabas"
+                        summary={conflict.summary || undefined}
+                        changes={[]}
+                        isSaving={isSaving}
+                        onKeepMine={handleKeepMine}
+                        onUseCurrent={handleUseCurrent}
+                    />
+                </div>
+            )}
+
             <div className="space-y-4">
                 {localValuation.valuationsBySubject.map((subject) => (
                     <div key={subject.subjectId}>
                         <ValuationChecklist
                             subject={subject}
+                            isExternallyUpdated={conflict?.subjectIds.has(subject.subjectId) ?? false}
+                            updatedItemIds={conflict?.itemIds}
                             open={openSubjectId === subject.subjectId}
                             onToggle={() =>
                                 setOpenSubjectId(
@@ -235,9 +319,9 @@ export default function StudentValuationDetail() {
                                         : subject.subjectId
                                 )
                             }
-                            // Inject icon based on index in sessionData.subjects
+                            // Inject icon based on index in the subjects catalog
                             icon={(() => {
-                                const subjectIndex = sessionData?.subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
+                                const subjectIndex = subjects?.findIndex(s => s._id === subject.subjectId) ?? -1;
                                 if (subjectIndex !== -1) {
                                     return SUBJECT_ICONS[subjectIndex % SUBJECT_ICONS.length];
                                 }
@@ -305,7 +389,7 @@ export default function StudentValuationDetail() {
 
             {/* Conditional Footer for Saving Changes */}
             {/* Sticky Footer for Saving Changes */}
-            <div className={`fixed bottom-6 inset-x-0 mx-auto max-w-3xl z-50 transition-all duration-300 transform ${hasChanges() ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+            <div className={`fixed bottom-6 inset-x-0 mx-auto max-w-3xl z-50 transition-all duration-300 transform ${hasChanges ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
                 <div className="bg-white p-4 rounded-xl shadow-lg flex items-center justify-between px-8 mx-auto container">
                     <div className="flex items-center gap-2">
                         <div className="flex h-2 w-2 relative">
@@ -322,23 +406,26 @@ export default function StudentValuationDetail() {
                             size="sm"
                             color="blue-gray"
                             onClick={() => {
-                                setLocalValuation(currentValuation);
+                                if (serverValuation) syncFromServer(serverValuation);
+                                setConflict(null);
                             }}
                             className="hover:bg-gray-100"
                         >
                             Deshacer cambios
                         </Button>
-                        <Button
-                            variant="gradient"
-                            color="purple"
-                            size="sm"
-                            loading={isSaving}
-                            onClick={handleSave}
-                            className="flex items-center gap-2 shadow-purple-500/20 hover:shadow-purple-500/40"
-                        >
-                            <BookmarkSquareIcon className="w-4 h-4" />
-                            Guardar
-                        </Button>
+                        {!conflict && (
+                            <Button
+                                variant="gradient"
+                                color="purple"
+                                size="sm"
+                                loading={isSaving}
+                                onClick={() => void handleSave()}
+                                className="flex items-center gap-2 shadow-purple-500/20 hover:shadow-purple-500/40"
+                            >
+                                <BookmarkSquareIcon className="w-4 h-4" />
+                                Guardar
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

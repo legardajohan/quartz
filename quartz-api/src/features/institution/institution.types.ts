@@ -1,10 +1,37 @@
+import type { GradeLevel } from '../auth/auth.types';
+
 export enum ReportKind {
   CHECKLIST = 'checklist',
   COMMUNICATIVE_LETTER = 'communicative-letter',
 }
 
+export interface IShiftDTO {
+  _id: string;
+  name: string;
+}
+
+// Payload de entrada: una entrada sin `_id` es una jornada nueva.
+export type ShiftInput = {
+  _id?: string;
+  name: string;
+};
+
+export interface IShiftSettings {
+  multipleShifts: boolean;
+  shifts: IShiftDTO[];
+}
+
 export interface IInstitutionSettings {
   enabledReports: ReportKind[];
+  multipleShifts: boolean;
+  shifts: IShiftDTO[];
+  offeredLevels: GradeLevel[];
+}
+
+export interface IInstitutionBrandingDTO {
+  name: string;
+  shieldUrl?: string;
+  shieldVersion: string | null;
 }
 
 export interface IInstitutionDTO {
@@ -18,6 +45,12 @@ export interface IInstitutionDTO {
   isActive: boolean;
   settings: IInstitutionSettings;
   shieldUrl?: string;
+  adjustedTeachers?: number;
 }
 
-export type UpdateInstitutionSettingsData = Partial<IInstitutionSettings>;
+export type UpdateInstitutionSettingsData = Partial<{
+  enabledReports: ReportKind[];
+  multipleShifts: boolean;
+  shifts: ShiftInput[];
+  offeredLevels: GradeLevel[];
+}>;

@@ -1,4 +1,4 @@
-import type { SubjectEvaluationMode } from "@/types/domain";
+import type { SubjectEvaluationMode, GradeLevel } from "@/types/domain";
 
 export type GlobalValuationStatus = 'Evaluado' | 'Evaluando' | 'Por diligenciar';
 
@@ -90,4 +90,82 @@ export interface IReportTemplate {
   student: IReportStudent;
   valuation: IReportValuation;
   generatedAt: string;
+}
+
+// --- Carta Comunicativa ---
+
+export interface ILetterConceptOption {
+  _id: string;
+  description: string;
+}
+
+export interface ILetterSubjectBlock {
+  subjectId: string;
+  subjectName: string;
+  evaluationMode: SubjectEvaluationMode;
+  valuationType: QualitativeValuation | null; // null en modo description
+  subjectPercentage: number;
+  assignedConceptId: string | null;
+  conceptText: string; // texto del concepto asignado, o performanceDescription en modo description
+  availableConcepts: ILetterConceptOption[]; // [] en modo description
+}
+
+export interface ICommunicativeLetterTemplate {
+  _id: string;
+  institution: IReportInstitution;
+  period: IReportPeriod;
+  teacher: IReportTeacher;
+  student: IReportStudent;
+  subjects: ILetterSubjectBlock[];
+  observations: string | null;
+  version: number;
+  generatedAt: string;
+}
+
+export interface IMissingConceptCoverage {
+  subjectId: string;
+  subjectName: string;
+  missingValuationTypes: QualitativeValuation[];
+}
+
+export interface ILetterAvailability {
+  periodId: string;
+  isAvailable: boolean;
+  missing: IMissingConceptCoverage[];
+}
+
+export type ConceptAssignmentUpdate = {
+  subjectId: string;
+  conceptId: string;
+  conceptText: string;
+};
+
+// --- Descarga masiva (RPT-07) ---
+
+export type BulkReportSkipReason =
+  | 'not-found'
+  | 'not-completed'
+  | 'forbidden-school'
+  | 'missing-concepts';
+
+export interface IBulkReportSkip {
+  valuationId: string;
+  reason: BulkReportSkipReason;
+}
+
+export interface IBulkChecklistReportResponse {
+  reports: IReportTemplate[];
+  skipped: IBulkReportSkip[];
+}
+
+export interface IBulkCommunicativeLetterResponse {
+  reports: ICommunicativeLetterTemplate[];
+  skipped: IBulkReportSkip[];
+}
+
+export interface IConsolidatedReportFilters {
+  schoolId?: string;
+  grade: GradeLevel;
+  shiftId?: string;
+  periodId: string;
 }

@@ -6,8 +6,21 @@ import {
     findOneAndUpdateScoped,
     deleteOneScoped,
 } from '../../repositories/base.repository';
-import { CreatePeriodData, UpdatePeriodData } from './period.types';
+import { CreatePeriodData, UpdatePeriodData, IPeriodDTO } from './period.types';
 import AppError from '../../utils/AppError';
+
+// Mismo DTO para `GET /periods` y para el payload de sesión.
+export function mapPeriodToDTO(period: PlainPeriodObject): IPeriodDTO {
+    return {
+        _id: period._id.toString(),
+        name: period.name,
+        year: period.year,
+        startDate: period.startDate.toISOString(),
+        endDate: period.endDate.toISOString(),
+        closingAlertDate: period.closingAlertDate ? period.closingAlertDate.toISOString() : null,
+        isActive: period.isActive,
+    };
+}
 
 export const getPeriodsByInstitution = async (institutionId: string): Promise<PlainPeriodObject[]> => {
     return findScoped(Period, institutionId).sort({ name: 1 }).lean<PlainPeriodObject[]>();

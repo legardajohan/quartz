@@ -11,7 +11,9 @@ export interface FormModalProps {
     children: React.ReactNode;
     submitText?: string;
     cancelText?: string;
+    scrollable?: boolean;
     submitColor?: "pink" | "green" | "purple" | "blue";
     isSubmitting?: boolean;
     isSubmitDisabled?: boolean;
+    hideSubmit?: boolean;
 }

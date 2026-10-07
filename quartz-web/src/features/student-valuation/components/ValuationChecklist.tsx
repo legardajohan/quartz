@@ -8,31 +8,11 @@ import {
   Radio,
   Progress,
 } from "@material-tailwind/react";
-import {
-  LightBulbIcon,
-  HeartIcon,
-  ChatBubbleLeftRightIcon,
-  FireIcon,
-  PaintBrushIcon,
-  ScaleIcon,
-  BookOpenIcon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
+import { BookOpenIcon } from "@heroicons/react/24/outline";
 import type { IValuationBySubjectDTO, ILearningValuationDTO } from "../types";
 import { ValuationState } from "../types/domain";
+import { useSubjectTypeLabel } from "../../subject/useSubjectAxisLabel";
 import PerformanceTextarea from "../../../components/common/PerformanceTextarea";
-
-// Export icons for parent usage
-export const SUBJECT_ICONS = [
-  LightBulbIcon,
-  HeartIcon,
-  FireIcon,
-  ChatBubbleLeftRightIcon,
-  PaintBrushIcon,
-  ScaleIcon,
-  UsersIcon,
-  BookOpenIcon,
-];
 
 const TABLE_HEAD = [
   "Aprendizajes",
@@ -49,6 +29,8 @@ type ValuationChecklistProps = {
   onChange?: (learningId: string, qualitativeValuation: string | null) => void;
   onDescriptionChange?: (subjectId: string, value: string) => void;
   icon?: React.ElementType; // New prop for icon injection
+  isExternallyUpdated?: boolean;
+  updatedItemIds?: ReadonlySet<string>;
 };
 
 function IconCheck() {
@@ -91,7 +73,10 @@ export default function ValuationChecklist({
   onChange,
   onDescriptionChange,
   icon: Icon = BookOpenIcon, // Default fallback
+  isExternallyUpdated = false,
+  updatedItemIds,
 }: ValuationChecklistProps) {
+  const subjectTypeLabel = useSubjectTypeLabel(subject?.subjectId);
   const [selections, setSelections] = React.useState<Record<string, string | null>>(initialSelections || {});
 
   React.useEffect(() => setSelections(initialSelections || {}), [initialSelections]);
@@ -178,8 +163,13 @@ export default function ValuationChecklist({
               {/* Text Info */}
               <div className="flex flex-col items-start gap-1 w-full max-w-[200px]">
                 <Typography variant="h6" color="blue-gray" className="font-bold leading-tight">
-                  Dimensión {subject?.subjectName ?? ""}
+                  {subjectTypeLabel} {subject?.subjectName ?? ""}
                 </Typography>
+                {isExternallyUpdated && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                    Actualizado por otra persona
+                  </span>
+                )}
                 <div className="w-full flex items-center gap-3">
                   <Progress
                     value={completionPercentage}
@@ -239,6 +229,11 @@ export default function ValuationChecklist({
                           <Typography variant="small" color="blue-gray" className="font-medium text-gray-700">
                             {l.learningDescription ?? ""}
                           </Typography>
+                          {updatedItemIds?.has(l.learningId) && (
+                            <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                              Actualizado por otra persona
+                            </span>
+                          )}
                         </td>
                         <td className={`${classes} text-center`}>
                           <Radio

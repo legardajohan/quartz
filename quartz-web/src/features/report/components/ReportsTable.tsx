@@ -1,11 +1,9 @@
-import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
-import { EnvelopeIcon } from "@heroicons/react/24/outline";
+import { ClipboardCheck, Mail } from "lucide-react";
 import { Avatar, Typography, IconButton, Tooltip } from "@material-tailwind/react";
-import { DataTable, type Column } from "../../../components/common/DataTable";
-import { ITEMS_PER_PAGE } from "../useReportStore";
-import type { UserDto } from "../types";
+import { DataTable, ITEMS_PER_PAGE, type Column } from "../../../components/common/DataTable";
+import type { UserDto } from "../../users/types";
 import type { ReportKind } from "@/types/domain";
-import userImage from "../../../assets/images/default-user.jpg";
+import { AVATAR_FALLBACK } from "@/constants/assets";
 
 interface ReportsTableProps {
   users: UserDto[];
@@ -15,7 +13,10 @@ interface ReportsTableProps {
   onPrevPage: () => void;
   isLoading?: boolean;
   onViewChecklist: (valuationId: string) => void;
+  onViewLetter: (valuationId: string) => void;
   enabledReports: ReportKind[];
+  isLetterAvailable: boolean;
+  activePeriodId?: string;
 }
 
 export default function ReportsTable({
@@ -26,10 +27,14 @@ export default function ReportsTable({
   onPrevPage,
   isLoading,
   onViewChecklist,
+  onViewLetter,
   enabledReports,
+  isLetterAvailable,
+  activePeriodId,
 }: ReportsTableProps) {
   const isChecklistEnabled = enabledReports.includes("checklist");
   const isCommunicativeLetterEnabled = enabledReports.includes("communicative-letter");
+
   const columns: Column<UserDto>[] = [
     {
       header: "ID",
@@ -48,7 +53,7 @@ export default function ReportsTable({
         const fullLastName = [item.lastName, item.secondLastName].filter(Boolean).join(" ");
         return (
           <div className="flex items-center gap-3">
-            <Avatar src={item.avatarUrl || userImage} alt={fullLastName} size="sm" />
+            <Avatar src={item.avatarUrl || AVATAR_FALLBACK} alt={fullLastName} size="sm" />
             <Typography variant="small" color="blue-gray" className="font-normal">
               {fullLastName}
             </Typography>
@@ -104,7 +109,9 @@ export default function ReportsTable({
     {
       header: "Informes",
       accessor: (item) => {
-        const valuation = item.valuations[0];
+        const valuation = activePeriodId
+          ? item.valuations.find((v) => v.periodId === activePeriodId)
+          : undefined;
         const isChecklistReady = valuation?.status === "Evaluado";
 
         if (!isChecklistEnabled && !isCommunicativeLetterEnabled) {
@@ -132,28 +139,38 @@ export default function ReportsTable({
                     onClick={() => valuation && onViewChecklist(valuation._id)}
                     className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                   >
-                    <ClipboardDocumentListIcon
+                    <ClipboardCheck
                       className={`h-5 w-5 ${isChecklistReady ? "text-green-600" : "text-gray-400"}`}
                     />
                   </IconButton>
                 </span>
               </Tooltip>
             )}
-            {isCommunicativeLetterEnabled && (
-              <Tooltip content="Próximamente" size="sm">
-                <span>
-                  <IconButton
-                    variant="text"
-                    size="sm"
-                    color="white"
-                    disabled
-                    className="shadow-none bg-white border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            )}
+            {isCommunicativeLetterEnabled && (() => {
+              const isLetterReady = isChecklistReady && isLetterAvailable;
+              const letterTooltip = !isChecklistReady
+                ? "Disponible cuando la evaluación esté completa"
+                : !isLetterAvailable
+                  ? "Faltan conceptos por dimensión"
+                  : "Ver Carta Comunicativa";
+
+              return (
+                <Tooltip content={letterTooltip} size="sm">
+                  <span>
+                    <IconButton
+                      variant="text"
+                      size="sm"
+                      color="white"
+                      disabled={!isLetterReady}
+                      onClick={() => valuation && onViewLetter(valuation._id)}
+                      className="shadow-none enabled:hover:shadow-md bg-white transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      <Mail className={`h-5 w-5 ${isLetterReady ? "text-green-500" : "text-gray-400"}`} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              );
+            })()}
           </div>
         );
       },

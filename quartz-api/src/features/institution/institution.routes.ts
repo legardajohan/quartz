@@ -1,5 +1,12 @@
 import { Router } from 'express';
-import { getMyInstitutionController, updateMyInstitutionController, uploadShieldController } from './institution.controller';
+import {
+  getMyInstitutionController,
+  getMyInstitutionBrandingController,
+  getMyInstitutionSettingsController,
+  getMyInstitutionShieldController,
+  updateMyInstitutionController,
+  uploadShieldController,
+} from './institution.controller';
 import { authenticateJWT } from '../../middlewares/auth.middleware';
 import { requireTenant } from '../../middlewares/require-tenant.middleware';
 import { authorize } from '../../middlewares/role.middleware';
@@ -19,6 +26,22 @@ router.get(
   asyncHandler(getMyInstitutionController)
 );
 
+router.get(
+  '/me/branding',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  asyncHandler(getMyInstitutionBrandingController)
+);
+
+router.get(
+  '/me/settings',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  asyncHandler(getMyInstitutionSettingsController)
+);
+
 router.patch(
   '/me',
   authenticateJWT,
@@ -26,6 +49,14 @@ router.patch(
   authorize([UserRole.JEFE_DE_AREA]),
   validate(updateInstitutionSettingsSchema),
   asyncHandler(updateMyInstitutionController)
+);
+
+router.get(
+  '/me/shield.jpg',
+  authenticateJWT,
+  requireTenant,
+  authorize([UserRole.JEFE_DE_AREA, UserRole.DOCENTE]),
+  asyncHandler(getMyInstitutionShieldController)
 );
 
 router.patch(
