@@ -13,6 +13,7 @@ import { Subject } from '../subject/subject.model';
 import { SubjectType, SubjectEvaluationMode } from '../subject/subject.types';
 import { User } from '../auth/auth.model';
 import { UserRole } from '../auth/auth.types';
+import { getOfferedLevels } from '../institution/institution.service';
 import type {
   CreateChecklistTemplateData,
   UpdateChecklistTemplateData,
@@ -65,7 +66,10 @@ export async function getChecklistTemplates(
   userId: string,
   userRole: UserRole
 ): Promise<IChecklistTemplateDocument[]> {
-  const filter: FilterQuery<IChecklistTemplateDocument> = {};
+  const offeredLevels = await getOfferedLevels(institutionId);
+  // Plantillas de un nivel retirado se conservan en BD pero no se listan; reaparecen si el nivel
+  // vuelve a ofrecerse.
+  const filter: FilterQuery<IChecklistTemplateDocument> = { grade: { $in: offeredLevels } };
   if (userRole === UserRole.DOCENTE) {
     filter.teacherId = new Types.ObjectId(userId);
   }

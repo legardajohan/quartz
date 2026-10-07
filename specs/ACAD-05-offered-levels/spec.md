@@ -1,7 +1,7 @@
 ---
 id: ACAD-05-offered-levels
 feature: offered-levels
-status: approved        # draft | approved | implemented | released — reabierto 2026-10-06: enmienda "Quitar un nivel"
+status: implemented     # draft | approved | implemented | released — enmienda "Quitar un nivel" (2026-10-06) implementada
 created: 2026-10-06
 ---
 
@@ -40,12 +40,12 @@ Que la app opere sobre los niveles de **Preescolar** (Prejardín 3 años · Jard
 - [x] Si `offeredLevels` trae duplicados o valores fuera del enum, el sistema responde `400`.
 
 **Quitar un nivel (enmienda)**
-- [ ] Si se quita un nivel que algún **Estudiante** del inquilino tiene en `gradesTaught`, el sistema responde `409` "El nivel «<nivel>» tiene N estudiante(s). Cámbialos de nivel antes." y no guarda nada.
-- [ ] Docentes, Jefes de Área, aprendizajes y plantillas de chequeo **no** bloquean el cambio.
-- [ ] Cuando se guarda sin el nivel, el sistema lo retira del `gradesTaught` de los Docentes del inquilino; si un Docente queda sin niveles, recibe todos los niveles que siguen ofertados.
-- [ ] El `gradesTaught` de los Jefes de Área no se modifica.
-- [ ] Los aprendizajes y plantillas de chequeo del nivel quitado se conservan en BD, pero `GET /api/learnings` y `GET /api/checklist-templates` solo devuelven los de niveles ofertados; si el nivel se vuelve a ofrecer, reaparecen sin cambios.
-- [ ] El toast de éxito de la tab "Niveles" indica cuántos docentes se ajustaron (si alguno).
+- [x] Si se quita un nivel que algún **Estudiante** del inquilino tiene en `gradesTaught`, el sistema responde `409` "El nivel «<nivel>» tiene N estudiante(s). Cámbialos de nivel antes." y no guarda nada.
+- [x] Docentes, Jefes de Área, aprendizajes y plantillas de chequeo **no** bloquean el cambio.
+- [x] Cuando se guarda sin el nivel, el sistema lo retira del `gradesTaught` de los Docentes del inquilino; si un Docente queda sin niveles, recibe todos los niveles que siguen ofertados.
+- [x] El `gradesTaught` de los Jefes de Área no se modifica.
+- [x] Los aprendizajes y plantillas de chequeo del nivel quitado se conservan en BD, pero `GET /api/learnings` y `GET /api/checklist-templates` solo devuelven los de niveles ofertados; si el nivel se vuelve a ofrecer, reaparecen sin cambios.
+- [x] El toast de éxito de la tab "Niveles" indica cuántos docentes se ajustaron (si alguno).
 
 **Uso en la app**
 - [x] Los selectores y filtros de grado de Usuarios, Dashboard, Informes, Valoraciones y Aprendizajes muestran solo los niveles ofertados.

@@ -13,6 +13,7 @@ import { User } from '../auth/auth.model';
 import type { LearningData, UpdateLearningData, ILearningFilter } from './learning.types';
 import { validateAllExist } from '../../services/document-validator.service';
 import { invalidatePrefix } from '../../services/memory-cache.service';
+import { getOfferedLevels } from '../institution/institution.service';
 import AppError, { VERSION_CONFLICT } from '../../utils/AppError';
 
 // --- Helper Function ---
@@ -42,6 +43,16 @@ export async function getAllLearnings(
     const cleanFilter = Object.fromEntries(
         Object.entries(filter).filter(([, value]) => value !== undefined)
     );
+
+    const offeredLevels = await getOfferedLevels(institutionId);
+    // Aprendizajes de un nivel retirado se conservan en BD pero no se listan; si el nivel pedido
+    // ya no se oferta, no hay intersección y el resultado queda vacío.
+    cleanFilter.grade = cleanFilter.grade && offeredLevels.includes(cleanFilter.grade)
+        ? cleanFilter.grade
+        : cleanFilter.grade
+            ? { $in: [] }
+            : { $in: offeredLevels };
+
     const query = findScoped(LearningModel, institutionId, cleanFilter);
     const learnings = await populateLearningDetails(query).exec();
     return learnings;

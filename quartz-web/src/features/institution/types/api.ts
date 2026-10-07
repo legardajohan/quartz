@@ -20,6 +20,7 @@ export interface InstitutionDto {
   isActive: boolean;
   settings: InstitutionSettingsDto;
   shieldUrl?: string;
+  adjustedTeachers?: number;
 }
 
 export interface InstitutionBrandingDto {

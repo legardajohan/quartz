@@ -44,7 +44,14 @@ export function LevelsPanel() {
     const promise = updateMutation.mutateAsync({ offeredLevels });
     toast.promise(promise, {
       loading: "Guardando niveles...",
-      success: <b>¡Niveles actualizados con éxito!</b>,
+      success: (updated) => (
+        <b>
+          ¡Niveles actualizados con éxito!
+          {updated.adjustedTeachers
+            ? ` Se ajustaron ${updated.adjustedTeachers} docente(s).`
+            : ""}
+        </b>
+      ),
       error: (err) => <b>{err.toString()}</b>,
     });
   };

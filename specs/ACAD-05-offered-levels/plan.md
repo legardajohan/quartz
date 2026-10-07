@@ -76,6 +76,8 @@ Riesgo: sin transacción, si el `$set` de la institución pasa y el `updateMany`
 
 Revisar en la implementación los consumidores de aprendizajes fuera del listado (dashboard, valoración, informes): como un nivel con estudiantes no se puede quitar, no deberían verse afectados; confirmarlo y anotarlo.
 
+**Confirmado:** el único consumidor de `getAllLearnings` es `getAllLearningsController` (listado del feature `learning`). El dashboard (`dashboard.service.ts:255`) agrega directamente sobre `LearningModel` sin pasar por `getAllLearnings`, y `student-valuation`/`report` no referencian `LearningModel` en absoluto. El filtro `grade ∈ offeredLevels` no les afecta.
+
 ### `quartz-web`
 | Archivo | Cambio |
 |---|---|

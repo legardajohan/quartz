@@ -45,6 +45,7 @@ export interface IInstitutionDTO {
   isActive: boolean;
   settings: IInstitutionSettings;
   shieldUrl?: string;
+  adjustedTeachers?: number;
 }
 
 export type UpdateInstitutionSettingsData = Partial<{

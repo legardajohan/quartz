@@ -1,9 +1,7 @@
 import { Types } from 'mongoose';
 import { Institution } from './institution.model';
 import { User } from '../auth/auth.model';
-import { LearningModel } from '../learning/learning.model';
-import { ChecklistTemplateModel } from '../checklist-template/checklist-template.model';
-import { GradeLevel, GRADE_LEVELS } from '../auth/auth.types';
+import { GradeLevel, GRADE_LEVELS, UserRole } from '../auth/auth.types';
 import { findScoped } from '../../repositories/base.repository';
 import {
   IInstitutionDTO,
@@ -156,23 +154,40 @@ export const getInstitutionById = async (institutionId: string): Promise<IInstit
   return mapInstitutionToDTO(institution);
 };
 
-// Un nivel quitado dejaría usuarios, aprendizajes o plantillas fuera de los niveles ofertados.
-async function assertLevelNotInUse(institutionId: string, level: GradeLevel): Promise<void> {
-  const [users, learnings, templates] = await Promise.all([
-    findScoped(User, institutionId, { gradesTaught: level }).countDocuments(),
-    findScoped(LearningModel, institutionId, { grade: level }).countDocuments(),
-    findScoped(ChecklistTemplateModel, institutionId, { grade: level }).countDocuments(),
-  ]);
+// Docentes, Jefes de Área, aprendizajes y plantillas no bloquean el cambio: solo los Estudiantes.
+async function assertNoStudentsInLevel(institutionId: string, level: GradeLevel): Promise<void> {
+  const count = await findScoped(User, institutionId, {
+    role: UserRole.ESTUDIANTE,
+    gradesTaught: level,
+  }).countDocuments();
 
-  const usages = [
-    users > 0 ? `${users} usuario(s)` : null,
-    learnings > 0 ? `${learnings} aprendizaje(s)` : null,
-    templates > 0 ? `${templates} plantilla(s) de chequeo` : null,
-  ].filter((usage): usage is string => usage !== null);
-
-  if (usages.length > 0) {
-    throw new AppError(`El nivel «${level}» está en uso: ${usages.join(', ')}.`, 409);
+  if (count > 0) {
+    throw new AppError(`El nivel «${level}» tiene ${count} estudiante(s). Cámbialos de nivel antes.`, 409);
   }
+}
+
+// Retira el nivel quitado del `gradesTaught` de los Docentes del inquilino; si alguno queda sin
+// niveles, recibe todos los que siguen ofertados. El Jefe de Área no se toca.
+async function reassignTeachersForRemovedLevels(
+  institutionId: string,
+  removedLevels: GradeLevel[],
+  nextLevels: GradeLevel[]
+): Promise<number> {
+  if (removedLevels.length === 0) {
+    return 0;
+  }
+
+  const pulled = await User.updateMany(
+    { institutionId, role: UserRole.DOCENTE, gradesTaught: { $in: removedLevels } },
+    { $pull: { gradesTaught: { $in: removedLevels } } }
+  );
+
+  await User.updateMany(
+    { institutionId, role: UserRole.DOCENTE, gradesTaught: { $size: 0 } },
+    { $set: { gradesTaught: sortLevels(nextLevels) } }
+  );
+
+  return pulled.modifiedCount;
 }
 
 export const updateInstitutionSettings = async (
@@ -255,13 +270,14 @@ export const updateInstitutionSettings = async (
     }
   }
 
+  let removedLevels: GradeLevel[] = [];
   if (data.offeredLevels !== undefined) {
     const nextLevels = new Set(data.offeredLevels);
-    const removedLevels = resolveOfferedLevels(current.settings?.offeredLevels)
+    removedLevels = resolveOfferedLevels(current.settings?.offeredLevels)
       .filter((level) => !nextLevels.has(level));
 
     for (const removed of removedLevels) {
-      await assertLevelNotInUse(institutionId, removed);
+      await assertNoStudentsInLevel(institutionId, removed);
     }
   }
 
@@ -289,7 +305,20 @@ export const updateInstitutionSettings = async (
     throw new AppError('Institución no encontrada.', 404);
   }
 
-  return mapInstitutionToDTO(institution);
+  const dto = mapInstitutionToDTO(institution);
+
+  if (removedLevels.length > 0) {
+    const adjustedTeachers = await reassignTeachersForRemovedLevels(
+      institutionId,
+      removedLevels,
+      sortLevels(data.offeredLevels as GradeLevel[])
+    );
+    if (adjustedTeachers > 0) {
+      dto.adjustedTeachers = adjustedTeachers;
+    }
+  }
+
+  return dto;
 };
 
 export const uploadInstitutionShield = async (

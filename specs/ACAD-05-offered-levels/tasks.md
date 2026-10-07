@@ -30,13 +30,13 @@
 - [x] `users/types/api.ts` (`ImportRowDto.gradesTaught`) y ayuda de columnas en `UserImportModal`
 
 ## Enmienda: quitar un nivel (2026-10-06)
-- [ ] `institution.service.ts` — `assertNoStudentsInLevel` (409 solo por Estudiantes; sin conteo de aprendizajes/plantillas)
-- [ ] `institution.service.ts` — `reassignTeachersForRemovedLevels` (`$pull` en Docentes; vacíos → niveles restantes; Jefe de Área intacto) tras el `$set`
-- [ ] `institution.types.ts` + web `institution/types/api.ts` — `adjustedTeachers?: number`
-- [ ] `learning.service.ts` `getAllLearnings` y listado de `checklist-template.service.ts` — filtro `grade ∈ offeredLevels`
-- [ ] `LevelsPanel.tsx` — toast con docentes ajustados; invalidar queries de aprendizajes, plantillas y usuarios
-- [ ] Revisar consumidores de aprendizajes (dashboard, valoración, informes) y anotar el resultado en `plan.md`
-- [ ] Re-verificación: `npx tsc --noEmit`, `npm run build && npm run lint`, recorrido manual de la enmienda
+- [x] `institution.service.ts` — `assertNoStudentsInLevel` (409 solo por Estudiantes; sin conteo de aprendizajes/plantillas)
+- [x] `institution.service.ts` — `reassignTeachersForRemovedLevels` (`$pull` en Docentes; vacíos → niveles restantes; Jefe de Área intacto) tras el `$set`
+- [x] `institution.types.ts` + web `institution/types/api.ts` — `adjustedTeachers?: number`
+- [x] `learning.service.ts` `getAllLearnings` y listado de `checklist-template.service.ts` — filtro `grade ∈ offeredLevels`
+- [x] `LevelsPanel.tsx` — toast con docentes ajustados; invalidar queries de aprendizajes, plantillas y usuarios
+- [x] Revisar consumidores de aprendizajes (dashboard, valoración, informes) y anotar el resultado en `plan.md`
+- [x] Re-verificación: `npx tsc --noEmit`, `npm run build && npm run lint`, recorrido manual de la enmienda _(automática en verde; el recorrido manual queda para el usuario)_
 
 ## Docs
 - [x] `docs/domain.md`, `docs/data-model.md`, tres `CLAUDE.md` — alcance Preescolar y `offeredLevels`
