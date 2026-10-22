@@ -2,7 +2,7 @@ export const BRAND_PURPLE = '#620DD1'; // purple-800 — mismo token que quartz-
 
 // Logo fijo de marca (no depende de la institución): subido una sola vez a R2 desde
 // quartz-web/public/quartz-name.svg. Se reutiliza en todo correo transaccional de Quartz.
-export const QUARTZ_LOGO_URL = 'https://pub-cef9daf4a53d4316a260fbc39622e206.r2.dev/branding/quartz-wordmark-email.png';
+export const QUARTZ_LOGO_URL = 'https://cdn.quartzedu.co/branding/quartz-wordmark-email.png';
 
 export function escapeHtml(value: string): string {
   return value

@@ -216,3 +216,31 @@ estudiante anterior mientras se genera el nuevo.
   de pestañas): crea su instancia al montar aunque no haya documento, y esa instancia vacía
   revienta cuando cualquier otra parte de la app renderiza un PDF.
 - Memoizar siempre el elemento `<Document>`: el render se dispara por identidad, no por contenido.
+
+---
+
+## Vite: un asset pequeño dentro de `url()` sin comillas vacía el `background` en producción
+
+**Fecha:** 2026-10 · **Componentes afectados:** `SidebarMenu.tsx` (también lo tenía `PresentationPanel.tsx`, ya retirado en INF-12)
+**Síntoma:** el sidebar se veía bien en `npm run dev`, pero en producción (Vercel) salía
+**blanco**, con los ítems en `text-purple-300` casi ilegibles. No había errores en consola.
+
+**Causa raíz:** el fondo se armaba inline como `` `url(${starryBackground}), linear-gradient(...)` ``.
+`starry-background.svg` pesa 1,8 KB, por debajo del `assetsInlineLimit` de Vite (4 KB por
+defecto). Por eso, en `vite build` el import deja de ser una ruta y pasa a ser un data URI que
+conserva las **comillas simples** del SVG sin escapar:
+
+```
+data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='350'...
+```
+
+Un `url()` **sin comillas** no admite `'`. El valor queda inválido y el navegador descarta la
+declaración `background` **completa**, degradado incluido. La `Card` cae a su fondo blanco por
+defecto. En dev no pasa porque Vite sirve el archivo por ruta (`/src/assets/...`).
+
+**Fix aplicado:** `` `url("${starryBackground}")` `` (con comillas dobles).
+
+**Regla general para el resto del proyecto:** todo asset importado que se interpole en un
+`url()` de CSS (inline o en un template string) va **entre comillas dobles**. Lo que funciona en
+dev no prueba nada aquí: el inline solo ocurre en el build. Si cabe, mejor usar `<img>` que
+`background-image`.
