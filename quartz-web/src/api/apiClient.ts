@@ -87,7 +87,10 @@ apiClient.interceptors.response.use(
 export function extractErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     if (err.code === 'ECONNABORTED') {
-      return 'La generación del informe tardó más de lo esperado. Inténtalo de nuevo.';
+      // Solo las llamadas de informe usan REPORT_REQUEST_TIMEOUT_MS; el resto cae al timeout global.
+      return err.config?.timeout === REPORT_REQUEST_TIMEOUT_MS
+        ? 'La generación del informe tardó más de lo esperado. Inténtalo de nuevo.'
+        : 'El servidor tardó demasiado en responder. Inténtalo de nuevo.';
     }
     return (err.response?.data as { message?: string })?.message ?? err.message;
   }
