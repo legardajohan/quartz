@@ -18,7 +18,7 @@ Crea los 6 archivos (`<feature>` en kebab-case, singular del dominio):
 5. **`<feature>.controller.ts`** — funciones `<accion>Controller`. Extraen `req.user!.institutionId.toString()`, llaman al service, responden. **Sin `try/catch`** y **sin** guarda `if (!user...)`: los errores se propagan al `errorHandler` central vía `asyncHandler` (cableado en routes), y `requireTenant` garantiza `req.user`. Errores esperables se lanzan en el **service** como `AppError`; el controller nunca mapea errores con `res.status(500)` ni por texto del mensaje.
 6. **`<feature>.routes.ts`** — `const router = Router()`; cada ruta encadena `authenticateJWT → requireTenant → authorize([roles]) → validate(schema) → asyncHandler(controller)`. `requireTenant` va **inmediatamente después** de `authenticateJWT` (omitir solo en rutas públicas como `login`); todo controller se envuelve con `asyncHandler` aquí. `export default router`.
 
-Finalmente **monta el router en `app.ts`**: `app.use('/api/<plural>', <feature>Routes);`.
+Finalmente **monta el router en el router raíz de `app.ts`**: `router.use('/<plural>', <feature>Routes);` (sin prefijo `/api`).
 
 ## Frontend — `quartz-web/src/features/<feature>/`
 

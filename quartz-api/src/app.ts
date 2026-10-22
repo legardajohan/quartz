@@ -24,34 +24,38 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+// Root router: the api.quartzedu.co subdomain already identifies the API, so no '/api' prefix
+const router = express.Router();
 // Health check for the host (public, no tenant data)
-app.get('/api/health', (_req, res) => {
+router.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 // Routes for authentication
-app.use('/api/auth', authRoutes);
+router.use('/auth', authRoutes);
 // Routes for expected learning
-app.use('/api/learnings', learningRoutes);
+router.use('/learnings', learningRoutes);
 // Routes for periods
-app.use('/api/periods', periodRoutes);
+router.use('/periods', periodRoutes);
 // Routes for subjects
-app.use('/api/subjects', subjectRoutes);
+router.use('/subjects', subjectRoutes);
 // Routes for checklist templates
-app.use('/api/checklist-templates', checklistTemplatesRoutes);
+router.use('/checklist-templates', checklistTemplatesRoutes);
 // Routes for student valuations
-app.use('/api/student-valuations', studentValuationRoutes);
+router.use('/student-valuations', studentValuationRoutes);
 // Routes for users (students listing by institution)
-app.use('/api/users', usersRoutes);
+router.use('/users', usersRoutes);
 // Routes for schools
-app.use('/api/schools', schoolRoutes);
+router.use('/schools', schoolRoutes);
 // Routes for concepts
-app.use('/api/concepts', conceptRoutes);
+router.use('/concepts', conceptRoutes);
 // Routes for reports (dynamic PDFs, never persisted)
-app.use('/api/reports', reportRoutes);
+router.use('/reports', reportRoutes);
 // Routes for institution settings (periods per year, enabled reports)
-app.use('/api/institutions', institutionRoutes);
+router.use('/institutions', institutionRoutes);
 // Routes for the analytics dashboard (read-only, in-memory cached)
-app.use('/api/dashboard', dashboardRoutes);
+router.use('/dashboard', dashboardRoutes);
+
+app.use('/', router);
 
 app.use(errorHandler);
 

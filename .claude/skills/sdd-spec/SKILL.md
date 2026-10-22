@@ -106,7 +106,7 @@ created: <YYYY-MM-DD>
 ### Endpoints
 | Método | Ruta | Rol | Middlewares |
 |---|---|---|---|
-| POST | `/api/<plural>` | Jefe de Área | `authenticateJWT → requireTenant → authorize([...]) → validate(schema)` |
+| POST | `/<plural>` | Jefe de Área | `authenticateJWT → requireTenant → authorize([...]) → validate(schema)` |
 
 ### Frontend
 <store: estado + acciones `apiClient` · componentes · página · ruta en `App.tsx`>
@@ -131,7 +131,7 @@ created: <YYYY-MM-DD>
 - [ ] `<feature>.service.ts` — <qué> (filtro `institutionId`, `.lean()`, `AppError`)
 - [ ] `<feature>.controller.ts` — <qué> (sin `try/catch`)
 - [ ] `<feature>.routes.ts` — <qué> (+ `asyncHandler`)
-- [ ] Montar en `app.ts`: `app.use('/api/<plural>', <feature>Routes)`
+- [ ] Montar en el router raíz de `app.ts`: `router.use('/<plural>', <feature>Routes)`
 
 ## Frontend (`quartz-web`)
 - [ ] `types/` → 2. `use<Feature>Store.ts` → 3. `components/` → 4. `pages/<Feature>Page.tsx` → 5. ruta en `App.tsx`

@@ -112,7 +112,7 @@ router.post(
 );
 
 /**
- * GET /api/users
+ * GET /users
  * Query params: id, role, schoolId
  * Only accessible by Jefe de Área and Docente.
  * Jefe de Área: Returns all students or teachers in the institution, strictly filtered by schoolId if provided.
@@ -128,7 +128,7 @@ router.get(
 );
 
 /**
- * POST /api/users
+ * POST /users
  * Crea un Estudiante, Docente o Jefe de Área. Solo Jefe de Área.
  * Docente/Jefe de Área nacen Pendientes y reciben la invitación por correo (USR-04).
  */
@@ -142,7 +142,7 @@ router.post(
 );
 
 /**
- * PATCH /api/users/:userId
+ * PATCH /users/:userId
  * Actualiza datos de un usuario (rol inmutable).
  * Jefe de Área: cualquier usuario del tenant.
  * Docente: solo estudiantes de su propia sede; no puede cambiar la sede.
@@ -157,7 +157,7 @@ router.patch(
 );
 
 /**
- * DELETE /api/users/:userId
+ * DELETE /users/:userId
  * Elimina un usuario. Solo Jefe de Área.
  */
 router.delete(
@@ -170,7 +170,7 @@ router.delete(
 );
 
 /**
- * POST /api/users/:userId/invitation
+ * POST /users/:userId/invitation
  * Reenvía la invitación de un Docente/Jefe de Área Pendiente (USR-04). Solo Jefe de Área,
  * nunca sobre sí mismo. Enfriamiento de 60 s por usuario.
  */
@@ -184,7 +184,7 @@ router.post(
 );
 
 /**
- * PATCH /api/users/:userId/photo
+ * PATCH /users/:userId/photo
  * Sube la foto de un usuario. Jefe de Área: cualquier usuario del tenant.
  * Docente: solo estudiantes de su propia sede.
  */

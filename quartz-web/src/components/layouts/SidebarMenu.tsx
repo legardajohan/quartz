@@ -113,7 +113,10 @@ export function SidebarMenu({ isSidebarOpen, toggleSidebar }: SidebarMenuProps) 
   const hoverClass = "hover:bg-purple-600/30 hover:text-white";
   const inactiveClass = "text-purple-300";
 
-  const bgPattern = `url(${starryBackground})`;
+  // Comillas obligatorias: en el build Vite incrusta este SVG (<4 KB) como data URI con comillas
+  // simples sin escapar; sin comillas el `url()` es inválido y se descarta TODO el `background`
+  // (degradado incluido), dejando el sidebar blanco solo en producción. Ver docs/known-issues.md.
+  const bgPattern = `url("${starryBackground}")`;
   const gradient = 'linear-gradient(4.01deg, #290460 19.26%, #620DD1 97.65%)';
 
   return (
