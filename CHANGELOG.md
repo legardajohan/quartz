@@ -2,6 +2,21 @@
 
 Versión de producto de Quartz (semver). Cada entrada lista los specs incluidos con su ID; el detalle vive en `specs/<ID>-<slug>/`.
 
+## v1.1.0 — 2026-10-22
+Paquetes: quartz-api 1.1.0 · quartz-web 1.0.1
+
+Ajustes tras el primer despliegue (DigitalOcean App Platform + Vercel).
+
+### Cambio de contrato
+- **INF-12** Rutas de la API en la raíz — `api.quartzedu.co/<recurso>` en lugar de `api.quartzedu.co/api/<recurso>`; `GET /health` reemplaza a `/api/health` (el prefijo antiguo responde `404`). Requiere `VITE_API_BASE_URL=https://api.quartzedu.co` en Vercel.
+
+### Fixes
+- **INF-12** Sidebar blanco en producción — el fondo SVG incrustado por Vite invalidaba el `url()` sin comillas; login con ilustración SVG (15 KB) sobre el degradado de marca en lugar de la foto de 402 KB.
+- Mensaje de timeout genérico fuera de los informes — un timeout en login ya no muestra el texto de generación de PDF.
+
+### Documentación
+- Guía de despliegue y análisis de precios actualizados para producción (luego retirados del repositorio).
+
 ## v1.0.0 — 2026-10-07
 Paquetes: quartz-api 1.0.0 · quartz-web 1.0.0
 

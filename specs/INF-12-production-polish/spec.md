@@ -1,7 +1,7 @@
 ---
 id: INF-12-production-polish
 feature: production-polish
-status: implemented          # draft | approved | implemented | released
+status: released          # draft | approved | implemented | released
 created: 2026-10-22
 ---
 
