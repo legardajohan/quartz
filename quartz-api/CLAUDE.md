@@ -52,7 +52,7 @@ Nunca aceptar `institutionId` del body/params.
 - Errores esperables → `throw new AppError(msg, statusCode)` desde el **service**; el `errorHandler` central (destino de `asyncHandler`) lo traduce a `res.status(statusCode).json({ message })`. El controller **no** captura ni mapea errores.
 
 ## Orden al crear un feature
-1. `*.types.ts` → 2. `*.model.ts` → 3. `*.validation.ts` → 4. `*.service.ts` → 5. `*.controller.ts` → 6. `*.routes.ts` → 7. montar en `app.ts` (`app.use('/api/<plural>', <feature>Routes)`).
+1. `*.types.ts` → 2. `*.model.ts` → 3. `*.validation.ts` → 4. `*.service.ts` → 5. `*.controller.ts` → 6. `*.routes.ts` → 7. montar en el router raíz de `app.ts` (`router.use('/<plural>', <feature>Routes)`; sin prefijo `/api`, el subdominio `api.` ya lo indica).
 
 ## Convención de export
 - Routers: `export default router`.
