@@ -24,9 +24,9 @@ Arquitectura elegida (ver también `02-r2-domain.md`):
 | Servicio | Uso | Cuenta (correo) | Plan | Región | Estado |
 |---|---|---|---|---|---|
 | Cloudflare | Dominio `quartzedu.co`, DNS, R2 (`cdn.quartzedu.co`) | quartzsaas@gmail.com | Registrar + R2 gratis | Global | ✅ Configurado |
-| Resend | Correo transaccional | Gmail personal | Free | `us-east-1` (N. Virginia) | ⏳ En curso |
-| DigitalOcean | API (App Platform) | _pendiente_ | Basic ~1 GB | NYC | ⏳ Pendiente |
-| MongoDB Atlas | Base de datos | _pendiente_ | M0 / M10 | AWS `us-east-1` | ⏳ Pendiente |
+| Resend | Correo transaccional | Gmail personal | Free | `us-east-1` (N. Virginia) | ✅ Configurado |
+| DigitalOcean | API (App Platform) | _pendiente_ | Basic ~1 GB | NYC | ✅ Configurado |
+| MongoDB Atlas | Base de datos | _pendiente_ | M0 / M10 | AWS `us-east-1` | ✅ Configurado |
 | Vercel | Web (`app.quartzedu.co`) | _pendiente_ | Hobby | Global (CDN) | ⏳ Pendiente |
 | GitHub | Repo `legardajohan/quartz` | _pendiente_ | — | — | ✅ |
 
